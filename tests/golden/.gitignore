@@ -1,1 +1,3 @@
-*.wav
+# Track wav files for CI verification
+!*.wav
+
