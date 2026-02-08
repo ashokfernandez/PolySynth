@@ -1,25 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang='en'>
 <head>
-<title>PolySynth Audio Tests</title>
-<style>body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; } h1 { border-bottom: 2px solid #eee; padding-bottom: 0.5rem; } .artifact { margin-bottom: 1.5rem; } audio { width: 100%; }</style>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>PolySynth - Audio Artifacts & Test Report</title>
+<style>body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #333; } header { border-bottom: 2px solid #eaeaea; padding-bottom: 2rem; margin-bottom: 2rem; text-align: center; } h1 { margin: 0; color: #111; font-size: 2.5rem; } .meta { color: #666; font-size: 0.9rem; margin-top: 0.5rem; } .section-title { border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-top: 3rem; color: #444; } .artifact { background: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #eee; } .artifact h4 { margin-top: 0; margin-bottom: 0.5rem; color: #222; } audio { width: 100%; margin-top: 0.5rem; } a { color: #0066cc; text-decoration: none; } a:hover { text-decoration: underline; } </style>
 </head>
 <body>
-<h1>PolySynth Audio Tests</h1>
-<p><strong>Generated:</strong> 2026-02-08 21:45:47</p>
-<h2>Audio Artifacts</h2>
-<h3>Audio Demos</h3>
-<div class='artifact'><h4>demo_engine_poly.wav</h4>
-<audio controls src='audio/demo_engine_poly.wav'></audio></div>
-<div class='artifact'><h4>demo_engine_saw.wav</h4>
-<audio controls src='audio/demo_engine_saw.wav'></audio></div>
-<div class='artifact'><h4>demo_filter_sweep.wav</h4>
-<audio controls src='audio/demo_filter_sweep.wav'></audio></div>
-<div class='artifact'><h4>demo_poly_chords.wav</h4>
-<audio controls src='audio/demo_poly_chords.wav'></audio></div>
-<h3>Data Demos</h3>
+<header>
+<h1>PolySynth Audio Labs</h1>
+<p class='meta'>Generated: 2026-02-08 22:06:13</p>
+<p>Welcome to the <strong>PolySynth</strong> automated test report. This page contains audio artifacts generated directly from our C++ DSP engine during the latest CI build. These samples verify the correctness of our Oscillators, Filters, and Envelopes.</p>
+<p><a href='https://github.com/ashokfernandez/PolySynth'>&larr; Back to Repository</a></p>
+</header>
+<section>
+<h2 class='section-title'>Latest Audio Artifacts</h2>
+<div class='artifact'>
+<h4>Engine Poly (demo_engine_poly.wav)</h4>
+<audio controls src='audio/demo_engine_poly.wav' preload='metadata'></audio>
+</div>
+<div class='artifact'>
+<h4>Engine Saw (demo_engine_saw.wav)</h4>
+<audio controls src='audio/demo_engine_saw.wav' preload='metadata'></audio>
+</div>
+<div class='artifact'>
+<h4>Filter Sweep (demo_filter_sweep.wav)</h4>
+<audio controls src='audio/demo_filter_sweep.wav' preload='metadata'></audio>
+</div>
+<div class='artifact'>
+<h4>Poly Chords (demo_poly_chords.wav)</h4>
+<audio controls src='audio/demo_poly_chords.wav' preload='metadata'></audio>
+</div>
+<h2 class='section-title'>Data Dumps (CSV)</h2>
 <ul>
 <li><a href='audio/demo_adsr.csv'>demo_adsr.csv</a></li>
 </ul>
+</section>
 </body>
 </html>
