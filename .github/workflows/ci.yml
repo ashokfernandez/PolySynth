@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+
+      - name: Download External Deps
+        run: |
+          chmod +x scripts/download_dependencies.sh
+          ./scripts/download_dependencies.sh
+
+      - name: Build Tests and Demos
+        run: |
+          cd tests
+          mkdir -p build
+          cd build
+          cmake ..
+          make
+
+      - name: Run Unit Tests
+        run: |
+          cd tests/build
+          ./run_tests
+
+      - name: Audio Golden Master Verification
+        run: |
+          python3 scripts/golden_master.py --verify
+
+      - name: Audio Frequency Analysis
+        run: |
+          python3 scripts/analyze_audio.py tests/golden/demo_render_wav.wav --expected-freq 440
