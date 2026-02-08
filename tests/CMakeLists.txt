@@ -26,6 +26,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_Engine_Audio.cpp
     unit/Test_ADSREnvelope.cpp
     unit/Test_BiquadFilter.cpp
+    unit/Test_LFO.cpp
     unit/Test_VoiceManager_Poly.cpp
 )
 
