@@ -2,8 +2,10 @@
 
 #include "dsp/BiquadFilter.h"
 #include "modulation/ADSREnvelope.h"
+#include "modulation/LFO.h"
 #include "oscillator/Oscillator.h"
 #include "types.h"
+#include <algorithm>
 #include <array>
 #include <cmath>
 
@@ -23,9 +25,16 @@ public:
     mAmpEnv.Init(sampleRate);
     mAmpEnv.SetParams(0.01, 0.1, 0.5, 0.2); // Default ADSR
 
+    mLfo.Init(sampleRate);
+    mLfo.SetRate(1.0);
+    mLfo.SetDepth(0.0);
+    mLfo.SetWaveform(0);
+
     mActive = false;
     mNote = -1;
     mAge = 0;
+    mBaseCutoff = 2000.0;
+    mBaseRes = 0.707;
   }
 
   void NoteOn(int note, int velocity) {
@@ -52,6 +61,10 @@ public:
       return 0.0;
 
     sample_t osc = mOsc.Process();
+    sample_t lfo = mLfo.Process();
+    double effectiveCutoff = mBaseCutoff * (1.0 + static_cast<double>(lfo));
+    effectiveCutoff = std::clamp(effectiveCutoff, 20.0, 20000.0);
+    mFilter.SetParams(FilterType::LowPass, effectiveCutoff, mBaseRes);
     sample_t flt = mFilter.Process(osc);
     sample_t env = mAmpEnv.Process();
 
@@ -82,19 +95,28 @@ public:
   }
 
   void SetFilter(double cutoff, double res) {
+    mBaseCutoff = cutoff;
+    mBaseRes = res;
     mFilter.SetParams(FilterType::LowPass, cutoff, res);
   }
 
   void SetWaveform(Oscillator::WaveformType type) { mOsc.SetWaveform(type); }
 
+  void SetLFORate(double hz) { mLfo.SetRate(hz); }
+
+  void SetLFODepth(double depth) { mLfo.SetDepth(depth); }
+
 private:
   Oscillator mOsc;
   BiquadFilter mFilter;
   ADSREnvelope mAmpEnv;
+  LFO mLfo;
   bool mActive = false;
   double mVelocity = 0.0;
   int mNote = -1;
   uint64_t mAge = 0;
+  double mBaseCutoff = 2000.0;
+  double mBaseRes = 0.707;
 };
 
 class VoiceManager {
@@ -162,6 +184,18 @@ public:
   void SetWaveform(Oscillator::WaveformType type) {
     for (auto &voice : mVoices) {
       voice.SetWaveform(type);
+    }
+  }
+
+  void SetLFORate(double hz) {
+    for (auto &voice : mVoices) {
+      voice.SetLFORate(hz);
+    }
+  }
+
+  void SetLFODepth(double depth) {
+    for (auto &voice : mVoices) {
+      voice.SetLFODepth(depth);
     }
   }
 
