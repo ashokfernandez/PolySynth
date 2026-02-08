@@ -2,7 +2,7 @@
 #include "catch.hpp"
 
 TEST_CASE("ADSR State Transitions", "[ADSREnvelope]") {
-  PolySynth::ADSREnvelope adsr;
+  PolySynthCore::ADSREnvelope adsr;
   double sr = 100.0; // Low SR for easy math
   adsr.Init(sr);
 
@@ -10,12 +10,12 @@ TEST_CASE("ADSR State Transitions", "[ADSREnvelope]") {
   adsr.SetParams(0.1, 0.1, 0.5, 0.1);
 
   // 1. Idle initially
-  REQUIRE(adsr.GetStage() == PolySynth::ADSREnvelope::kIdle);
+  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kIdle);
   REQUIRE(adsr.GetLevel() == Approx(0.0));
 
   // 2. NoteOn -> Attack
   adsr.NoteOn();
-  REQUIRE(adsr.GetStage() == PolySynth::ADSREnvelope::kAttack);
+  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kAttack);
 
   // Process 5 samples (halfway)
   for (int i = 0; i < 5; i++)
@@ -24,11 +24,11 @@ TEST_CASE("ADSR State Transitions", "[ADSREnvelope]") {
 
   // Process until we hit Decay (Robust transition)
   int watchdog = 0;
-  while (adsr.GetStage() == PolySynth::ADSREnvelope::kAttack &&
+  while (adsr.GetStage() == PolySynthCore::ADSREnvelope::kAttack &&
          watchdog++ < 20) {
     adsr.Process();
   }
-  REQUIRE(adsr.GetStage() == PolySynth::ADSREnvelope::kDecay);
+  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kDecay);
 
   // Note: We don't check Level == 1.0 here because it might be effectively 1.0
   // but logic happened
@@ -36,13 +36,13 @@ TEST_CASE("ADSR State Transitions", "[ADSREnvelope]") {
   // 3. Decay to Sustain (0.5)
   // Process until we hit Sustain
   watchdog = 0;
-  while (adsr.GetStage() == PolySynth::ADSREnvelope::kDecay &&
+  while (adsr.GetStage() == PolySynthCore::ADSREnvelope::kDecay &&
          watchdog++ < 20) {
     adsr.Process();
   }
 
   // Should be Sustain now
-  REQUIRE(adsr.GetStage() == PolySynth::ADSREnvelope::kSustain);
+  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kSustain);
   REQUIRE(adsr.GetLevel() == Approx(0.5).margin(0.01));
 
   // 4. Hold Sustain
@@ -51,14 +51,14 @@ TEST_CASE("ADSR State Transitions", "[ADSREnvelope]") {
 
   // 5. NoteOff -> Release
   adsr.NoteOff();
-  REQUIRE(adsr.GetStage() == PolySynth::ADSREnvelope::kRelease);
+  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kRelease);
 
   // Release Phase
   watchdog = 0;
-  while (adsr.GetStage() == PolySynth::ADSREnvelope::kRelease &&
+  while (adsr.GetStage() == PolySynthCore::ADSREnvelope::kRelease &&
          watchdog++ < 20) {
     adsr.Process();
   }
   REQUIRE(adsr.GetLevel() <= Approx(0.001)); // Should be zero
-  REQUIRE(adsr.GetStage() == PolySynth::ADSREnvelope::kIdle);
+  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kIdle);
 }

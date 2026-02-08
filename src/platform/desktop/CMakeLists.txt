@@ -8,9 +8,18 @@ endif()
 include(${IPLUG2_DIR}/iPlug2.cmake)
 find_package(iPlug2 REQUIRED)
 
-include_directories(${IPLUG2_DIR}/IPlug/Extras/WebView)
-include_directories(${IPLUG2_DIR}/Dependencies/IGraphics/MetalNanoVG/src)
-add_compile_definitions(WEBVIEW_EDITOR_DELEGATE=1)
+# Add core include directory
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../core
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/dsp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/modulation
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/oscillator
+    ${IPLUG2_DIR}/IGraphics
+    ${IPLUG2_DIR}/IGraphics/Controls
+    ${IPLUG2_DIR}/IGraphics/Drawing
+    ${IPLUG2_DIR}/IPlug/Extras/WebView
+    ${IPLUG2_DIR}/Dependencies/Extras/nlohmann
+)
 
 iplug_add_plugin(${PROJECT_NAME}
   SOURCES
@@ -18,15 +27,37 @@ iplug_add_plugin(${PROJECT_NAME}
     PolySynth.h
     PolySynth_DSP.h
     resources/resource.h
-  WEB_RESOURCES
-    resources/web/index.html
-    resources/web/style.css
-    resources/web/main.js
   RESOURCES
     resources/fonts/Roboto-Regular.ttf
   LINK
-    iPlug2::Extras::Synth
-  EXTRA_INC_PATHS
-    ${IPLUG2_DIR}/IPlug/Extras/WebView
-  UI WEBVIEW
+    iPlug2::IGraphics::NanoVG
+  NANOVG
 )
+
+# Apply Metal to all
+target_compile_definitions(${PROJECT_NAME}-app PUBLIC IGRAPHICS_METAL)
+target_compile_definitions(${PROJECT_NAME}-au PUBLIC IGRAPHICS_METAL)
+target_compile_definitions(${PROJECT_NAME}-vst3 PUBLIC IGRAPHICS_METAL)
+target_compile_definitions(PolySynthAU-framework PUBLIC IGRAPHICS_METAL)
+
+# Function to remove definitions
+function(remove_definitions targetName)
+  if(TARGET ${targetName})
+    get_target_property(defs ${targetName} COMPILE_DEFINITIONS)
+    if(defs)
+      list(REMOVE_ITEM defs "IGRAPHICS_GL2")
+      list(REMOVE_ITEM defs "IPLUG_WEBVIEW")
+      list(REMOVE_ITEM defs "WEBVIEW_EDITOR_DELEGATE")
+      list(REMOVE_ITEM defs "WEBVIEW_EDITOR_DELEGATE=1")
+      list(REMOVE_ITEM defs "NO_IGRAPHICS")
+      set_target_properties(${targetName} PROPERTIES COMPILE_DEFINITIONS "${defs}")
+      message(STATUS "Sanitized definitions for ${targetName}")
+    endif()
+  endif()
+endfunction()
+
+# Sanitize targets
+remove_definitions(${PROJECT_NAME}-app)
+remove_definitions(${PROJECT_NAME}-au)
+remove_definitions(${PROJECT_NAME}-vst3)
+remove_definitions(PolySynthAU-framework)

@@ -2,12 +2,12 @@
 #include "catch.hpp"
 
 TEST_CASE("Biquad LowPass Response", "[Biquad]") {
-  PolySynth::BiquadFilter filter;
+  PolySynthCore::BiquadFilter filter;
   double sr = 48000.0;
   filter.Init(sr);
 
   // LowPass at 100Hz
-  filter.SetParams(PolySynth::FilterType::LowPass, 100.0, 0.707);
+  filter.SetParams(PolySynthCore::FilterType::LowPass, 100.0, 0.707);
 
   // 1. DC Check (0 Hz) -> Gain should be 1.0 (0dB)
   // Run constant 1.0 signal
@@ -31,9 +31,9 @@ TEST_CASE("Biquad LowPass Response", "[Biquad]") {
 }
 
 TEST_CASE("Biquad Stability", "[Biquad]") {
-  PolySynth::BiquadFilter filter;
+  PolySynthCore::BiquadFilter filter;
   filter.Init(48000.0);
-  filter.SetParams(PolySynth::FilterType::LowPass, 1000.0, 5.0); // High Q
+  filter.SetParams(PolySynthCore::FilterType::LowPass, 1000.0, 5.0); // High Q
 
   // Pulse input
   double out = filter.Process(1.0); // Impulse

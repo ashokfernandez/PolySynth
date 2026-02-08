@@ -3,7 +3,7 @@
 #include <vector>
 
 TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
-  PolySynth::VoiceManager vm;
+  PolySynthCore::VoiceManager vm;
   vm.Init(48000.0);
 
   // 1. Play a chord (3 notes)
@@ -12,7 +12,7 @@ TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
   vm.OnNoteOn(67, 100); // G4
 
   // Process a bit
-  PolySynth::sample_t out = vm.Process();
+  PolySynthCore::sample_t out = vm.Process();
   REQUIRE(std::abs(out) > 0.0); // Should have output
 
   // 2. Voice Stealing Logic
@@ -62,12 +62,12 @@ TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
   // Or just rely on the fact that CRASHing or weird behavior didn't happen.
 
   // Let's verify that we still produce sound.
-  PolySynth::sample_t val = vm.Process();
+  PolySynthCore::sample_t val = vm.Process();
   REQUIRE(std::abs(val) > 0.0);
 }
 
 TEST_CASE("VoiceManager Silence", "[VoiceManager]") {
-  PolySynth::VoiceManager vm;
+  PolySynthCore::VoiceManager vm;
   vm.Init(48000.0);
 
   // No notes -> Silence

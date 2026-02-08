@@ -2,13 +2,13 @@
 #include "catch.hpp"
 
 TEST_CASE("Engine can be instantiated", "[Engine]") {
-  PolySynth::Engine engine;
+  PolySynthCore::Engine engine;
   engine.Init(48000.0);
 
   SECTION("Process produces silence by default") {
-    PolySynth::sample_t *outputs[2];
-    PolySynth::sample_t left[32];
-    PolySynth::sample_t right[32];
+    PolySynthCore::sample_t *outputs[2];
+    PolySynthCore::sample_t left[32];
+    PolySynthCore::sample_t right[32];
     outputs[0] = left;
     outputs[1] = right;
 

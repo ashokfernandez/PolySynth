@@ -6,7 +6,7 @@
 int main() {
   std::cout << "Rendering Poly Chords Demo..." << std::endl;
 
-  PolySynth::VoiceManager vm;
+  PolySynthCore::VoiceManager vm;
   double sr = 48000.0;
   vm.Init(sr);
 

@@ -2,13 +2,13 @@
 #include "catch.hpp"
 
 TEST_CASE("Engine Produces Audio On Note", "[Engine]") {
-  PolySynth::Engine engine;
+  PolySynthCore::Engine engine;
   engine.Init(48000.0);
 
   // 1. Initial state: Silence
-  PolySynth::sample_t *outputs[2];
-  PolySynth::sample_t left[100];
-  PolySynth::sample_t right[100];
+  PolySynthCore::sample_t *outputs[2];
+  PolySynthCore::sample_t left[100];
+  PolySynthCore::sample_t right[100];
   outputs[0] = left;
   outputs[1] = right;
 
@@ -39,8 +39,8 @@ TEST_CASE("Engine Produces Audio On Note", "[Engine]") {
   // 6. Drain Release
   // Release is 0.2s * 48000 = 9600 samples.
   // We process 15000 samples to be sure.
-  PolySynth::sample_t tempBuffer[100];
-  PolySynth::sample_t *tempPtrs[2] = {tempBuffer, tempBuffer};
+  PolySynthCore::sample_t tempBuffer[100];
+  PolySynthCore::sample_t *tempPtrs[2] = {tempBuffer, tempBuffer};
 
   for (int i = 0; i < 150; i++) {
     engine.Process(nullptr, tempPtrs, 100, 2);

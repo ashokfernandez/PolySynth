@@ -47,6 +47,61 @@ For every feature (e.g., "Add a Moog Ladder Filter"):
     *   Adds a knob to the UI.
     *   Connects the parameter ID.
 
-5.  **Review (User)**:
     *   User listens to the build.
     *   User checks the code diff.
+
+## 4. Environment & Cheat Sheet
+
+### Running Unit Tests
+Tests are the source of truth. Always run them before and after changes.
+
+```bash
+# Navigate to the test directory
+cd polysynth/tests
+
+# Create build directory if it doesn't exist
+mkdir -p build && cd build
+
+# Configure and Build
+cmake .. -DIPLUG_UNIT_TESTS=ON
+make
+
+# Run Tests
+./run_tests
+```
+
+### Generating Audio Demos
+Use the demo executables to verify signal integrity.
+
+```bash
+# From polysynth/tests/build
+./demo_render_wav
+# Output: demo_*.wav (Check docs/audio/ or listen manually)
+```
+
+## 5. Concurrency & Coordination
+To enable multiple agents to work in parallel without conflicts:
+
+### 5.1 The "Ticket" System
+1.  **Claim It**: Before starting, check `polysynth/plans/roadmap.md`. Find your Milestone.
+2.  **Mark It**: Change `[ ] Milestone 1.1` to `[/] Milestone 1.1 (@AgentName)`.
+3.  **Atomic Units**: Work on *one* bullet point at a time. Do not claim an entire Phase.
+
+### 5.2 Branching Strategy
+*   **Main Branch**: `main` is always stable (compiles + passes tests).
+*   **Feature Branches**: Create a branch for your ticket: `user/feat/short-description`.
+    *   Example: `agent/feat/adsr-envelope`
+*   **Merging**:
+    1.  Work on your branch.
+    2.  `git fetch origin main`
+    3.  `git rebase main` (Resolve conflicts locally).
+    4.  Run `./run_tests.sh`.
+    5.  Push and create PR (or merge if you have direct access).
+
+### 5.3 Interface-First Contracts
+If Agent A needs `Filter` (impl by Agent B):
+1.  Agent A defines `Filter.h` with pure virtual methods.
+2.  Agent A mocks `Filter` in their test.
+3.  Agent B implements `Filter.cpp` against the interface.
+4.  They merge.
+This avoids "blocking" on implementation details.

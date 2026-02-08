@@ -7,7 +7,7 @@
 int main() {
   std::cout << "Rendering Engine Demo (Sawtooth)..." << std::endl;
 
-  PolySynth::Engine engine;
+  PolySynthCore::Engine engine;
   double sr = 48000.0;
   engine.Init(sr);
 
@@ -25,9 +25,9 @@ int main() {
   int blockSize = 512;
   int currentFrame = 0;
 
-  PolySynth::sample_t *outPtrs[2];
-  PolySynth::sample_t left[512];
-  PolySynth::sample_t right[512];
+  PolySynthCore::sample_t *outPtrs[2];
+  PolySynthCore::sample_t left[512];
+  PolySynthCore::sample_t right[512];
   outPtrs[0] = left;
   outPtrs[1] = right;
 

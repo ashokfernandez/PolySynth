@@ -2,7 +2,7 @@
 #include "catch.hpp"
 
 TEST_CASE("Oscillator Frequency Check", "[Oscillator]") {
-  PolySynth::Oscillator osc;
+  PolySynthCore::Oscillator osc;
   double sr = 48000.0;
   osc.Init(sr);
 
@@ -30,6 +30,6 @@ TEST_CASE("Oscillator Frequency Check", "[Oscillator]") {
 
   // At sample 100, phase wraps. Process returns (2*ph - 1).
   // It might be -1.0 again or very close to it depending on float precision
-  PolySynth::sample_t val = osc.Process();
+  PolySynthCore::sample_t val = osc.Process();
   REQUIRE(val == Approx(-1.0).margin(0.01));
 }

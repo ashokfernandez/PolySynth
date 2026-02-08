@@ -6,7 +6,7 @@
 int main() {
   std::cout << "Generating ADSR Demo CSV..." << std::endl;
 
-  PolySynth::ADSREnvelope adsr;
+  PolySynthCore::ADSREnvelope adsr;
   double sr = 48000.0;
   adsr.Init(sr);
 
@@ -22,7 +22,7 @@ int main() {
   // Run for 1.0s (Sustain holds)
   for (int i = 0; i < 48000; i++) {
     double t = (double)i / sr;
-    PolySynth::sample_t level = adsr.Process();
+    PolySynthCore::sample_t level = adsr.Process();
     file << t << "," << level << "\n";
   }
 
@@ -32,7 +32,7 @@ int main() {
   // Run for 1.0s (Release)
   for (int i = 0; i < 48000; i++) {
     double t = 1.0 + (double)i / sr;
-    PolySynth::sample_t level = adsr.Process();
+    PolySynthCore::sample_t level = adsr.Process();
     file << t << "," << level << "\n";
   }
 
