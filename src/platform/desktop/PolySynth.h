@@ -44,7 +44,8 @@ public:
   bool OnCanDownloadMIMEType(const char *mimeType) override;
   void OnFailedToDownloadFile(const char *path) override;
   void OnDownloadedFile(const char *path) override;
-  void OnGetLocalDownloadPathForFile(const char *fileName, WDL_String &localPath) override;
+  void OnGetLocalDownloadPathForFile(const char *fileName,
+                                     WDL_String &localPath) override;
 
 #if IPLUG_DSP
 public:
@@ -53,7 +54,8 @@ public:
   void OnReset() override;
   void OnParamChange(int paramIdx) override;
   void OnIdle() override;
-  bool OnMessage(int msgTag, int ctrlTag, int dataSize, const void *pData) override;
+  bool OnMessage(int msgTag, int ctrlTag, int dataSize,
+                 const void *pData) override;
 
 private:
   PolySynthDSP mDSP{8};

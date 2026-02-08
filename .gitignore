@@ -6,6 +6,7 @@
 
 # Build Artifacts
 build/
+build_desktop/
 bin/
 obj/
 *.o

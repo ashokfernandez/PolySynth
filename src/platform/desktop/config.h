@@ -23,7 +23,6 @@
 #define PLUG_DOES_MPE 1
 #define PLUG_DOES_STATE_CHUNKS 0
 #define PLUG_HAS_UI 1
-#define WEBVIEW_EDITOR_DELEGATE 1
 #define PLUG_WIDTH 1024
 #define PLUG_HEIGHT 669
 #define PLUG_FPS 60
@@ -46,7 +45,7 @@
 #define CLAP_MANUAL_URL "https://iplug2.github.io/manuals/example_manual.pdf"
 #define CLAP_SUPPORT_URL "https://github.com/iPlug2/iPlug2/wiki"
 #define CLAP_DESCRIPTION "iPlug2 instrument example"
-#define CLAP_FEATURES "instrument" //, "synth"
+#define CLAP_FEATURES "instrument"
 
 #define APP_NUM_CHANNELS 2
 #define APP_N_VECTOR_WAIT 0
