@@ -85,6 +85,8 @@ public:
     mFilter.SetParams(FilterType::LowPass, cutoff, res);
   }
 
+  void SetWaveform(Oscillator::WaveformType type) { mOsc.SetWaveform(type); }
+
 private:
   Oscillator mOsc;
   BiquadFilter mFilter;
@@ -154,6 +156,12 @@ public:
   void SetFilter(double cutoff, double res) {
     for (auto &voice : mVoices) {
       voice.SetFilter(cutoff, res);
+    }
+  }
+
+  void SetWaveform(Oscillator::WaveformType type) {
+    for (auto &voice : mVoices) {
+      voice.SetWaveform(type);
     }
   }
 

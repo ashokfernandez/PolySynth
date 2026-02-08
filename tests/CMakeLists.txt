@@ -23,6 +23,7 @@ set(UNIT_TEST_SOURCES
     main_test.cpp
     unit/Test_Engine_Basic.cpp
     unit/Test_Oscillator.cpp
+    unit/Test_Oscillator_Waveforms.cpp
     unit/Test_Engine_Audio.cpp
     unit/Test_ADSREnvelope.cpp
     unit/Test_BiquadFilter.cpp
