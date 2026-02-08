@@ -1,0 +1,37 @@
+name: Headless Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake
+        
+    - name: Download External Deps
+      run: |
+        chmod +x polysynth/scripts/download_dependencies.sh
+        ./polysynth/scripts/download_dependencies.sh
+        
+    - name: Build Tests
+      run: |
+        cd polysynth/tests
+        mkdir build
+        cd build
+        cmake ..
+        make
+        
+    - name: Run Tests
+      run: |
+        cd polysynth/tests/build
+        ./run_tests

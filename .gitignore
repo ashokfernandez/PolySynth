@@ -1,0 +1,27 @@
+# OS & Editors
+.DS_Store
+.vscode/
+*.swp
+*.swo
+
+# Build Artifacts
+build/
+bin/
+obj/
+*.o
+*.a
+*.dylib
+*.dll
+
+# Dependencies (Managed by scripts)
+external/
+
+# Tests
+tests/build/
+tests/run_tests
+
+# iPlug2 Generated (Specific build folders)
+src/platform/desktop/build-*/
+src/platform/desktop/*.xcworkspace
+src/platform/desktop/*.xcodeproj
+src/platform/desktop/*.sln
