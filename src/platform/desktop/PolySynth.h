@@ -46,6 +46,10 @@ public:
   void OnDownloadedFile(const char *path) override;
   void OnGetLocalDownloadPathForFile(const char *fileName,
                                      WDL_String &localPath) override;
+#if IPLUG_EDITOR
+  void OnUIOpen() override;
+  void OnParamChangeUI(int paramIdx, EParamSource source) override;
+#endif
 
 #if IPLUG_DSP
 public:
