@@ -49,12 +49,16 @@ def collect_artifacts():
     
     if os.path.exists(TEST_BUILD_DIR):
         for ext in exts:
-            for f in glob.glob(os.path.join(TEST_BUILD_DIR, ext)):
+            files = glob.glob(os.path.join(TEST_BUILD_DIR, ext))
+            print(f"Found {len(files)} files for extension {ext} in {TEST_BUILD_DIR}")
+            for f in files:
                 filename = os.path.basename(f)
                 dest = os.path.join(AUDIO_DIR, filename)
                 shutil.copy2(f, dest)
                 artifacts.append(filename)
                 print(f"Copied {filename} to {AUDIO_DIR}")
+    else:
+        print(f"WARNING: Build directory {TEST_BUILD_DIR} does not exist!")
             
     return artifacts
 

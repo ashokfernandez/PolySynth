@@ -12,6 +12,16 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    - name: Grant Permissions
+      run: |
+        echo "Granting permissions..."
+        
+    permissions:
+      contents: write
     
     - name: Install Dependencies
       run: |
