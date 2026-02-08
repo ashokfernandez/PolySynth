@@ -62,3 +62,20 @@ TEST_CASE("ADSR State Transitions", "[ADSREnvelope]") {
   REQUIRE(adsr.GetLevel() <= Approx(0.001)); // Should be zero
   REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kIdle);
 }
+
+TEST_CASE("ADSR handles zero time segments", "[ADSREnvelope]") {
+  PolySynthCore::ADSREnvelope adsr;
+  double sr = 100.0;
+  adsr.Init(sr);
+
+  // Zero attack/decay, instant sustain at 0.25, zero release.
+  adsr.SetParams(0.0, 0.0, 0.25, 0.0);
+
+  adsr.NoteOn();
+  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kSustain);
+  REQUIRE(adsr.GetLevel() == Approx(0.25));
+
+  adsr.NoteOff();
+  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kIdle);
+  REQUIRE(adsr.GetLevel() == Approx(0.0));
+}

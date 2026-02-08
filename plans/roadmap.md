@@ -20,8 +20,8 @@ This document serves as the tactical roadmap for agents working on `polysynth`. 
 ## Phase 1: Core DSP (Monophonic to Polyphonic)
 **Reference:** `implementation_plan_phase3.md` (ADSR), `implementation_plan_phase4.md` (Polyphony)
 
-- [ ] **Milestone 1.1: ADSR Envelope**
-    - [ ] Implement `ADSREnvelope` class.
+- [/] **Milestone 1.1: ADSR Envelope** (@GPT-5.2-Codex)
+    - [x] Implement `ADSREnvelope` class. (@GPT-5.2-Codex)
     - [ ] Verify with `demo_adsr`.
 - [ ] **Milestone 1.2: Polyphony**
     - [ ] Implement `VoiceManager` (8 voices).

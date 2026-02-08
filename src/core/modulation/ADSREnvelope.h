@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../types.h"
+#include <algorithm>
 #include <cmath>
 
 namespace PolySynthCore {
@@ -24,18 +25,34 @@ public:
 
   // Params in Seconds (except Sustain which is 0.0-1.0)
   void SetParams(double a, double d, double s, double r) {
-    mA = a;
-    mD = d;
-    mS = s;
-    mR = r;
+    mA = std::max(0.0, a);
+    mD = std::max(0.0, d);
+    mS = std::clamp(s, 0.0, 1.0);
+    mR = std::max(0.0, r);
     CalculateCoefficients();
   }
 
-  void NoteOn() { mStage = kAttack; }
+  void NoteOn() {
+    if (mA == 0.0) {
+      mLevel = 1.0;
+      mStage = (mD == 0.0) ? kSustain : kDecay;
+      if (mStage == kSustain) {
+        mLevel = mS;
+      }
+    } else {
+      mStage = kAttack;
+    }
+  }
 
   void NoteOff() {
     if (mStage != kIdle) {
-      mStage = kRelease;
+      if (mR == 0.0) {
+        mLevel = 0.0;
+        mStage = kIdle;
+      } else {
+        mReleaseInc = (mR > 0.0) ? (mLevel / (mR * mSampleRate)) : 0.0;
+        mStage = kRelease;
+      }
     }
   }
 
@@ -47,27 +64,48 @@ public:
     case kIdle:
       break;
     case kAttack:
-      mLevel += mAttackInc;
-      if (mLevel >= 1.0) {
+      if (mAttackInc <= 0.0) {
         mLevel = 1.0;
-        mStage = kDecay;
+        mStage = (mD == 0.0) ? kSustain : kDecay;
+        if (mStage == kSustain) {
+          mLevel = mS;
+        }
+      } else {
+        mLevel += mAttackInc;
+        if (mLevel >= 1.0) {
+          mLevel = 1.0;
+          mStage = (mD == 0.0) ? kSustain : kDecay;
+          if (mStage == kSustain) {
+            mLevel = mS;
+          }
+        }
       }
       break;
     case kDecay:
-      mLevel -= mDecayInc;
-      if (mLevel <= mS) {
+      if (mDecayInc <= 0.0) {
         mLevel = mS;
         mStage = kSustain;
+      } else {
+        mLevel -= mDecayInc;
+        if (mLevel <= mS) {
+          mLevel = mS;
+          mStage = kSustain;
+        }
       }
       break;
     case kSustain:
       mLevel = mS;
       break;
     case kRelease:
-      mLevel -= mReleaseInc;
-      if (mLevel <= 0.0) {
+      if (mReleaseInc <= 0.0) {
         mLevel = 0.0;
         mStage = kIdle;
+      } else {
+        mLevel -= mReleaseInc;
+        if (mLevel <= 0.0) {
+          mLevel = 0.0;
+          mStage = kIdle;
+        }
       }
       break;
     }
@@ -81,12 +119,9 @@ public:
 private:
   void CalculateCoefficients() {
     if (mSampleRate > 0.0) {
-      mAttackInc = 1.0 / (mA * mSampleRate);
-      mDecayInc = (1.0 - mS) / (mD * mSampleRate);
-      // Release from 1.0 down to 0 over R seconds (simplified linear slope)
-      // But actually we release from mS.
-      // To keep slope constant regardless of starting point:
-      mReleaseInc = 1.0 / (mR * mSampleRate);
+      mAttackInc = (mA > 0.0) ? (1.0 / (mA * mSampleRate)) : 0.0;
+      mDecayInc = (mD > 0.0) ? ((1.0 - mS) / (mD * mSampleRate)) : 0.0;
+      mReleaseInc = (mR > 0.0) ? (mS / (mR * mSampleRate)) : 0.0;
     }
   }
 
