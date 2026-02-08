@@ -1,4 +1,4 @@
-#include "../src/core/Engine.h"
+#include "../../src/core/Engine.h"
 #include "catch.hpp"
 
 TEST_CASE("Engine Produces Audio On Note", "[Engine]") {
@@ -22,8 +22,6 @@ TEST_CASE("Engine Produces Audio On Note", "[Engine]") {
   engine.Process(nullptr, outputs, 100, 2);
 
   // Should have signal now.
-  // Sawtooth starts at -1.0 or similar.
-  // Check RMS or just non-zero
   double energy = 0.0;
   for (int i = 0; i < 100; i++) {
     energy += std::abs(left[i]);
@@ -33,7 +31,22 @@ TEST_CASE("Engine Produces Audio On Note", "[Engine]") {
   // 4. Note Off
   engine.OnNoteOff(69);
 
-  // 5. Process (Instant silence for now due to lack of envelope)
+  // 5. Process (Release phase)
+  // Should NOT be silence immediately due to Release envelope
   engine.Process(nullptr, outputs, 100, 2);
-  REQUIRE(left[0] == Approx(0.0));
+  REQUIRE(std::abs(left[0]) > 0.001);
+
+  // 6. Drain Release
+  // Release is 0.2s * 48000 = 9600 samples.
+  // We process 15000 samples to be sure.
+  PolySynth::sample_t tempBuffer[100];
+  PolySynth::sample_t *tempPtrs[2] = {tempBuffer, tempBuffer};
+
+  for (int i = 0; i < 150; i++) {
+    engine.Process(nullptr, tempPtrs, 100, 2);
+  }
+
+  // 7. Verify Silence
+  engine.Process(nullptr, outputs, 100, 2);
+  REQUIRE(left[0] == Approx(0.0).margin(0.001));
 }

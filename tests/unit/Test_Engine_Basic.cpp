@@ -1,4 +1,4 @@
-#include "../src/core/Engine.h"
+#include "../../src/core/Engine.h"
 #include "catch.hpp"
 
 TEST_CASE("Engine can be instantiated", "[Engine]") {

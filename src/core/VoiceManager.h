@@ -1,5 +1,6 @@
 #pragma once
 
+#include "modulation/ADSREnvelope.h"
 #include "oscillator/Oscillator.h"
 #include "types.h"
 #include <array>
@@ -14,6 +15,10 @@ public:
   void Init(double sampleRate) {
     mOsc.Init(sampleRate);
     mOsc.SetFrequency(440.0);
+
+    mAmpEnv.Init(sampleRate);
+    mAmpEnv.SetParams(0.01, 0.1, 0.5, 0.2); // Default ADSR
+
     mActive = false;
   }
 
@@ -21,23 +26,39 @@ public:
     // Simple Midi to Freq
     double freq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
     mOsc.SetFrequency(freq);
-    mActive = true;
+    mOsc.Reset(); // Hard sync
+
     mVelocity = velocity / 127.0;
-    mOsc.Reset(); // Hard sync on note on
+
+    mAmpEnv.NoteOn();
+    mActive = true;
   }
 
-  void NoteOff() { mActive = false; }
+  void NoteOff() {
+    mAmpEnv.NoteOff();
+    // mActive remains true until Envelope finishes
+  }
 
   inline sample_t Process() {
     if (!mActive)
       return 0.0;
-    return mOsc.Process() * mVelocity;
+
+    sample_t osc = mOsc.Process();
+    sample_t env = mAmpEnv.Process();
+
+    // Check if envelope finished
+    if (!mAmpEnv.IsActive()) {
+      mActive = false;
+    }
+
+    return osc * env * mVelocity;
   }
 
   bool IsActive() const { return mActive; }
 
 private:
   Oscillator mOsc;
+  ADSREnvelope mAmpEnv;
   bool mActive = false;
   double mVelocity = 0.0;
 };
@@ -51,15 +72,14 @@ public:
     mVoice.Init(sampleRate);
   }
 
-  void Reset() { mVoice.NoteOff(); }
+  void Reset() {
+    // mVoice.NoteOff(); // Should be silence?
+    mVoice.Init(44100.0); // Reset everything
+  }
 
   void OnNoteOn(int note, int velocity) { mVoice.NoteOn(note, velocity); }
 
-  void OnNoteOff(int note) {
-    // For mono, we might want to check if it's the SAME note, but simple gate
-    // for now
-    mVoice.NoteOff();
-  }
+  void OnNoteOff(int note) { mVoice.NoteOff(); }
 
   inline sample_t Process() { return mVoice.Process(); }
 

@@ -1,4 +1,4 @@
-#include "../src/core/oscillator/Oscillator.h"
+#include "../../src/core/oscillator/Oscillator.h"
 #include "catch.hpp"
 
 TEST_CASE("Oscillator Frequency Check", "[Oscillator]") {

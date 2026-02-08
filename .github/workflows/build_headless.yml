@@ -35,3 +35,14 @@ jobs:
       run: |
         cd polysynth/tests/build
         ./run_tests
+        
+    - name: Generate Audio Docs
+      run: |
+        python3 polysynth/scripts/generate_test_report.py
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: polysynth/docs
+        branch: gh-pages
