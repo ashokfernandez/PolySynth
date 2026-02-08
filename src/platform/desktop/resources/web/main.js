@@ -1,68 +1,123 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log("PolySynth UI Loaded");
 
-    // iPlug2 Bridge Setup
-    // Recieve from C++
-    window.SPVFD = (paramIdx, val) => {
-        console.log(`[Bridge] Recv Parameter: ${paramIdx} = ${val}`);
+    const paramMeta = {
+        0: { name: 'Gain', min: 0, max: 100, unit: '%', decimals: 0 },
+        2: { name: 'Attack', min: 1, max: 1000, unit: 'ms', decimals: 0 },
+        3: { name: 'Decay', min: 1, max: 1000, unit: 'ms', decimals: 0 },
+        4: { name: 'Sustain', min: 0, max: 100, unit: '%', decimals: 0 },
+        5: { name: 'Release', min: 2, max: 1000, unit: 'ms', decimals: 0 },
+        11: { name: 'Cutoff', min: 20, max: 20000, unit: 'Hz', decimals: 0 },
+        12: { name: 'Resonance', min: 0, max: 100, unit: '%', decimals: 0 }
+    };
 
-        // Find controls bound to this paramIdx and update them
-        // Note: In real app, might need a map of paramIdx to DOM elements
-        // For now, simple selector query
-        // We need to map param IDs (strings in HTML) to indices (integers)
-        // This requires a mapping system. 
-        // For this prototype, we assume data-param is the INDEX (or we map it)
+    const controls = new Map();
+    document.querySelectorAll('[data-param-idx]').forEach((el) => {
+        const idx = Number(el.dataset.paramIdx);
+        if (!Number.isNaN(idx)) {
+            controls.set(idx, {
+                input: el,
+                display: el.parentElement.querySelector('[data-param-value]') || null
+            });
+        }
+    });
 
-        // For the prototype, we will just log it unless we map strings to ints.
-        // But the UI sends strings? No, HTML has data-param="Osc1Wave".
+    const clamp01 = (value) => Math.min(1, Math.max(0, value));
 
-        // Strategy: We need a map.
-        // For now, update the visual if we can find it.
-        // This part is tricky without shared constants.
-    }
+    const toDisplayValue = (paramIdx, normalized) => {
+        const meta = paramMeta[paramIdx];
+        if (!meta) {
+            return `${(normalized * 100).toFixed(0)}%`;
+        }
+        const value = meta.min + (meta.max - meta.min) * normalized;
+        return `${meta.name}: ${value.toFixed(meta.decimals)}${meta.unit ? ` ${meta.unit}` : ''}`;
+    };
 
-    window.PolySynthBridge = {
-        sendParameter: (paramId, value) => {
-            console.log(`[Bridge] Send Parameter: ${paramId} = ${value}`);
-            // Map string IDs to indices (Hardcoded for prototype Match)
-            const paramMap = {
-                "MasterGain": 0,
-                "NoteGlideTime": 1,
-                "AmpAttack": 2,
-                "AmpDecay": 3,
-                "AmpSustain": 4,
-                "AmpRelease": 5,
-                "LFO Shape": 6, // Matches C++ roughly
-                "LFO Rate": 7,
-                "OscMix": -1, // Not in C++ params list
-                "Osc1Wave": -1,
-                "FilterCutoff": -1,
-                "FilterRes": -1
-            };
+    const updateValueDisplay = (paramIdx, normalized) => {
+        const entry = controls.get(paramIdx);
+        if (!entry || !entry.display) return;
+        entry.display.textContent = toDisplayValue(paramIdx, normalized);
+    };
 
-            const idx = paramMap[paramId];
-            if (idx !== undefined && idx >= 0) {
-                var message = {
-                    "msg": "SPVFUI",
-                    "paramIdx": idx,
-                    "value": value
-                };
-                if (window.IPlugSendMsg) {
-                    window.IPlugSendMsg(message);
+    const updateKnobVisual = (knob, value) => {
+        const minAngle = -135;
+        const maxAngle = 135;
+        const angle = minAngle + (value * (maxAngle - minAngle));
+        knob.style.transform = `rotate(${angle}deg)`;
+    };
+
+    const knobState = new Map();
+    const animateKnobTo = (paramIdx, targetValue) => {
+        const entry = controls.get(paramIdx);
+        if (!entry || !entry.input.classList.contains('knob')) return;
+
+        const state = knobState.get(paramIdx) || { value: targetValue, target: targetValue, animating: false };
+        state.target = targetValue;
+        if (!state.animating) {
+            state.animating = true;
+            const step = () => {
+                const diff = state.target - state.value;
+                state.value += diff * 0.2;
+                if (Math.abs(diff) < 0.001) {
+                    state.value = state.target;
+                    state.animating = false;
                 } else {
-                    console.warn("IPlugSendMsg not found (running in browser?)");
+                    requestAnimationFrame(step);
                 }
+                updateKnobVisual(entry.input, state.value);
+                updateValueDisplay(paramIdx, state.value);
+            };
+            requestAnimationFrame(step);
+        }
+        knobState.set(paramIdx, state);
+    };
+
+    window.SPVFUI = {
+        setParam: (paramIdx, normalizedValue) => {
+            const value = clamp01(normalizedValue);
+            if (window.IPlugSendParamValue) {
+                window.IPlugSendParamValue(paramIdx, value);
+                return;
             }
+            if (window.IPlugSendMsg) {
+                window.IPlugSendMsg({
+                    msg: 'SPVFUI',
+                    paramIdx,
+                    value
+                });
+            } else {
+                console.warn("IPlugSendParamValue/IPlugSendMsg not found (running in browser?)");
+            }
+        },
+        paramChanged: (paramIdx, normalizedValue) => {
+            const value = clamp01(normalizedValue);
+            const entry = controls.get(paramIdx);
+            if (!entry) return;
+
+            if (entry.input.classList.contains('knob')) {
+                animateKnobTo(paramIdx, value);
+            } else {
+                entry.input.value = value;
+                updateValueDisplay(paramIdx, value);
+                drawEnvelope();
+            }
+        },
+        initParams: (paramArray) => {
+            if (!Array.isArray(paramArray)) return;
+            paramArray.forEach((value, idx) => {
+                if (typeof value === 'number') {
+                    window.SPVFUI.paramChanged(idx, value);
+                }
+            });
         }
     };
 
-    // Interactive Knobs (Simple Vertical Drag)
-    const knobs = document.querySelectorAll('.knob');
-
+    const knobs = document.querySelectorAll('.knob[data-param-idx]');
     knobs.forEach(knob => {
         let isDragging = false;
         let startY = 0;
-        let currentValue = 0.5; // Normalized 0-1
+        let currentValue = 0.5;
+        const paramIdx = Number(knob.dataset.paramIdx);
 
         knob.addEventListener('mousedown', (e) => {
             isDragging = true;
@@ -73,17 +128,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-
             const delta = startY - e.clientY;
-            currentValue += delta * 0.005; // Sensitivity
-            currentValue = Math.min(Math.max(currentValue, 0), 1);
-
+            currentValue = clamp01(currentValue + delta * 0.005);
             updateKnobVisual(knob, currentValue);
-
-            const paramId = knob.parentElement.dataset.param || "Unknown";
-            window.PolySynthBridge.sendParameter(paramId, currentValue);
-
-            startY = e.clientY; // Reset for relative movement
+            updateValueDisplay(paramIdx, currentValue);
+            window.SPVFUI.setParam(paramIdx, currentValue);
+            startY = e.clientY;
         });
 
         window.addEventListener('mouseup', () => {
@@ -91,43 +141,34 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.style.cursor = 'default';
         });
 
-        // Initialize
         updateKnobVisual(knob, currentValue);
+        updateValueDisplay(paramIdx, currentValue);
+        knobState.set(paramIdx, { value: currentValue, target: currentValue, animating: false });
     });
 
-    function updateKnobVisual(knob, value) {
-        // Rotate from -135deg to +135deg (270 degree range)
-        const minAngle = -135;
-        const maxAngle = 135;
-        const angle = minAngle + (value * (maxAngle - minAngle));
-
-        knob.style.transform = `rotate(${angle}deg)`;
-    }
-
-    // Fader Handling
-    const faders = document.querySelectorAll('.fader');
+    const faders = document.querySelectorAll('.fader[data-param-idx]');
     faders.forEach(fader => {
+        const paramIdx = Number(fader.dataset.paramIdx);
         fader.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            const paramId = e.target.dataset.param;
-            window.PolySynthBridge.sendParameter(paramId, val);
-            drawEnvelope(); // Re-draw ADSR when changed
+            const val = clamp01(parseFloat(e.target.value));
+            updateValueDisplay(paramIdx, val);
+            window.SPVFUI.setParam(paramIdx, val);
+            drawEnvelope();
         });
+        updateValueDisplay(paramIdx, clamp01(parseFloat(fader.value)));
     });
 
-    // Canvas ADSR Drawing
     const canvas = document.getElementById('adsr-canvas');
+    let drawEnvelope = () => {};
     if (canvas) {
         const ctx = canvas.getContext('2d');
-
-        // Handle HiDPI displays
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
 
-        function drawEnvelope() {
+        drawEnvelope = () => {
             const w = rect.width;
             const h = rect.height;
 
@@ -136,37 +177,33 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.lineWidth = 2;
             ctx.beginPath();
 
-            // Fetch values from faders
             const attack = parseFloat(document.querySelector('[data-param="AmpAttack"]').value) || 0.1;
             const decay = parseFloat(document.querySelector('[data-param="AmpDecay"]').value) || 0.1;
             const sustain = parseFloat(document.querySelector('[data-param="AmpSustain"]').value) || 0.5;
             const release = parseFloat(document.querySelector('[data-param="AmpRelease"]').value) || 0.2;
 
-            // Simple visualization logic
-            // Total width is fixed, distribute segments roughly
             const attackX = w * (attack * 0.25);
             const decayX = attackX + (w * (decay * 0.25));
             const releaseX = w - (w * (release * 0.25));
 
             const sustainLevel = h - (sustain * h);
 
-            ctx.moveTo(0, h); // Start bottom left
-            ctx.lineTo(attackX, 0); // Peak
-            ctx.lineTo(decayX, sustainLevel); // Sustain Level
-            ctx.lineTo(releaseX, sustainLevel); // Sustain Hold
-            ctx.lineTo(w, h); // End
+            ctx.moveTo(0, h);
+            ctx.lineTo(attackX, 0);
+            ctx.lineTo(decayX, sustainLevel);
+            ctx.lineTo(releaseX, sustainLevel);
+            ctx.lineTo(w, h);
 
             ctx.stroke();
 
-            // Fill
             ctx.fillStyle = 'rgba(0, 123, 255, 0.1)';
             ctx.lineTo(w, h);
             ctx.lineTo(0, h);
             ctx.fill();
-        }
+        };
 
-        // Initial draw
         drawEnvelope();
-        window.drawEnvelope = drawEnvelope; // Expose for debug
+        window.drawEnvelope = drawEnvelope;
     }
+
 });

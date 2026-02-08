@@ -109,6 +109,12 @@
             color: #aaa;
         }
 
+        .param-value {
+            font-size: 0.7rem;
+            color: #c7c7c7;
+            min-height: 1em;
+        }
+
         .knob {
             width: 60px;
             height: 60px;
@@ -118,7 +124,7 @@
             position: relative;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             cursor: pointer;
-            transition: box-shadow 0.2s;
+            transition: box-shadow 0.2s, transform 0.08s linear;
         }
 
         .knob::after {
@@ -181,10 +187,12 @@
                     <div class="control">
                         <div class="knob" data-param="Osc1Wave"></div>
                         <label>Wave 1</label>
+                        <div class="param-value">Wave 1</div>
                     </div>
                     <div class="control">
                         <div class="knob" data-param="OscMix"></div>
                         <label>Mix</label>
+                        <div class="param-value">Mix</div>
                     </div>
                 </div>
             </div>
@@ -193,12 +201,14 @@
                 <h2>Filter</h2>
                 <div class="knob-group">
                     <div class="control">
-                        <div class="knob" data-param="FilterCutoff"></div>
+                        <div class="knob" data-param="FilterCutoff" data-param-idx="11" data-param-name="Cutoff"></div>
                         <label>Cutoff</label>
+                        <div class="param-value" data-param-value></div>
                     </div>
                     <div class="control">
-                        <div class="knob" data-param="FilterRes"></div>
+                        <div class="knob" data-param="FilterRes" data-param-idx="12" data-param-name="Resonance"></div>
                         <label>Resonance</label>
+                        <div class="param-value" data-param-value></div>
                     </div>
                 </div>
             </div>
@@ -207,8 +217,9 @@
                 <h2>Master</h2>
                 <div class="knob-group">
                     <div class="control">
-                        <div class="knob" data-param="MasterGain"></div>
+                        <div class="knob" data-param="MasterGain" data-param-idx="0" data-param-name="Gain"></div>
                         <label>Gain</label>
+                        <div class="param-value" data-param-value></div>
                     </div>
                 </div>
             </div>
@@ -220,58 +231,34 @@
                 <div class="fader-group">
                     <div class="fader-control">
                         <input type="range" class="fader" min="0" max="1" step="0.01" value="0.1"
-                            data-param="AmpAttack">
+                            data-param="AmpAttack" data-param-idx="2" data-param-name="Attack">
                         <label>A</label>
+                        <div class="param-value" data-param-value></div>
                     </div>
                     <div class="fader-control">
-                        <input type="range" class="fader" min="0" max="1" step="0.01" value="0.3" data-param="AmpDecay">
+                        <input type="range" class="fader" min="0" max="1" step="0.01" value="0.3"
+                            data-param="AmpDecay" data-param-idx="3" data-param-name="Decay">
                         <label>D</label>
+                        <div class="param-value" data-param-value></div>
                     </div>
                     <div class="fader-control">
                         <input type="range" class="fader" min="0" max="1" step="0.01" value="0.7"
-                            data-param="AmpSustain">
+                            data-param="AmpSustain" data-param-idx="4" data-param-name="Sustain">
                         <label>S</label>
+                        <div class="param-value" data-param-value></div>
                     </div>
                     <div class="fader-control">
                         <input type="range" class="fader" min="0" max="1" step="0.01" value="0.4"
-                            data-param="AmpRelease">
+                            data-param="AmpRelease" data-param-idx="5" data-param-name="Release">
                         <label>R</label>
+                        <div class="param-value" data-param-value></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        console.log("PolySynth UI Loaded");
-
-        // Simple knob interaction
-        const knobs = document.querySelectorAll('.knob');
-        knobs.forEach(knob => {
-            let isDragging = false;
-            let startY = 0;
-            let currentValue = 0.5;
-
-            knob.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                startY = e.clientY;
-                e.preventDefault();
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                const delta = startY - e.clientY;
-                currentValue = Math.min(Math.max(currentValue + delta * 0.005, 0), 1);
-                const angle = -135 + (currentValue * 270);
-                knob.style.transform = `rotate(${angle}deg)`;
-                startY = e.clientY;
-            });
-
-            window.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
-        });
-    </script>
+    <script src="main.js"></script>
 </body>
 
 </html>

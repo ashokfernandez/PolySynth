@@ -45,6 +45,21 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 #endif
 }
 
+#if IPLUG_EDITOR
+void PolySynthPlugin::OnUIOpen() {
+  for (int paramIdx = 0; paramIdx < kNumParams; ++paramIdx) {
+    SendParameterValueFromDelegate(paramIdx,
+                                   GetParam(paramIdx)->GetNormalized());
+  }
+}
+
+void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
+  (void)source;
+  SendParameterValueFromDelegate(paramIdx,
+                                 GetParam(paramIdx)->GetNormalized());
+}
+#endif
+
 #if IPLUG_DSP
 void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
                                    int nFrames) {
