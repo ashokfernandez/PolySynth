@@ -157,6 +157,25 @@ public:
     }
   }
 
+  int GetActiveVoiceCount() const {
+    int count = 0;
+    for (const auto &voice : mVoices) {
+      if (voice.IsActive()) {
+        ++count;
+      }
+    }
+    return count;
+  }
+
+  bool IsNoteActive(int note) const {
+    for (const auto &voice : mVoices) {
+      if (voice.IsActive() && voice.GetNote() == note) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 private:
   Voice *FindFreeVoice() {
     for (auto &voice : mVoices) {

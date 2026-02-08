@@ -1,6 +1,5 @@
 #include "../../src/core/VoiceManager.h"
 #include "catch.hpp"
-#include <vector>
 
 TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
   PolySynthCore::VoiceManager vm;
@@ -14,6 +13,10 @@ TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
   // Process a bit
   PolySynthCore::sample_t out = vm.Process();
   REQUIRE(std::abs(out) > 0.0); // Should have output
+  REQUIRE(vm.GetActiveVoiceCount() == 3);
+  REQUIRE(vm.IsNoteActive(60));
+  REQUIRE(vm.IsNoteActive(64));
+  REQUIRE(vm.IsNoteActive(67));
 
   // 2. Voice Stealing Logic
   // We have 8 voices. We already used 3.
@@ -48,18 +51,9 @@ TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
   // Trigger 9th note. Should steal Note 1 (Oldest).
   vm.OnNoteOn(9, 100);
 
-  // How to verify?
-  // VoiceManager doesn't expose voices publicly.
-  // But we can check via NoteOff behavior or just trust the logic if we can't
-  // inspect. Ideally we'd inspect. But since `VoiceManager` hides `mVoices` and
-  // `Voice` hides `mNote`, we can't verify state easily without friends or
-  // getters. I added `GetNote()` to Voice, but `mVoices` is private in Manager.
-
-  // Let's verify via audio? Impossible.
-  // Better: Add a helper or make it friend for testing?
-  // Or just trust the coverage if I can get coverage data? No.
-  // I'll add a `GetActiveVoiceCount()` helper to VoiceManager for testing?
-  // Or just rely on the fact that CRASHing or weird behavior didn't happen.
+  REQUIRE(vm.GetActiveVoiceCount() == 8);
+  REQUIRE_FALSE(vm.IsNoteActive(1));
+  REQUIRE(vm.IsNoteActive(9));
 
   // Let's verify that we still produce sound.
   PolySynthCore::sample_t val = vm.Process();
@@ -76,14 +70,19 @@ TEST_CASE("VoiceManager Silence", "[VoiceManager]") {
   // Note On -> Sound
   vm.OnNoteOn(60, 100);
   vm.Process();
+  REQUIRE(vm.GetActiveVoiceCount() == 1);
+  REQUIRE(vm.IsNoteActive(60));
   REQUIRE(std::abs(vm.Process()) > 0.0);
 
   // Note Off -> Release -> Eventually Silence
   vm.OnNoteOff(60);
+  REQUIRE(vm.IsNoteActive(60));
 
   // Drain
   for (int i = 0; i < 20000; i++)
     vm.Process();
 
+  REQUIRE(vm.GetActiveVoiceCount() == 0);
+  REQUIRE_FALSE(vm.IsNoteActive(60));
   REQUIRE(vm.Process() == Approx(0.0).margin(0.001));
 }
