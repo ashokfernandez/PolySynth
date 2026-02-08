@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dsp/BiquadFilter.h"
 #include "modulation/ADSREnvelope.h"
 #include "oscillator/Oscillator.h"
 #include "types.h"
@@ -16,10 +17,15 @@ public:
     mOsc.Init(sampleRate);
     mOsc.SetFrequency(440.0);
 
+    mFilter.Init(sampleRate);
+    mFilter.SetParams(FilterType::LowPass, 2000.0, 0.707); // Default open
+
     mAmpEnv.Init(sampleRate);
     mAmpEnv.SetParams(0.01, 0.1, 0.5, 0.2); // Default ADSR
 
     mActive = false;
+    mNote = -1;
+    mAge = 0;
   }
 
   void NoteOn(int note, int velocity) {
@@ -32,6 +38,8 @@ public:
 
     mAmpEnv.NoteOn();
     mActive = true;
+    mNote = note;
+    mAge = 0; // Reset age
   }
 
   void NoteOff() {
@@ -44,47 +52,115 @@ public:
       return 0.0;
 
     sample_t osc = mOsc.Process();
+    sample_t flt = mFilter.Process(osc);
     sample_t env = mAmpEnv.Process();
+
+    // Update age (samples active)
+    mAge++;
 
     // Check if envelope finished
     if (!mAmpEnv.IsActive()) {
       mActive = false;
+      mNote = -1;
+      mAge = 0;
     }
 
-    return osc * env * mVelocity;
+    // Velocity sensitivity
+    return flt * env * mVelocity;
   }
 
   bool IsActive() const { return mActive; }
+  int GetNote() const { return mNote; }
+  uint64_t GetAge() const { return mAge; }
+
+  // For stealing, we might want to release quickly?
+  // Or just hard reset?
+  // Let's just use NoteOn to reset.
 
 private:
   Oscillator mOsc;
+  BiquadFilter mFilter;
   ADSREnvelope mAmpEnv;
   bool mActive = false;
   double mVelocity = 0.0;
+  int mNote = -1;
+  uint64_t mAge = 0;
 };
 
 class VoiceManager {
 public:
+  static constexpr int kNumVoices = 8;
+
   VoiceManager() = default;
 
   void Init(double sampleRate) {
-    // Monophonic for now: just 1 voice
-    mVoice.Init(sampleRate);
+    for (auto &voice : mVoices) {
+      voice.Init(sampleRate);
+    }
   }
 
   void Reset() {
-    // mVoice.NoteOff(); // Should be silence?
-    mVoice.Init(44100.0); // Reset everything
+    for (auto &voice : mVoices) {
+      voice.Init(44100.0); // Reset defaults
+    }
   }
 
-  void OnNoteOn(int note, int velocity) { mVoice.NoteOn(note, velocity); }
+  void OnNoteOn(int note, int velocity) {
+    Voice *voice = FindFreeVoice();
+    if (!voice) {
+      voice = FindVoiceToSteal();
+    }
 
-  void OnNoteOff(int note) { mVoice.NoteOff(); }
+    if (voice) {
+      voice->NoteOn(note, velocity);
+    }
+  }
 
-  inline sample_t Process() { return mVoice.Process(); }
+  void OnNoteOff(int note) {
+    // Find voice playing this note
+    for (auto &voice : mVoices) {
+      if (voice.IsActive() && voice.GetNote() == note) {
+        voice.NoteOff();
+        // Don't break, in case multiple voices have same note (unlikely but
+        // possible in some midi scenarios) Actually usually we want to note off
+        // all of them? Or just one? Standard behavior: note off all matching.
+      }
+    }
+  }
+
+  inline sample_t Process() {
+    sample_t sum = 0.0;
+    for (auto &voice : mVoices) {
+      sum += voice.Process();
+    }
+    return sum * 0.25; // Headroom scaling (1/sqrt(N) or similar, 0.25 is safe
+                       // for 8 voices)
+  }
 
 private:
-  Voice mVoice;
+  Voice *FindFreeVoice() {
+    for (auto &voice : mVoices) {
+      if (!voice.IsActive())
+        return &voice;
+    }
+    return nullptr;
+  }
+
+  Voice *FindVoiceToSteal() {
+    // Steal oldest voice
+    Voice *oldest = nullptr;
+    uint64_t maxAge = 0;
+
+    for (auto &voice : mVoices) {
+      if (voice.GetAge() >= maxAge) {
+        maxAge = voice.GetAge();
+        oldest = &voice;
+      }
+    }
+    return oldest;
+  }
+
+  std::array<Voice, kNumVoices> mVoices;
 };
 
 } // namespace PolySynth

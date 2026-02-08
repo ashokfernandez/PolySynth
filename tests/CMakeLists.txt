@@ -25,6 +25,8 @@ set(UNIT_TEST_SOURCES
     unit/Test_Oscillator.cpp
     unit/Test_Engine_Audio.cpp
     unit/Test_ADSREnvelope.cpp
+    unit/Test_BiquadFilter.cpp
+    unit/Test_VoiceManager_Poly.cpp
 )
 
 add_executable(run_tests ${UNIT_TEST_SOURCES})
@@ -34,6 +36,8 @@ add_executable(run_tests ${UNIT_TEST_SOURCES})
 add_executable(demo_render_wav demos/demo_render_wav.cpp)
 add_executable(demo_adsr demos/demo_adsr.cpp)
 add_executable(demo_engine_poly demos/demo_engine_poly.cpp)
+add_executable(demo_filter_sweep demos/demo_filter_sweep.cpp)
+add_executable(demo_poly_chords demos/demo_poly_chords.cpp)
 
 # Future Demos
 # add_executable(demo_adsr demos/demo_adsr.cpp)

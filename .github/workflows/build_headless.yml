@@ -20,12 +20,12 @@ jobs:
         
     - name: Download External Deps
       run: |
-        chmod +x polysynth/scripts/download_dependencies.sh
-        ./polysynth/scripts/download_dependencies.sh
+        chmod +x scripts/download_dependencies.sh
+        ./scripts/download_dependencies.sh
         
     - name: Build Tests
       run: |
-        cd polysynth/tests
+        cd tests
         mkdir build
         cd build
         cmake ..
@@ -33,16 +33,16 @@ jobs:
         
     - name: Run Tests
       run: |
-        cd polysynth/tests/build
+        cd tests/build
         ./run_tests
         
     - name: Generate Audio Docs
       run: |
-        python3 polysynth/scripts/generate_test_report.py
+        python3 scripts/generate_test_report.py
 
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        folder: polysynth/docs
+        folder: docs
         branch: gh-pages
