@@ -65,38 +65,61 @@ def collect_artifacts():
 def generate_index(artifacts):
     print(f"Generating {INDEX_FILE}...")
     
+def generate_index(artifacts):
+    print(f"Generating {INDEX_FILE}...")
+    
     with open(INDEX_FILE, 'w') as f:
-        f.write("<!DOCTYPE html>\n<html>\n<head>\n<title>PolySynth Audio Tests</title>\n")
-        f.write("<style>body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; } ")
-        f.write("h1 { border-bottom: 2px solid #eee; padding-bottom: 0.5rem; } ")
-        f.write(".artifact { margin-bottom: 1.5rem; } audio { width: 100%; }</style>\n")
+        f.write("<!DOCTYPE html>\n<html lang='en'>\n<head>\n")
+        f.write("<meta charset='UTF-8'>\n<meta name='viewport' content='width=device-width, initial-scale=1.0'>\n")
+        f.write("<title>PolySynth - Audio Artifacts & Test Report</title>\n")
+        f.write("<style>")
+        f.write("body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; line-height: 1.6; color: #333; } ")
+        f.write("header { border-bottom: 2px solid #eaeaea; padding-bottom: 2rem; margin-bottom: 2rem; text-align: center; } ")
+        f.write("h1 { margin: 0; color: #111; font-size: 2.5rem; } ")
+        f.write(".meta { color: #666; font-size: 0.9rem; margin-top: 0.5rem; } ")
+        f.write(".section-title { border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-top: 3rem; color: #444; } ")
+        f.write(".artifact { background: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #eee; } ")
+        f.write(".artifact h4 { margin-top: 0; margin-bottom: 0.5rem; color: #222; } ")
+        f.write("audio { width: 100%; margin-top: 0.5rem; } ")
+        f.write("a { color: #0066cc; text-decoration: none; } a:hover { text-decoration: underline; } ")
+        f.write("</style>\n")
         f.write("</head>\n<body>\n")
-        f.write("<h1>PolySynth Audio Tests</h1>\n")
-        f.write(f"<p><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>\n")
-        f.write("<h2>Audio Artifacts</h2>\n")
+        
+        f.write("<header>\n")
+        f.write("<h1>PolySynth Audio Labs</h1>\n")
+        f.write(f"<p class='meta'>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>\n")
+        f.write("<p>Welcome to the <strong>PolySynth</strong> automated test report. This page contains audio artifacts generated directly from our C++ DSP engine during the latest CI build. These samples verify the correctness of our Oscillators, Filters, and Envelopes.</p>\n")
+        f.write("<p><a href='https://github.com/ashokfernandez/PolySynth'>&larr; Back to Repository</a></p>\n")
+        f.write("</header>\n")
+
+        f.write("<section>\n")
+        f.write("<h2 class='section-title'>Latest Audio Artifacts</h2>\n")
         
         wavs = [a for a in artifacts if a.endswith('.wav')]
         csvs = [a for a in artifacts if a.endswith('.csv')]
         
         if wavs:
-            f.write("<h3>Audio Demos</h3>\n")
             for wav in sorted(wavs):
-                f.write(f"<div class='artifact'><h4>{wav}</h4>\n")
-                f.write(f"<audio controls src='audio/{wav}'></audio></div>\n")
-        
+                clean_name = wav.replace("demo_", "").replace(".wav", "").replace("_", " ").title()
+                f.write(f"<div class='artifact'>\n")
+                f.write(f"<h4>{clean_name} ({wav})</h4>\n")
+                f.write(f"<audio controls src='audio/{wav}' preload='metadata'></audio>\n")
+                f.write("</div>\n")
+        elif not csvs:
+             f.write("<p>No audio artifacts found in this build.</p>\n")
+
         if csvs:
-            f.write("<h3>Data Demos</h3>\n")
+            f.write("<h2 class='section-title'>Data Dumps (CSV)</h2>\n")
             f.write("<ul>\n")
             for csv in sorted(csvs):
-                f.write(f"<li><a href='audio/{csv}'>{csv}</a></li>\n")
+                 f.write(f"<li><a href='audio/{csv}'>{csv}</a></li>\n")
             f.write("</ul>\n")
-
-        if not wavs and not csvs:
-            f.write("<p>No artifacts found.</p>\n")
+            
+        f.write("</section>\n")
             
         f.write("</body>\n</html>")
 
-    print("Done.")
+    print(f"Generated {INDEX_FILE}")
 
 if __name__ == "__main__":
     # Ensure directories exist

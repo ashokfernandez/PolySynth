@@ -6,7 +6,7 @@
 #include <cstring>
 #include <iostream>
 
-namespace PolySynth {
+namespace PolySynthCore {
 
 class Engine {
 public:
@@ -34,6 +34,7 @@ public:
 
   // --- Audio Processing ---
   void Process(sample_t **inputs, sample_t **outputs, int nFrames, int nChans) {
+    // Basic stereo copy for now
     for (int i = 0; i < nFrames; ++i) {
       sample_t out = mVoiceManager.Process();
       for (int c = 0; c < nChans; ++c) {
@@ -47,4 +48,4 @@ private:
   VoiceManager mVoiceManager;
 };
 
-} // namespace PolySynth
+} // namespace PolySynthCore

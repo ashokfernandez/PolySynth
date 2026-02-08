@@ -7,7 +7,7 @@
 #include <array>
 #include <cmath>
 
-namespace PolySynth {
+namespace PolySynthCore {
 
 class Voice {
 public:
@@ -77,6 +77,14 @@ public:
   // Or just hard reset?
   // Let's just use NoteOn to reset.
 
+  void SetADSR(double a, double d, double s, double r) {
+    mAmpEnv.SetParams(a, d, s, r);
+  }
+
+  void SetFilter(double cutoff, double res) {
+    mFilter.SetParams(FilterType::LowPass, cutoff, res);
+  }
+
 private:
   Oscillator mOsc;
   BiquadFilter mFilter;
@@ -137,6 +145,18 @@ public:
                        // for 8 voices)
   }
 
+  void SetADSR(double a, double d, double s, double r) {
+    for (auto &voice : mVoices) {
+      voice.SetADSR(a, d, s, r);
+    }
+  }
+
+  void SetFilter(double cutoff, double res) {
+    for (auto &voice : mVoices) {
+      voice.SetFilter(cutoff, res);
+    }
+  }
+
 private:
   Voice *FindFreeVoice() {
     for (auto &voice : mVoices) {
@@ -163,4 +183,4 @@ private:
   std::array<Voice, kNumVoices> mVoices;
 };
 
-} // namespace PolySynth
+} // namespace PolySynthCore

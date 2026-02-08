@@ -3,7 +3,7 @@
 #include "../types.h"
 #include <cmath>
 
-namespace PolySynth {
+namespace PolySynthCore {
 
 class ADSREnvelope {
 public:
@@ -104,4 +104,4 @@ private:
   double mReleaseInc = 0.0;
 };
 
-} // namespace PolySynth
+} // namespace PolySynthCore

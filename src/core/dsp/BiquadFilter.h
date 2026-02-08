@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace PolySynth {
+namespace PolySynthCore {
 
 enum class FilterType { LowPass, HighPass, BandPass, Notch };
 
@@ -102,4 +102,4 @@ private:
   double z1 = 0.0, z2 = 0.0;
 };
 
-} // namespace PolySynth
+} // namespace PolySynthCore

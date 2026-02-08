@@ -1,12 +1,10 @@
 #pragma once
 
 #include "IPlug_include_in_plug_hdr.h"
-#include "IControls.h"
 
 const int kNumPresets = 1;
 
-enum EParams
-{
+enum EParams {
   kParamGain = 0,
   kParamNoteGlideTime,
   kParamAttack,
@@ -18,6 +16,8 @@ enum EParams
   kParamLFORateTempo,
   kParamLFORateMode,
   kParamLFODepth,
+  kParamFilterCutoff,
+  kParamFilterResonance,
   kNumParams
 };
 
@@ -26,8 +26,7 @@ enum EParams
 #include "PolySynth_DSP.h"
 #endif
 
-enum EControlTags
-{
+enum EControlTags {
   kCtrlTagMeter = 0,
   kCtrlTagLFOVis,
   kCtrlTagScope,
@@ -38,26 +37,30 @@ enum EControlTags
 };
 
 using namespace iplug;
-using namespace igraphics;
 
-class PolySynth final : public Plugin
-{
+class PolySynthPlugin final : public Plugin {
 public:
-  PolySynth(const InstanceInfo& info);
+  PolySynthPlugin(const InstanceInfo &info);
 
-#if IPLUG_DSP // http://bit.ly/2S64BDd
+  // WebView Overrides (Always available)
+  bool CanNavigateToURL(const char *url);
+  bool OnCanDownloadMIMEType(const char *mimeType) override;
+  void OnFailedToDownloadFile(const char *path) override;
+  void OnDownloadedFile(const char *path) override;
+  void OnGetLocalDownloadPathForFile(const char *fileName,
+                                     WDL_String &localPath) override;
+
+#if IPLUG_DSP
 public:
-  void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;
-  void ProcessMidiMsg(const IMidiMsg& msg) override;
+  void ProcessBlock(sample **inputs, sample **outputs, int nFrames) override;
+  void ProcessMidiMsg(const IMidiMsg &msg) override;
   void OnReset() override;
   void OnParamChange(int paramIdx) override;
-  void OnParamChangeUI(int paramIdx, EParamSource source) override;
   void OnIdle() override;
-  bool OnMessage(int msgTag, int ctrlTag, int dataSize, const void* pData) override;
+  bool OnMessage(int msgTag, int ctrlTag, int dataSize,
+                 const void *pData) override;
 
 private:
-  PolySynthDSP<sample> mDSP {16};
-  IPeakAvgSender<2> mMeterSender;
-  ISender<1> mLFOVisSender;
+  PolySynthDSP mDSP{8};
 #endif
 };

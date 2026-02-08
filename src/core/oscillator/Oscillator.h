@@ -3,7 +3,7 @@
 #include "../types.h"
 #include <cmath>
 
-namespace PolySynth {
+namespace PolySynthCore {
 
 class Oscillator {
 public:
@@ -54,4 +54,4 @@ private:
   double mPhaseIncrement = 0.0;
 };
 
-} // namespace PolySynth
+} // namespace PolySynthCore
