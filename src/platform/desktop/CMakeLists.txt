@@ -16,6 +16,9 @@ iplug_add_plugin(${PROJECT_NAME}
     resources/resource.h
   RESOURCES
     resources/fonts/Roboto-Regular.ttf
+    resources/web/index.html
+    resources/web/style.css
+    resources/web/main.js
   LINK
     iPlug2::Extras::Synth
 )
