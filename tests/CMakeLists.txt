@@ -28,6 +28,8 @@ include_directories(../external/catch2)
 set(SOURCES
     main_test.cpp
     Test_Engine_Basic.cpp
+    Test_Oscillator.cpp
+    Test_Engine_Audio.cpp
 )
 
 add_executable(run_tests ${SOURCES})

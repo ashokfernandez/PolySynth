@@ -1,5 +1,6 @@
 #pragma once
 
+#include "VoiceManager.h"
 #include "types.h"
 #include <cstdint>
 #include <cstring>
@@ -18,18 +19,14 @@ public:
     Reset();
   }
 
-  void Reset() {
-    // TODO: Reset voices
-  }
+  void Reset() { mVoiceManager.Reset(); }
 
   // --- Events ---
   void OnNoteOn(int note, int velocity) {
-    // TODO: Voice Allocation
+    mVoiceManager.OnNoteOn(note, velocity);
   }
 
-  void OnNoteOff(int note) {
-    // TODO: Voice Release
-  }
+  void OnNoteOff(int note) { mVoiceManager.OnNoteOff(note); }
 
   void SetParameter(int paramNum, double value) {
     // TODO: Param dispatch
@@ -37,14 +34,17 @@ public:
 
   // --- Audio Processing ---
   void Process(sample_t **inputs, sample_t **outputs, int nFrames, int nChans) {
-    // Silence for now
-    for (int c = 0; c < nChans; ++c) {
-      std::memset(outputs[c], 0, nFrames * sizeof(sample_t));
+    for (int i = 0; i < nFrames; ++i) {
+      sample_t out = mVoiceManager.Process();
+      for (int c = 0; c < nChans; ++c) {
+        outputs[c][i] = out;
+      }
     }
   }
 
 private:
   double mSampleRate;
+  VoiceManager mVoiceManager;
 };
 
 } // namespace PolySynth
