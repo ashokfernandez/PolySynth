@@ -21,6 +21,12 @@ include_directories(
     ${IPLUG2_DIR}/Dependencies/Extras/nlohmann
 )
 
+# Glob web resources from the dist folder (Vite output)
+file(GLOB WEB_RESOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/web/dist/index.html"
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/web/dist/assets/*"
+)
+
 iplug_add_plugin(${PROJECT_NAME}
   SOURCES
     PolySynth.cpp
@@ -29,9 +35,7 @@ iplug_add_plugin(${PROJECT_NAME}
     resources/resource.h
   RESOURCES
     resources/fonts/Roboto-Regular.ttf
-    resources/web/index.html
-    resources/web/style.css
-    resources/web/main.js
+    ${WEB_RESOURCES}
   LINK
     iPlug2::WebView
 )

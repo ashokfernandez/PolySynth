@@ -44,6 +44,21 @@ jobs:
         run: |
           python3 scripts/analyze_audio.py tests/golden/demo_render_wav.wav --expected-freq 440
 
+  frontend-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - name: Install and Test
+        run: |
+          cd src/platform/desktop/resources/web
+          npm ci
+          npm test
+          npm run build
+
   build-macos:
     runs-on: macos-latest
 
@@ -58,6 +73,12 @@ jobs:
       - name: Build Desktop App
         run: |
           chmod +x build_desktop.sh
+          # Build frontend first
+          cd src/platform/desktop/resources/web
+          npm install
+          npm test
+          npm run build
+          cd -
           ./build_desktop.sh Debug
 
       - name: Run UI Render Test
