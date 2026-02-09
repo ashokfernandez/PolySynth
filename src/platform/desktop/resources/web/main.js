@@ -7,8 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
         3: { name: 'Decay', min: 1, max: 1000, unit: 'ms', decimals: 0 },
         4: { name: 'Sustain', min: 0, max: 100, unit: '%', decimals: 0 },
         5: { name: 'Release', min: 2, max: 1000, unit: 'ms', decimals: 0 },
+        6: { name: 'LFO Shape', items: ['Sine', 'Triangle', 'Square', 'Saw'] },
+        7: { name: 'LFO Rate', min: 0.01, max: 40, unit: 'Hz', decimals: 2 },
+        10: { name: 'LFO Depth', min: 0, max: 100, unit: '%', decimals: 0 },
         11: { name: 'Cutoff', min: 20, max: 20000, unit: 'Hz', decimals: 0 },
-        12: { name: 'Resonance', min: 0, max: 100, unit: '%', decimals: 0 }
+        12: { name: 'Resonance', min: 0, max: 100, unit: '%', decimals: 0 },
+        13: { name: 'Osc Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
+        14: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 }
     };
 
     const controls = new Map();
@@ -29,6 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!meta) {
             return `${(normalized * 100).toFixed(0)}%`;
         }
+
+        if (meta.items) {
+            const index = Math.min(meta.items.length - 1, Math.floor(normalized * meta.items.length));
+            return `${meta.name}: ${meta.items[index]}`;
+        }
+
         const value = meta.min + (meta.max - meta.min) * normalized;
         return `${meta.name}: ${value.toFixed(meta.decimals)}${meta.unit ? ` ${meta.unit}` : ''}`;
     };
@@ -122,6 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
         knob.addEventListener('mousedown', (e) => {
             isDragging = true;
             startY = e.clientY;
+            // Sync current value with state to prevent jumping
+            const state = knobState.get(paramIdx);
+            if (state) {
+                currentValue = state.value;
+            }
             document.body.style.cursor = 'ns-resize';
             e.preventDefault();
         });
@@ -159,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const canvas = document.getElementById('adsr-canvas');
-    let drawEnvelope = () => {};
+    let drawEnvelope = () => { };
     if (canvas) {
         const ctx = canvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
@@ -206,4 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.drawEnvelope = drawEnvelope;
     }
 
+    if (window.IPlugSendMsg) {
+        // Send kMsgTagTestLoaded (6) to signal UI load
+        window.IPlugSendMsg({
+            msg: 'SAMFUI',
+            msgTag: 6,
+            ctrlTag: 0,
+            data: ''
+        });
+    }
 });

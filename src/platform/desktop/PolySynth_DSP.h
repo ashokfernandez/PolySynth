@@ -25,6 +25,9 @@ public:
     for (int s = 0; s < nFrames; s++) {
       PolySynthCore::sample_t out = mVoiceManager.Process();
 
+      // Apply Gain
+      out *= (mGain / 100.0);
+
       // Mono to Stereo copy
       if (nOutputs > 0)
         outputs[0][s] = (sample)out;
@@ -46,37 +49,46 @@ public:
   }
 
   void SetParam(int paramIdx, double value) {
-    static double a = 0.01, d = 0.1, s = 0.5, r = 0.2;
-    static double filterCutoff = 20000.0;
-    static double filterRes = 0.707;
-
     switch (paramIdx) {
     case kParamGain:
-      // TODO
+      mGain = value;
       break;
     case kParamAttack:
-      a = value / 1000.0;
-      mVoiceManager.SetADSR(a, d, s, r);
+      mAttack = value / 1000.0;
+      mVoiceManager.SetADSR(mAttack, mDecay, mSustain, mRelease);
       break;
     case kParamDecay:
-      d = value / 1000.0;
-      mVoiceManager.SetADSR(a, d, s, r);
+      mDecay = value / 1000.0;
+      mVoiceManager.SetADSR(mAttack, mDecay, mSustain, mRelease);
       break;
     case kParamSustain:
-      s = value / 100.0;
-      mVoiceManager.SetADSR(a, d, s, r);
+      mSustain = value / 100.0;
+      mVoiceManager.SetADSR(mAttack, mDecay, mSustain, mRelease);
       break;
     case kParamRelease:
-      r = value / 1000.0;
-      mVoiceManager.SetADSR(a, d, s, r);
+      mRelease = value / 1000.0;
+      mVoiceManager.SetADSR(mAttack, mDecay, mSustain, mRelease);
       break;
     case kParamFilterCutoff:
-      filterCutoff = value;
-      mVoiceManager.SetFilter(filterCutoff, filterRes);
+      mFilterCutoff = value;
+      mVoiceManager.SetFilter(mFilterCutoff, mFilterRes);
       break;
     case kParamFilterResonance:
-      filterRes = value / 100.0; // Assume 0-100%
-      mVoiceManager.SetFilter(filterCutoff, filterRes);
+      mFilterRes = value / 100.0;
+      mVoiceManager.SetFilter(mFilterCutoff, mFilterRes);
+      break;
+    case kParamOscWave:
+      mVoiceManager.SetWaveform(
+          static_cast<PolySynthCore::Oscillator::WaveformType>((int)value));
+      break;
+    case kParamLFOShape:
+      mVoiceManager.SetLFOType((int)value);
+      break;
+    case kParamLFORateHz:
+      mVoiceManager.SetLFORate(value);
+      break;
+    case kParamLFODepth:
+      mVoiceManager.SetLFODepth(value / 100.0);
       break;
     default:
       break;
@@ -84,4 +96,13 @@ public:
   }
 
   PolySynthCore::VoiceManager mVoiceManager;
+
+private:
+  double mGain = 100.0;
+  double mAttack = 0.01;
+  double mDecay = 0.1;
+  double mSustain = 0.5;
+  double mRelease = 0.2;
+  double mFilterCutoff = 20000.0;
+  double mFilterRes = 0.707;
 };

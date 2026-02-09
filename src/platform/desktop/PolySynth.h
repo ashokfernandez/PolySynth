@@ -17,6 +17,8 @@ enum EParams {
   kParamLFODepth,
   kParamFilterCutoff,
   kParamFilterResonance,
+  kParamOscWave,
+  kParamOscMix,
   kNumParams
 };
 
@@ -31,6 +33,7 @@ enum EControlTags {
   kCtrlTagRTText,
   kCtrlTagKeyboard,
   kCtrlTagBender,
+  kMsgTagTestLoaded,
   kNumCtrlTags
 };
 

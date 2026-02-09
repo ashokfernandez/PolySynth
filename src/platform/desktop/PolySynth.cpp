@@ -2,6 +2,7 @@
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_src.h"
 #include "LFO.h"
+#include <cstdlib>
 
 PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
@@ -23,10 +24,10 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 
   // LFO Params
   GetParam(kParamLFOShape)
-      ->InitEnum("LFO Shape", LFO<>::kTriangle, {LFO_SHAPE_VALIST});
+      ->InitEnum("LFO Shape", 1, {"Sine", "Triangle", "Square", "Saw"});
   GetParam(kParamLFORateHz)->InitFrequency("LFO Rate", 1., 0.01, 40.);
   GetParam(kParamLFORateTempo)
-      ->InitEnum("LFO Rate", LFO<>::k1, {LFO_TEMPODIV_VALIST});
+      ->InitEnum("LFO Rate", 0, {"1/1", "1/2", "1/4", "1/8", "1/16"});
   GetParam(kParamLFORateMode)->InitBool("LFO Sync", true);
   GetParam(kParamLFODepth)->InitPercentage("LFO Depth");
 
@@ -37,9 +38,16 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamFilterResonance)
       ->InitDouble("Resonance", 0., 0., 100., 1., "%");
 
+  // Oscillator Params
+  GetParam(kParamOscWave)
+      ->InitEnum("Osc Waveform",
+                 (int)PolySynthCore::Oscillator::WaveformType::Saw,
+                 {"Saw", "Square", "Triangle", "Sine"});
+  GetParam(kParamOscMix)->InitDouble("Osc Mix", 0., 0., 100., 1., "%");
+
 #if IPLUG_EDITOR
   mEditorInitFunc = [&]() {
-    LoadFile("index.html", GetBundleID());
+    LoadIndexHtml(__FILE__, "com.PolySynth.app.PolySynth");
     EnableScroll(false);
   };
 #endif
@@ -49,14 +57,14 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 void PolySynthPlugin::OnUIOpen() {
   for (int paramIdx = 0; paramIdx < kNumParams; ++paramIdx) {
     SendParameterValueFromDelegate(paramIdx,
-                                   GetParam(paramIdx)->GetNormalized());
+                                   GetParam(paramIdx)->GetNormalized(), true);
   }
 }
 
 void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
   (void)source;
-  SendParameterValueFromDelegate(paramIdx,
-                                 GetParam(paramIdx)->GetNormalized());
+  SendParameterValueFromDelegate(paramIdx, GetParam(paramIdx)->GetNormalized(),
+                                 true);
 }
 #endif
 
@@ -80,6 +88,13 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
 
 bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
                                 const void *pData) {
+  if (msgTag == kMsgTagTestLoaded) {
+    if (std::getenv("POLYSYNTH_TEST_UI")) {
+      printf("TEST_PASS: UI Loaded\n");
+      exit(0);
+    }
+    return true;
+  }
   return false;
 }
 

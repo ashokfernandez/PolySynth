@@ -106,6 +106,8 @@ public:
 
   void SetLFODepth(double depth) { mLfo.SetDepth(depth); }
 
+  void SetLFOType(int type) { mLfo.SetWaveform(type); }
+
 private:
   Oscillator mOsc;
   BiquadFilter mFilter;
@@ -196,6 +198,12 @@ public:
   void SetLFODepth(double depth) {
     for (auto &voice : mVoices) {
       voice.SetLFODepth(depth);
+    }
+  }
+
+  void SetLFOType(int type) {
+    for (auto &voice : mVoices) {
+      voice.SetLFOType(type);
     }
   }
 
