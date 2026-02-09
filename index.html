@@ -309,7 +309,7 @@
         <p class="tagline">DSP Verification & Audio Demos</p>
         <div class="meta">
             <span class="dot"></span>
-            <span>Generated February 09, 2026 at 11:30</span>
+            <span>Generated February 09, 2026 at 11:42</span>
         </div>
     </div>
     
@@ -334,7 +334,7 @@
         </div>
         <div class="section-header">
             <h2>🎧 Audio Demos</h2>
-            <span class="count">4 samples</span>
+            <span class="count">13 samples</span>
         </div>
 
         <div class="demo-card">
@@ -393,6 +393,87 @@
 
         <div class="demo-card">
             <div class="header">
+                <span class="icon">🎹</span>
+                <div class="title-group">
+                    <h3>Factory Presets</h3>
+                    <span class="filename">demo_factory_presets.wav</span>
+                </div>
+            </div>
+            <p class="description">A musical phrase played with each of the 3 factory presets: Warm Pad (soft), Bright Lead (punchy), Dark Bass (growly).</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>C major arpeggio with preset-specific envelope/filter settings.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Distinct character of each preset, same notes sound very different</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_factory_presets.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
+                <span class="icon">🔊</span>
+                <div class="title-group">
+                    <h3>✨ Filter Envelope</h3>
+                    <span class="filename">demo_filter_envelope.wav</span>
+                </div>
+            </div>
+            <p class="description">Classic synth plucks and stabs created by the filter envelope. The envelope opens and closes the filter over time.</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>Filter cutoff modulated by ADSR: Pluck, Stab, Swell, Long Pluck.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Percussive attacks, the 'bwow' of filter movement</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_filter_envelope.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
+                <span class="icon">🔊</span>
+                <div class="title-group">
+                    <h3>🌀 Filter Resonance</h3>
+                    <span class="filename">demo_filter_resonance.wav</span>
+                </div>
+            </div>
+            <p class="description">The same note filtered at increasing resonance (Q) values. Higher resonance creates a peak at the cutoff frequency.</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>Low-pass filter at 800Hz, Q values: 1 → 2 → 4 → 8.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Increasingly 'peaky' sound, ringing quality at high Q</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_filter_resonance.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
                 <span class="icon">🎛️</span>
                 <div class="title-group">
                     <h3>Filter Sweep</h3>
@@ -420,6 +501,114 @@
 
         <div class="demo-card">
             <div class="header">
+                <span class="icon">🔊</span>
+                <div class="title-group">
+                    <h3>🔈 Filter Wobble Bass</h3>
+                    <span class="filename">demo_lfo_filter_wobble.wav</span>
+                </div>
+            </div>
+            <p class="description">Classic 'dubstep wobble' sound - LFO modulating the filter cutoff. Rate increases over time for building tension.</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>Sine LFO → filter cutoff (100-3000Hz), rate 1Hz→7Hz.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Rhythmic 'wub wub' sound, increasingly intense</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_lfo_filter_wobble.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
+                <span class="icon">🔊</span>
+                <div class="title-group">
+                    <h3>📳 LFO Tremolo</h3>
+                    <span class="filename">demo_lfo_tremolo.wav</span>
+                </div>
+            </div>
+            <p class="description">The LFO modulating amplitude for tremolo effect. Rate increases from slow (2Hz) to fast (12Hz) helicopter effect.</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>Sine LFO with rate sweep 2Hz→12Hz over 4 seconds.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Slow pulse → medium wobble → fast flutter</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_lfo_tremolo.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
+                <span class="icon">🔊</span>
+                <div class="title-group">
+                    <h3>〰️ LFO Vibrato</h3>
+                    <span class="filename">demo_lfo_vibrato.wav</span>
+                </div>
+            </div>
+            <p class="description">The LFO modulating pitch to create vibrato. Hear all LFO shapes: Sine, Triangle, Square (trill), and Saw.</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>5Hz LFO with 3% pitch depth, all 4 waveform shapes.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Smooth vibrato (sine), angular vibrato (square), rising sweep (saw)</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_lfo_vibrato.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
+                <span class="icon">🔊</span>
+                <div class="title-group">
+                    <h3>🎚️ Oscillator Mixing</h3>
+                    <span class="filename">demo_osc_mix.wav</span>
+                </div>
+            </div>
+            <p class="description">Two oscillators blended together - sawtooth and slightly detuned square. Demonstrates the classic 'thick' synth sound.</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>Osc A (saw) + Osc B (square, +5 cents detune), crossfade mix.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Thickening effect when both oscillators play, beating from detune</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_osc_mix.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
                 <span class="icon">🎶</span>
                 <div class="title-group">
                     <h3>Chord Progressions</h3>
@@ -440,6 +629,60 @@
             <div class="audio-player">
                 <audio controls preload="metadata">
                     <source src="audio/demo_poly_chords.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
+                <span class="icon">🔊</span>
+                <div class="title-group">
+                    <h3>📐 Pulse Width Modulation</h3>
+                    <span class="filename">demo_pulse_width.wav</span>
+                </div>
+            </div>
+            <p class="description">A square wave with the pulse width sweeping from thin (10%) to fat (90%). Classic PWM creates movement and thickness.</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>Square wave with pulse width modulated over 4 seconds.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Thin nasal tone → fat hollow tone, phasing effect in the middle</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_pulse_width.wav" type="audio/wav">
+                    Your browser does not support audio playback.
+                </audio>
+            </div>
+        </div>
+
+        <div class="demo-card">
+            <div class="header">
+                <span class="icon">🔊</span>
+                <div class="title-group">
+                    <h3>🔊 Waveform Comparison</h3>
+                    <span class="filename">demo_waveforms.wav</span>
+                </div>
+            </div>
+            <p class="description">Hear all four basic waveforms played in sequence: Sawtooth, Square, Triangle, and Sine. Each has distinct harmonic character.</p>
+            <div class="details">
+                <div class="detail-item">
+                    <label>Technical</label>
+                    <span>Same note (A3) played with each waveform type.</span>
+                </div>
+                <div class="detail-item">
+                    <label>Listen for</label>
+                    <span>Sawtooth is brightest, Square has hollow quality, Triangle is soft, Sine is pure</span>
+                </div>
+            </div>
+            <div class="audio-player">
+                <audio controls preload="metadata">
+                    <source src="audio/demo_waveforms.wav" type="audio/wav">
                     Your browser does not support audio playback.
                 </audio>
             </div>
