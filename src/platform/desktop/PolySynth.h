@@ -39,6 +39,9 @@ enum EControlTags {
   kMsgTagDemoPoly,
   kMsgTagSavePreset,
   kMsgTagLoadPreset,
+  kMsgTagPreset1, // Warm Pad
+  kMsgTagPreset2, // Bright Lead
+  kMsgTagPreset3, // Dark Bass
   kNumCtrlTags
 };
 

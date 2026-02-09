@@ -6,8 +6,20 @@ import Envelope from './components/Envelope';
 import { PARAMS, PARAM_META, mapParamValue } from './constants/params';
 import './index.css';
 
-const DemoSection = ({ sendMsg }) => {
+const PresetBrowser = ({ sendMsg }) => {
+  const [activePreset, setActivePreset] = useState(null);
   const [activeDemo, setActiveDemo] = useState(null);
+
+  const factoryPresets = [
+    { id: 'warm', name: '🎹 Warm Pad', tag: 11, description: 'Slow attack, mellow' },
+    { id: 'lead', name: '⚡ Bright Lead', tag: 12, description: 'Punchy, resonant' },
+    { id: 'bass', name: '🎸 Dark Bass', tag: 13, description: 'Deep, growling' },
+  ];
+
+  const handlePreset = (preset) => {
+    setActivePreset(preset.id);
+    sendMsg(preset.tag);
+  };
 
   const handleDemo = (type, tag) => {
     if (activeDemo === type) {
@@ -20,36 +32,59 @@ const DemoSection = ({ sendMsg }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      <button
-        className={`demo-btn ${activeDemo === 'mono' ? 'active' : ''}`}
-        onClick={() => handleDemo('mono', 7)}
-      >
-        Demo Mono
-      </button>
-      <button
-        className={`demo-btn ${activeDemo === 'poly' ? 'active' : ''}`}
-        onClick={() => handleDemo('poly', 8)}
-      >
-        Demo Poly
-      </button>
-      <div style={{ borderTop: '1px solid #444', paddingTop: '10px', marginTop: '5px' }}>
-        <span style={{ fontSize: '12px', color: '#888', marginBottom: '8px', display: 'block' }}>Preset Demo</span>
-        <button
-          className="demo-btn preset-btn"
-          onClick={() => sendMsg(9)}
-          title="Save current settings to Desktop"
-        >
-          💾 Save Preset
-        </button>
-        <button
-          className="demo-btn preset-btn"
-          onClick={() => sendMsg(10)}
-          style={{ marginTop: '5px' }}
-          title="Load preset from Desktop"
-        >
-          📂 Load Preset
-        </button>
+    <div className="preset-browser">
+      <div className="preset-section">
+        <span className="preset-label">Factory Presets</span>
+        <div className="preset-grid">
+          {factoryPresets.map(preset => (
+            <button
+              key={preset.id}
+              className={`preset-btn ${activePreset === preset.id ? 'active' : ''}`}
+              onClick={() => handlePreset(preset)}
+              title={preset.description}
+            >
+              {preset.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="preset-section">
+        <span className="preset-label">User Preset</span>
+        <div className="user-preset-row">
+          <button
+            className="preset-btn user-save"
+            onClick={() => sendMsg(9)}
+            title="Save current settings"
+          >
+            💾 Save
+          </button>
+          <button
+            className="preset-btn user-load"
+            onClick={() => sendMsg(10)}
+            title="Load saved preset"
+          >
+            📂 Load
+          </button>
+        </div>
+      </div>
+
+      <div className="preset-section">
+        <span className="preset-label">Audio Demo</span>
+        <div className="demo-row">
+          <button
+            className={`demo-btn ${activeDemo === 'mono' ? 'active' : ''}`}
+            onClick={() => handleDemo('mono', 7)}
+          >
+            🎵 Mono
+          </button>
+          <button
+            className={`demo-btn ${activeDemo === 'poly' ? 'active' : ''}`}
+            onClick={() => handleDemo('poly', 8)}
+          >
+            🎶 Poly
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -142,10 +177,10 @@ function App() {
           </div>
         </div>
 
-        {/* Demo */}
-        <div className="module demo">
-          <h2>Demo</h2>
-          <DemoSection sendMsg={sendMsg} />
+        {/* Presets & Demo */}
+        <div className="module presets">
+          <h2>Presets</h2>
+          <PresetBrowser sendMsg={sendMsg} />
         </div>
       </div>
     </div>

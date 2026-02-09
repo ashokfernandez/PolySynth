@@ -280,6 +280,71 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
              presetPath.Get());
     }
     return true;
+  } else if (msgTag == kMsgTagPreset1 || msgTag == kMsgTagPreset2 ||
+             msgTag == kMsgTagPreset3) {
+    // Factory Presets with distinct sounds
+    if (msgTag == kMsgTagPreset1) {
+      // Warm Pad - Slow attack, low cutoff, no resonance
+      mState.masterGain = 0.8;
+      mState.ampAttack = 0.5; // 500ms
+      mState.ampDecay = 0.3;
+      mState.ampSustain = 0.7;
+      mState.ampRelease = 1.0; // 1 second
+      mState.filterCutoff = 800.0;
+      mState.filterResonance = 0.1;
+      mState.oscAWaveform = 0; // Saw
+      mState.lfoShape = 0;     // Sine
+      mState.lfoRate = 0.5;
+      mState.lfoDepth = 0.3;
+      printf("PRESET: Warm Pad loaded\n");
+    } else if (msgTag == kMsgTagPreset2) {
+      // Bright Lead - Fast attack, high cutoff, high resonance
+      mState.masterGain = 1.0;
+      mState.ampAttack = 0.005; // 5ms
+      mState.ampDecay = 0.1;
+      mState.ampSustain = 0.6;
+      mState.ampRelease = 0.2;
+      mState.filterCutoff = 18000.0;
+      mState.filterResonance = 0.7;
+      mState.oscAWaveform = 1; // Square
+      mState.lfoShape = 2;     // Square LFO
+      mState.lfoRate = 6.0;
+      mState.lfoDepth = 0.0; // No LFO
+      printf("PRESET: Bright Lead loaded\n");
+    } else if (msgTag == kMsgTagPreset3) {
+      // Dark Bass - Medium attack, very low cutoff, medium resonance
+      mState.masterGain = 0.9;
+      mState.ampAttack = 0.02; // 20ms
+      mState.ampDecay = 0.5;
+      mState.ampSustain = 0.4;
+      mState.ampRelease = 0.15;
+      mState.filterCutoff = 300.0;
+      mState.filterResonance = 0.5;
+      mState.oscAWaveform = 0; // Saw
+      mState.lfoShape = 1;     // Triangle
+      mState.lfoRate = 2.0;
+      mState.lfoDepth = 0.5;
+      printf("PRESET: Dark Bass loaded\n");
+    }
+
+    // Sync UI with loaded state by updating all parameters
+    GetParam(kParamGain)->Set(mState.masterGain * 100.0);
+    GetParam(kParamAttack)->Set(mState.ampAttack * 1000.0);
+    GetParam(kParamDecay)->Set(mState.ampDecay * 1000.0);
+    GetParam(kParamSustain)->Set(mState.ampSustain * 100.0);
+    GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
+    GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
+    GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+    GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
+    GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
+    GetParam(kParamLFORateHz)->Set(mState.lfoRate);
+    GetParam(kParamLFODepth)->Set(mState.lfoDepth * 100.0);
+
+    // Notify UI of all param changes
+    for (int i = 0; i < kNumParams; ++i) {
+      SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
+    }
+    return true;
   }
   return false;
 }
