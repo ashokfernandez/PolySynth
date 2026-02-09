@@ -131,19 +131,81 @@ void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
       }
     }
   }
+
+  // Push state to DSP before processing
+  mDSP.UpdateState(mState);
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
 }
 
 void PolySynthPlugin::OnIdle() {}
 
-void PolySynthPlugin::OnReset() { mDSP.Reset(GetSampleRate(), GetBlockSize()); }
+void PolySynthPlugin::OnReset() {
+  mDSP.Reset(GetSampleRate(), GetBlockSize());
+  // Ensure DSP has latest state on reset
+  mDSP.UpdateState(mState);
+}
 
 void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
   mDSP.ProcessMidiMsg(msg);
 }
 
 void PolySynthPlugin::OnParamChange(int paramIdx) {
-  mDSP.SetParam(paramIdx, GetParam(paramIdx)->Value());
+  double value = GetParam(paramIdx)->Value();
+
+  switch (paramIdx) {
+  case kParamGain:
+    mState.masterGain = value / 100.0;
+    break;
+  case kParamNoteGlideTime:
+    mState.glideTime = value / 1000.0;
+    break;
+  case kParamAttack:
+    mState.ampAttack = value / 1000.0;
+    break;
+  case kParamDecay:
+    mState.ampDecay = value / 1000.0;
+    break;
+  case kParamSustain:
+    mState.ampSustain = value / 100.0;
+    break;
+  case kParamRelease:
+    mState.ampRelease = value / 1000.0;
+    break;
+  case kParamLFOShape:
+    mState.lfoShape = (int)value;
+    break;
+  case kParamLFORateHz:
+    mState.lfoRate = value;
+    break;
+  case kParamLFORateTempo:
+    // TODO: Tempo sync
+    break;
+  case kParamLFORateMode:
+    // TODO: Sync mode
+    break;
+  case kParamLFODepth:
+    mState.lfoDepth = value / 100.0;
+    break;
+  case kParamFilterCutoff:
+    mState.filterCutoff = value;
+    break;
+  case kParamFilterResonance:
+    mState.filterResonance = value / 100.0;
+    break;
+  case kParamOscWave:
+    mState.oscAWaveform = (int)value;
+    break;
+  case kParamOscMix:
+    mState.mixOscA = 1.0 - (value / 100.0);
+    mState.mixOscB = value / 100.0;
+    static_cast<void>(mState.mixOscB); // Suppress unused for now
+    break;
+  default:
+    break;
+  }
+
+  // Legacy support for direct param setting is removed in favor of UpdateState
+  // loop mDSP.SetParam(paramIdx, GetParam(paramIdx)->Value());
 }
 
 bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,

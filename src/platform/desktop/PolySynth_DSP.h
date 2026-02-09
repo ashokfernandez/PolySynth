@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../core/SynthState.h"
 #include "../../core/VoiceManager.h"
 #include "IPlugConstants.h"
 
@@ -11,6 +12,30 @@ public:
 
   void Reset(double sampleRate, int blockSize) {
     mVoiceManager.Init(sampleRate);
+  }
+
+  // Called from ProcessBlock in the plugin, before audio processing
+  void UpdateState(const PolySynthCore::SynthState &state) {
+    // Global
+    mGain = state.masterGain;
+
+    // Dispatch to VoiceManager which currently handles all voices uniformly
+    // This is a temporary bridge until VoiceManager reads state directly
+    mVoiceManager.SetADSR(state.ampAttack, state.ampDecay, state.ampSustain,
+                          state.ampRelease);
+    mVoiceManager.SetFilter(state.filterCutoff, state.filterResonance);
+
+    // Map Oscillator types
+    // SynthState uses: 0=Saw, 1=Square (Osc A)
+    // Oscillator.h uses: Saw=0, Square=1. Matches.
+    mVoiceManager.SetWaveform(
+        static_cast<PolySynthCore::Oscillator::WaveformType>(
+            state.oscAWaveform));
+
+    // LFO
+    mVoiceManager.SetLFOType(state.lfoShape);
+    mVoiceManager.SetLFORate(state.lfoRate);
+    mVoiceManager.SetLFODepth(state.lfoDepth);
   }
 
   void ProcessBlock(sample **inputs, sample **outputs, int nOutputs,
@@ -26,7 +51,7 @@ public:
       PolySynthCore::sample_t out = mVoiceManager.Process();
 
       // Apply Gain
-      out *= (mGain / 100.0);
+      out *= mGain; // mGain is now 0.0-1.0 from state
 
       // Mono to Stereo copy
       if (nOutputs > 0)
@@ -43,66 +68,18 @@ public:
       mVoiceManager.OnNoteOn(msg.NoteNumber(), msg.Velocity());
     } else if (status == IMidiMsg::kNoteOff) {
       mVoiceManager.OnNoteOff(msg.NoteNumber());
-    } else if (status == IMidiMsg::kControlChange) {
-      // Handle MIDI CC?
     }
   }
 
+  // SetParam is legacy now, used only if direct param access is needed,
+  // but we prefer UpdateState. Leaving empty or routing to a "Pending Change"
+  // queue if strictly necessary, but for this Epic we switch to State.
   void SetParam(int paramIdx, double value) {
-    switch (paramIdx) {
-    case kParamGain:
-      mGain = value;
-      break;
-    case kParamAttack:
-      mAttack = value / 1000.0;
-      mVoiceManager.SetADSR(mAttack, mDecay, mSustain, mRelease);
-      break;
-    case kParamDecay:
-      mDecay = value / 1000.0;
-      mVoiceManager.SetADSR(mAttack, mDecay, mSustain, mRelease);
-      break;
-    case kParamSustain:
-      mSustain = value / 100.0;
-      mVoiceManager.SetADSR(mAttack, mDecay, mSustain, mRelease);
-      break;
-    case kParamRelease:
-      mRelease = value / 1000.0;
-      mVoiceManager.SetADSR(mAttack, mDecay, mSustain, mRelease);
-      break;
-    case kParamFilterCutoff:
-      mFilterCutoff = value;
-      mVoiceManager.SetFilter(mFilterCutoff, mFilterRes);
-      break;
-    case kParamFilterResonance:
-      mFilterRes = value / 100.0;
-      mVoiceManager.SetFilter(mFilterCutoff, mFilterRes);
-      break;
-    case kParamOscWave:
-      mVoiceManager.SetWaveform(
-          static_cast<PolySynthCore::Oscillator::WaveformType>((int)value));
-      break;
-    case kParamLFOShape:
-      mVoiceManager.SetLFOType((int)value);
-      break;
-    case kParamLFORateHz:
-      mVoiceManager.SetLFORate(value);
-      break;
-    case kParamLFODepth:
-      mVoiceManager.SetLFODepth(value / 100.0);
-      break;
-    default:
-      break;
-    }
+    // No-op or TODO: remove once Plugin calls are removed
   }
 
   PolySynthCore::VoiceManager mVoiceManager;
 
 private:
-  double mGain = 100.0;
-  double mAttack = 0.01;
-  double mDecay = 0.1;
-  double mSustain = 0.5;
-  double mRelease = 0.2;
-  double mFilterCutoff = 20000.0;
-  double mFilterRes = 0.707;
+  double mGain = 1.0;
 };

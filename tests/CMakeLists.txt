@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Directories
 include_directories(../src/core)
+include_directories(../external/iPlug2/Dependencies/Extras/nlohmann)
 include_directories(utils)
 
 # Fetch Catch2
@@ -29,6 +30,9 @@ set(UNIT_TEST_SOURCES
     unit/Test_BiquadFilter.cpp
     unit/Test_LFO.cpp
     unit/Test_VoiceManager_Poly.cpp
+    unit/Test_VAFilters.cpp
+    unit/Test_PresetManager.cpp
+    ../src/core/PresetManager.cpp
 )
 
 add_executable(run_tests ${UNIT_TEST_SOURCES})
