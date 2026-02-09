@@ -47,7 +47,23 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 
 #if IPLUG_EDITOR
   mEditorInitFunc = [&]() {
+#if defined _DEBUG
+    // In debug, load the built index.html from dist/ folder
+    std::string path = std::string(__FILE__);
+    path = path.substr(0, path.find_last_of("/\\"));
+    path += "/resources/web/dist/index.html";
+    LoadFile(path.c_str(), nullptr);
+#else
+#if defined _DEBUG
+    // In debug, load the built index.html from dist/ folder
+    std::string path = std::string(__FILE__);
+    path = path.substr(0, path.find_last_of("/\\"));
+    path += "/resources/web/dist/index.html";
+    LoadFile(path.c_str(), nullptr);
+#else
     LoadIndexHtml(__FILE__, "com.PolySynth.app.PolySynth");
+#endif
+#endif
     EnableScroll(false);
   };
 #endif
