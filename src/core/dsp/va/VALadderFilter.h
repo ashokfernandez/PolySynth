@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TPTIntegrator.h"
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -26,10 +27,14 @@ public:
 
   void SetParams(Model model, double cutoff, double resonance) {
     mModel = model;
-    mCutoff = cutoff;
-    mResonance = resonance;
+    mCutoff = ClampCutoff(cutoff);
+    mResonance = std::clamp(resonance, 0.0, 1.2);
 
     // Prepare G
+    if (mSampleRate <= 0.0) {
+      g = 0.0;
+      return;
+    }
     double wd = kTwoPi * mCutoff;
     double T = 1.0 / mSampleRate;
     double wa = (2.0 / T) * std::tan(wd * T / 2.0);
@@ -152,6 +157,14 @@ private:
   double g = 0.0;
 
   TPTIntegrator integrators[4];
+
+  double ClampCutoff(double cutoff) const {
+    if (mSampleRate <= 0.0)
+      return 0.0;
+    double nyquist = 0.5 * mSampleRate;
+    double maxCutoff = nyquist * 0.49;
+    return std::clamp(cutoff, 0.0, maxCutoff);
+  }
 };
 
 } // namespace PolySynthCore

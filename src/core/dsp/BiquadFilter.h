@@ -25,7 +25,7 @@ public:
 
   void SetParams(FilterType type, double cutoff, double Q) {
     mType = type;
-    mCutoff = cutoff;
+    mCutoff = ClampCutoff(cutoff);
     mQ = std::max(0.01, Q); // Safety
     CalculateCoefficients();
   }
@@ -71,6 +71,22 @@ private:
       a1_tmp = -2.0 * cs;
       a2_tmp = 1.0 - alpha;
       break;
+    case FilterType::BandPass:
+      b0_tmp = alpha;
+      b1_tmp = 0.0;
+      b2_tmp = -alpha;
+      a0_tmp = 1.0 + alpha;
+      a1_tmp = -2.0 * cs;
+      a2_tmp = 1.0 - alpha;
+      break;
+    case FilterType::Notch:
+      b0_tmp = 1.0;
+      b1_tmp = -2.0 * cs;
+      b2_tmp = 1.0;
+      a0_tmp = 1.0 + alpha;
+      a1_tmp = -2.0 * cs;
+      a2_tmp = 1.0 - alpha;
+      break;
     default: // Pass through
       b0_tmp = 1.0;
       b1_tmp = 0.0;
@@ -100,6 +116,14 @@ private:
 
   // State
   double z1 = 0.0, z2 = 0.0;
+
+  double ClampCutoff(double cutoff) const {
+    if (mSampleRate <= 0.0)
+      return 0.0;
+    double nyquist = 0.5 * mSampleRate;
+    double maxCutoff = nyquist * 0.49;
+    return std::clamp(cutoff, 0.0, maxCutoff);
+  }
 };
 
 } // namespace PolySynthCore
