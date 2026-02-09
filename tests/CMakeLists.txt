@@ -40,12 +40,26 @@ set(UNIT_TEST_SOURCES
 add_executable(run_tests ${UNIT_TEST_SOURCES})
 
 # --- Demos ---
-# Refactored demo_render_wav to use WavWriter
 add_executable(demo_render_wav demos/demo_render_wav.cpp)
 add_executable(demo_adsr demos/demo_adsr.cpp)
 add_executable(demo_engine_poly demos/demo_engine_poly.cpp)
 add_executable(demo_filter_sweep demos/demo_filter_sweep.cpp)
 add_executable(demo_poly_chords demos/demo_poly_chords.cpp)
 
-# Future Demos
-# add_executable(demo_adsr demos/demo_adsr.cpp)
+# Oscillator demos
+add_executable(demo_waveforms demos/demo_waveforms.cpp)
+add_executable(demo_pulse_width demos/demo_pulse_width.cpp)
+add_executable(demo_osc_mix demos/demo_osc_mix.cpp)
+
+# Filter demos
+add_executable(demo_filter_resonance demos/demo_filter_resonance.cpp)
+add_executable(demo_filter_envelope demos/demo_filter_envelope.cpp)
+
+# LFO demos
+add_executable(demo_lfo_vibrato demos/demo_lfo_vibrato.cpp)
+add_executable(demo_lfo_tremolo demos/demo_lfo_tremolo.cpp)
+add_executable(demo_lfo_filter_wobble demos/demo_lfo_filter_wobble.cpp)
+
+# Preset demo
+add_executable(demo_factory_presets demos/demo_factory_presets.cpp)
+

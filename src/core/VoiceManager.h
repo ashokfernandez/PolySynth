@@ -16,17 +16,22 @@ public:
   Voice() = default;
 
   void Init(double sampleRate) {
-    mOsc.Init(sampleRate);
-    mOsc.SetFrequency(440.0);
+    mOscA.Init(sampleRate);
+    mOscB.Init(sampleRate);
+    mOscA.SetFrequency(440.0);
+    mOscB.SetFrequency(440.0 * std::pow(2.0, mDetuneB / 1200.0));
 
     mFilter.Init(sampleRate);
-    mFilter.SetParams(FilterType::LowPass, 2000.0, 0.707); // Default open
+    mFilter.SetParams(FilterType::LowPass, 2000.0, 0.707);
 
     mAmpEnv.Init(sampleRate);
-    mAmpEnv.SetParams(0.01, 0.1, 0.5, 0.2); // Default ADSR
+    mAmpEnv.SetParams(0.01, 0.1, 1.0, 0.2);
+
+    mFilterEnv.Init(sampleRate);
+    mFilterEnv.SetParams(0.01, 0.1, 0.5, 0.2);
 
     mLfo.Init(sampleRate);
-    mLfo.SetRate(1.0);
+    mLfo.SetRate(5.0);
     mLfo.SetDepth(0.0);
     mLfo.SetWaveform(0);
 
@@ -38,87 +43,149 @@ public:
   }
 
   void NoteOn(int note, int velocity) {
-    // Simple Midi to Freq
-    double freq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
-    mOsc.SetFrequency(freq);
-    mOsc.Reset(); // Hard sync
+    mFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
+    mOscA.SetFrequency(mFreq);
+    mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
+    mOscA.Reset();
+    mOscB.Reset();
 
     mVelocity = velocity / 127.0;
 
     mAmpEnv.NoteOn();
+    mFilterEnv.NoteOn();
     mActive = true;
     mNote = note;
-    mAge = 0; // Reset age
+    mAge = 0;
   }
 
   void NoteOff() {
     mAmpEnv.NoteOff();
-    // mActive remains true until Envelope finishes
+    mFilterEnv.NoteOff();
   }
 
   inline sample_t Process() {
     if (!mActive)
       return 0.0;
 
-    sample_t osc = mOsc.Process();
-    sample_t lfo = mLfo.Process();
-    double effectiveCutoff = mBaseCutoff * (1.0 + static_cast<double>(lfo));
-    effectiveCutoff = std::clamp(effectiveCutoff, 20.0, 20000.0);
-    mFilter.SetParams(FilterType::LowPass, effectiveCutoff, mBaseRes);
-    sample_t flt = mFilter.Process(osc);
-    sample_t env = mAmpEnv.Process();
+    sample_t lfoVal = mLfo.Process();
 
-    // Update age (samples active)
+    // Pitch Modulation (Vibrato)
+    double modFreqA = mFreq;
+    double modFreqB = mFreq * std::pow(2.0, mDetuneB / 1200.0);
+
+    if (mLfoPitchDepth > 0.0) {
+      double modMult = (1.0 + lfoVal * mLfoPitchDepth * 0.05);
+      modFreqA *= modMult;
+      modFreqB *= modMult;
+    }
+
+    mOscA.SetFrequency(modFreqA);
+    mOscB.SetFrequency(modFreqB);
+
+    sample_t oscA = mOscA.Process();
+    sample_t oscB = mOscB.Process();
+    sample_t mixed = (oscA * mMixA) + (oscB * mMixB);
+
+    sample_t filterEnvVal = mFilterEnv.Process();
+
+    // Filter Modulation: Base + Keyboard + Env + LFO
+    double cutoff = mBaseCutoff;
+    cutoff += filterEnvVal * mFilterEnvAmount * 10000.0;
+    cutoff *= (1.0 + lfoVal * mLfoFilterDepth);
+    cutoff = std::clamp(cutoff, 20.0, 20000.0);
+
+    mFilter.SetParams(FilterType::LowPass, cutoff, mBaseRes);
+    sample_t flt = mFilter.Process(mixed);
+
+    sample_t ampEnvVal = mAmpEnv.Process();
+
+    // Amp Modulation (Tremolo)
+    double ampMod = 1.0;
+    if (mLfoAmpDepth > 0.0) {
+      ampMod = 1.0 + lfoVal * mLfoAmpDepth;
+      ampMod = std::clamp(ampMod, 0.0, 2.0);
+    }
+
     mAge++;
 
-    // Check if envelope finished
-    if (!mAmpEnv.IsActive()) {
+    if (!mAmpEnv.IsActive() && !mFilterEnv.IsActive()) {
       mActive = false;
       mNote = -1;
       mAge = 0;
     }
 
-    // Velocity sensitivity
-    return flt * env * mVelocity;
+    return flt * ampEnvVal * mVelocity * ampMod;
   }
 
   bool IsActive() const { return mActive; }
   int GetNote() const { return mNote; }
   uint64_t GetAge() const { return mAge; }
 
-  // For stealing, we might want to release quickly?
-  // Or just hard reset?
-  // Let's just use NoteOn to reset.
-
   void SetADSR(double a, double d, double s, double r) {
     mAmpEnv.SetParams(a, d, s, r);
   }
 
-  void SetFilter(double cutoff, double res) {
-    mBaseCutoff = cutoff;
-    mBaseRes = res;
-    mFilter.SetParams(FilterType::LowPass, cutoff, res);
+  void SetFilterEnv(double a, double d, double s, double r) {
+    mFilterEnv.SetParams(a, d, s, r);
   }
 
-  void SetWaveform(Oscillator::WaveformType type) { mOsc.SetWaveform(type); }
+  void SetFilter(double cutoff, double res, double envAmount) {
+    mBaseCutoff = cutoff;
+    mBaseRes = res;
+    mFilterEnvAmount = envAmount;
+  }
 
-  void SetLFORate(double hz) { mLfo.SetRate(hz); }
+  void SetWaveform(Oscillator::WaveformType type) { SetWaveformA(type); }
+  void SetWaveformA(Oscillator::WaveformType type) { mOscA.SetWaveform(type); }
+  void SetWaveformB(Oscillator::WaveformType type) { mOscB.SetWaveform(type); }
 
-  void SetLFODepth(double depth) { mLfo.SetDepth(depth); }
+  void SetPulseWidth(double pw) { SetPulseWidthA(pw); }
+  void SetPulseWidthA(double pw) { mOscA.SetPulseWidth(pw); }
+  void SetPulseWidthB(double pw) { mOscB.SetPulseWidth(pw); }
 
-  void SetLFOType(int type) { mLfo.SetWaveform(type); }
+  void SetMixer(double mixA, double mixB, double detuneB) {
+    mMixA = std::clamp(mixA, 0.0, 1.0);
+    mMixB = std::clamp(mixB, 0.0, 1.0);
+    mDetuneB = detuneB;
+  }
+
+  void SetLFO(int type, double rate, double depth) {
+    mLfo.SetWaveform(type);
+    mLfo.SetRate(rate);
+    mLfo.SetDepth(depth);
+  }
+
+  void SetLFORouting(double pitch, double filter, double amp) {
+    mLfoPitchDepth = pitch;
+    mLfoFilterDepth = filter;
+    mLfoAmpDepth = amp;
+  }
 
 private:
-  Oscillator mOsc;
+  Oscillator mOscA;
+  Oscillator mOscB;
   BiquadFilter mFilter;
   ADSREnvelope mAmpEnv;
+  ADSREnvelope mFilterEnv;
   LFO mLfo;
+
   bool mActive = false;
   double mVelocity = 0.0;
   int mNote = -1;
   uint64_t mAge = 0;
+
+  double mFreq = 440.0;
   double mBaseCutoff = 2000.0;
   double mBaseRes = 0.707;
+  double mFilterEnvAmount = 0.0;
+
+  double mMixA = 1.0;
+  double mMixB = 0.0;
+  double mDetuneB = 0.0;
+
+  double mLfoPitchDepth = 0.0;
+  double mLfoFilterDepth = 0.0;
+  double mLfoAmpDepth = 0.0;
 };
 
 class VoiceManager {
@@ -177,9 +244,15 @@ public:
     }
   }
 
-  void SetFilter(double cutoff, double res) {
+  void SetFilterEnv(double a, double d, double s, double r) {
     for (auto &voice : mVoices) {
-      voice.SetFilter(cutoff, res);
+      voice.SetFilterEnv(a, d, s, r);
+    }
+  }
+
+  void SetFilter(double cutoff, double res, double envAmount) {
+    for (auto &voice : mVoices) {
+      voice.SetFilter(cutoff, res, envAmount);
     }
   }
 
@@ -189,21 +262,51 @@ public:
     }
   }
 
-  void SetLFORate(double hz) {
+  void SetWaveformA(Oscillator::WaveformType type) {
     for (auto &voice : mVoices) {
-      voice.SetLFORate(hz);
+      voice.SetWaveformA(type);
     }
   }
 
-  void SetLFODepth(double depth) {
+  void SetWaveformB(Oscillator::WaveformType type) {
     for (auto &voice : mVoices) {
-      voice.SetLFODepth(depth);
+      voice.SetWaveformB(type);
     }
   }
 
-  void SetLFOType(int type) {
+  void SetPulseWidth(double pw) {
     for (auto &voice : mVoices) {
-      voice.SetLFOType(type);
+      voice.SetPulseWidth(pw);
+    }
+  }
+
+  void SetPulseWidthA(double pw) {
+    for (auto &voice : mVoices) {
+      voice.SetPulseWidthA(pw);
+    }
+  }
+
+  void SetPulseWidthB(double pw) {
+    for (auto &voice : mVoices) {
+      voice.SetPulseWidthB(pw);
+    }
+  }
+
+  void SetMixer(double mixA, double mixB, double detuneB) {
+    for (auto &voice : mVoices) {
+      voice.SetMixer(mixA, mixB, detuneB);
+    }
+  }
+
+  void SetLFO(int type, double rate, double depth) {
+    for (auto &voice : mVoices) {
+      voice.SetLFO(type, rate, depth);
+    }
+  }
+
+  void SetLFORouting(double pitch, double filter, double amp) {
+    for (auto &voice : mVoices) {
+      voice.SetLFORouting(pitch, filter, amp);
     }
   }
 

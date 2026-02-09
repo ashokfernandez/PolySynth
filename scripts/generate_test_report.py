@@ -23,6 +23,7 @@ INDEX_FILE = os.path.join(DOCS_DIR, "index.html")
 # Demo descriptions for rich documentation
 # Keys should match the .wav filename (without extension)
 DEMO_DESCRIPTIONS = {
+    # Original demos
     "demo_engine_saw": {
         "title": "🎵 Sawtooth Oscillator",
         "description": "A pure sawtooth wave demonstrating the fundamental oscillator. The sawtooth is the most harmonically rich basic waveform, containing all harmonics.",
@@ -58,8 +59,71 @@ DEMO_DESCRIPTIONS = {
         "description": "Full polyphonic chords demonstrating the synth in a musical context. Multiple notes held together create rich harmonic content.",
         "technical": "Simultaneous voice triggering with harmonic intervals.",
         "listen_for": "Chord clarity, voice blending, no audio artifacts"
+    },
+    
+    # Oscillator demos
+    "demo_waveforms": {
+        "title": "🔊 Waveform Comparison",
+        "description": "Hear all four basic waveforms played in sequence: Sawtooth, Square, Triangle, and Sine. Each has distinct harmonic character.",
+        "technical": "Same note (A3) played with each waveform type.",
+        "listen_for": "Sawtooth is brightest, Square has hollow quality, Triangle is soft, Sine is pure"
+    },
+    "demo_pulse_width": {
+        "title": "📐 Pulse Width Modulation",
+        "description": "A square wave with the pulse width sweeping from thin (10%) to fat (90%). Classic PWM creates movement and thickness.",
+        "technical": "Square wave with pulse width modulated over 4 seconds.",
+        "listen_for": "Thin nasal tone → fat hollow tone, phasing effect in the middle"
+    },
+    "demo_osc_mix": {
+        "title": "🎚️ Oscillator Mixing",
+        "description": "Two oscillators blended together - sawtooth and slightly detuned square. Demonstrates the classic 'thick' synth sound.",
+        "technical": "Osc A (saw) + Osc B (square, +5 cents detune), crossfade mix.",
+        "listen_for": "Thickening effect when both oscillators play, beating from detune"
+    },
+    
+    # Filter demos
+    "demo_filter_resonance": {
+        "title": "🌀 Filter Resonance",
+        "description": "The same note filtered at increasing resonance (Q) values. Higher resonance creates a peak at the cutoff frequency.",
+        "technical": "Low-pass filter at 800Hz, Q values: 1 → 2 → 4 → 8.",
+        "listen_for": "Increasingly 'peaky' sound, ringing quality at high Q"
+    },
+    "demo_filter_envelope": {
+        "title": "✨ Filter Envelope",
+        "description": "Classic synth plucks and stabs created by the filter envelope. The envelope opens and closes the filter over time.",
+        "technical": "Filter cutoff modulated by ADSR: Pluck, Stab, Swell, Long Pluck.",
+        "listen_for": "Percussive attacks, the 'bwow' of filter movement"
+    },
+    
+    # LFO demos
+    "demo_lfo_vibrato": {
+        "title": "〰️ LFO Vibrato",
+        "description": "The LFO modulating pitch to create vibrato. Hear all LFO shapes: Sine, Triangle, Square (trill), and Saw.",
+        "technical": "5Hz LFO with 3% pitch depth, all 4 waveform shapes.",
+        "listen_for": "Smooth vibrato (sine), angular vibrato (square), rising sweep (saw)"
+    },
+    "demo_lfo_tremolo": {
+        "title": "📳 LFO Tremolo",
+        "description": "The LFO modulating amplitude for tremolo effect. Rate increases from slow (2Hz) to fast (12Hz) helicopter effect.",
+        "technical": "Sine LFO with rate sweep 2Hz→12Hz over 4 seconds.",
+        "listen_for": "Slow pulse → medium wobble → fast flutter"
+    },
+    "demo_lfo_filter_wobble": {
+        "title": "🔈 Filter Wobble Bass",
+        "description": "Classic 'dubstep wobble' sound - LFO modulating the filter cutoff. Rate increases over time for building tension.",
+        "technical": "Sine LFO → filter cutoff (100-3000Hz), rate 1Hz→7Hz.",
+        "listen_for": "Rhythmic 'wub wub' sound, increasingly intense"
+    },
+    
+    # Preset demos
+    "demo_factory_presets": {
+        "title": "🎹 Factory Presets",
+        "description": "A musical phrase played with each of the 3 factory presets: Warm Pad (soft), Bright Lead (punchy), Dark Bass (growly).",
+        "technical": "C major arpeggio with preset-specific envelope/filter settings.",
+        "listen_for": "Distinct character of each preset, same notes sound very different"
     }
 }
+
 
 
 def run_demos():

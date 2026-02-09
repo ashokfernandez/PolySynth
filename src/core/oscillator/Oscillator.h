@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../types.h"
+#include <algorithm>
 #include <cmath>
 
 namespace PolySynthCore {
@@ -40,6 +41,12 @@ public:
   void SetWaveform(WaveformType type) { mWaveform = type; }
 
   /**
+   * @brief Set pulse width for square wave.
+   * Range: (0.0, 1.0)
+   */
+  void SetPulseWidth(double pw) { mPulseWidth = std::clamp(pw, 0.01, 0.99); }
+
+  /**
    * @brief Render one sample.
    * Range: [-1.0, 1.0]
    */
@@ -49,11 +56,10 @@ public:
 
     switch (mWaveform) {
     case WaveformType::Saw:
-      // Naive Sawtooth: (2.0 * phase) - 1.0
       out = (sample_t)((2.0 * mPhase) - 1.0);
       break;
     case WaveformType::Square:
-      out = (mPhase < 0.5) ? 1.0 : -1.0;
+      out = (mPhase < mPulseWidth) ? 1.0 : -1.0;
       break;
     case WaveformType::Triangle:
       out = (sample_t)((4.0 * std::abs(mPhase - 0.5)) - 1.0);
@@ -75,6 +81,7 @@ private:
   double mSampleRate = 44100.0;
   double mPhase = 0.0;
   double mPhaseIncrement = 0.0;
+  double mPulseWidth = 0.5;
   WaveformType mWaveform = WaveformType::Saw;
 };
 

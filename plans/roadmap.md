@@ -1,56 +1,50 @@
-# PolySynth Detailed Roadmap
+# PolySynth Master Roadmap
 
-This document serves as the tactical roadmap for agents working on `polysynth`. It complements the high-level strategy in `05_program_management.md`.
+This document outlines the strategic epics for PolySynth evolution. Each epic focuses on a major pillar of the instrument: Sonic Power, Visual Excellence, and Professional Reliability.
 
-## Phase 0: Rescue & First Build ✅
-**Goal:** Fix broken build and enable "Blind" Agents to verify their work.
+## Epic 1: Advanced Synthesis Core ✅
+**Goal:** Expand the sonic palette beyond basic virtual analog.
+*   [x] **Waveform Expansion**: Pure Sine, Triangle, and Band-limited Pulse Width Modulation (PWM).
+*   [x] **Dual Oscillator Architecture**: Independent waveforms for Osc A/B with mixer and detune.
+*   [x] **Complex Modulation**: Flexible LFO routing (Pitch, Filter, Amp) and dedicated Filter ADSR.
+*   [x] **Advanced Demo Suite**: Comprehensive audio verification for all synthesis features.
 
-- [x] **Milestone 0.0: Fix Build Errors**
-    - [x] Fix Namespace in `BiquadFilter.h` (PolySynth vs PolySynthCore).
-    - [x] Fix Include paths in `tests/unit/Test_BiquadFilter.cpp`.
-    - [x] Run `scripts/run_tests.sh`.
-- [x] **Milestone 0.1: Test Runner Scripts**
-    - [x] Create `scripts/run_tests.sh` to automate the CMake build/test cycle.
-    - [x] Update `ci.yml` to use this script.
-- [x] **Milestone 0.2: Audio Artifact Verification**
-    - [x] Create `scripts/analyze_audio.py` (FFT/RMS check) to verify `demo_render_wav` output.
-    - [x] Add "Golden Master" regression testing (compare new WAVs against known good WAVs).
-    - [x] Automated CI for builds and tests.
+## Epic 2: Virtual Analog (VA) Filter Suite (In Progress)
+**Goal:** Implement industry-standard filter models using Topology-Preserving Transforms (TPT).
+*   [ ] **Milestone 2.1: TPT Integrator Core**: Implement the fundamental SVF structure.
+*   [ ] **Milestone 2.2: Moog-style Ladder**: 24dB resonant ladder filter with nonlinear saturation.
+*   [ ] **Milestone 2.3: Sallen-Key (SKF)**: MS-20 style scream and character.
+*   [ ] **Milestone 2.4: State Variable (SVF)**: Multi-mode (LP/HP/BP/Notch) with stable resonance.
 
-## Phase 1: Core DSP ✅
-**Goal:** Robust polyphonic synthesis with modulation and filters.
+## Epic 3: High-Performance Web UI 🚀
+**Goal:** A "Wowed at first glance" interface using modern web technologies.
+*   [ ] **Vite + React Migration**: Move from basic JS to a modern development workflow.
+*   [ ] **Glassmorphism Design**: High-end aesthetic with semi-transparent panels and vibrant accents.
+*   [ ] **Interactive Visualizers**: Real-time waveform and spectrum displays.
+*   [ ] **Responsive Layout**: Fluid UI that scales from small plugin windows to 4K displays.
 
-- [x] **Milestone 1.1: ADSR Envelope**
-    - [x] Implement `ADSREnvelope` class with hardened transitions.
-    - [x] Verify with `demo_adsr`.
-- [x] **Milestone 1.2: Polyphony**
-    - [x] Implement `VoiceManager` (8 voices).
-    - [x] Implement Note Stealing (Oldest).
-    - [x] Verify with `demo_poly_chords`.
-- [x] **Milestone 1.3: Filter & Oscillators**
-    - [x] Implement `BiquadFilter` (Lowpass).
-    - [x] Implement multiple Oscillator waveforms (Saw, Square, Triangle, Sine).
-    - [x] Implement LFO for filter-cutoff modulation.
-    - [x] Verify with `demo_filter_sweep`.
+## Epic 4: Effects Engine 🌈
+**Goal:** Integrated signal processing to create finished, mix-ready sounds.
+*   [ ] **Stereo Delay**: Tempo-synced delays with feedback filtering.
+*   [ ] **Dimensional Chorus**: BBD-style thickening and width.
+*   [ ] **Plate/Hall Reverb**: Lush spatialization for pads and leads.
+*   [ ] **Master Limiter**: Transparent protection against clipping.
 
-## Phase 2: UI & Integration ✅
-**Goal:** Seamless integration between DSP engine and Web UI.
+## Epic 5: Preset System & Browser 📂
+**Goal:** Effortless sound discovery and management.
+*   [ ] **Advanced Preset Browser**: Category/Tag-based searching.
+*   [ ] **Cloud Sync (Future)**: Sharing presets between sessions and devices.
+*   [ ] **User Save/Load**: Persistent storage of custom sounds in JSON format.
 
-- [x] **Milestone 2.1: Engine Integration**
-    - [x] Replace `MidiSynth` boilerplate in `src/platform/desktop`.
-    - [x] Connect `VoiceManager` to `ProcessBlock`.
-- [x] **Milestone 2.2: Web UI**
-    - [x] Implement `IPlugWebViewEditorDelegate`.
-    - [x] Bind JS knobs to C++ parameters with bidirectional sync.
-    - [x] Sync UI state on initialization.
+## Epic 6: Professional Distribution 📦
+**Goal:** Seamless installation and platform compatibility.
+*   [ ] **VST3/AU Validation**: Passing Steinberg and Apple validation suites.
+*   [ ] **Universal Installers**: Pkg (macOS) and MSI (Windows) with signing/notarization.
+*   [ ] **CI/CD Deployment**: Automatic builds for every release tag.
 
-## Phase 3: Release
-**Goal:** Distribution-ready installers and certification.
+---
 
-- [ ] **Milestone 3.1: Installer** (Pkg/MSI).
-- [ ] **Milestone 3.2: Signing & Notarization**.
-
-## Agent "Next Task" Selector
-1.  Check `task.md` (in `antigravity/` or `polysynth/plans/`).
-2.  Phase 0, 1, and 2 are nearly complete.
-3.  Next priority: Release packaging and installer creation.
+## Technical Debt & Maintenance
+*   [ ] **SIMD Optimization**: Vectorizing oscillator and filter loops for lower CPU usage.
+*   [ ] **Internal Oversampling**: 2x/4x oversampling option for high-resonance filtering.
+*   [ ] **Documentation**: Complete API docs for the Core DSP engine.
