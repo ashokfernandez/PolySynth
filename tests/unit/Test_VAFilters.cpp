@@ -122,6 +122,6 @@ TEST_CASE("Sallen-Key Filter Check", "[VAFilter][SKF]") {
     skf.Process(0.0); // Decay check
 
   skf.SetParams(20000.0, 3.0);
-  double out = skf.Process(0.1);
+  out = skf.Process(0.1);
   REQUIRE(std::isfinite(out));
 }
