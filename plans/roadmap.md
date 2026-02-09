@@ -1,50 +1,81 @@
-# PolySynth Master Roadmap
+# PolySynth Master Roadmap: The Prophet-5 Evolution
 
-This document outlines the strategic epics for PolySynth evolution. Each epic focuses on a major pillar of the instrument: Sonic Power, Visual Excellence, and Professional Reliability.
-
-## Epic 1: Advanced Synthesis Core ✅
-**Goal:** Expand the sonic palette beyond basic virtual analog.
-*   [x] **Waveform Expansion**: Pure Sine, Triangle, and Band-limited Pulse Width Modulation (PWM).
-*   [x] **Dual Oscillator Architecture**: Independent waveforms for Osc A/B with mixer and detune.
-*   [x] **Complex Modulation**: Flexible LFO routing (Pitch, Filter, Amp) and dedicated Filter ADSR.
-*   [x] **Advanced Demo Suite**: Comprehensive audio verification for all synthesis features.
-
-## Epic 2: Virtual Analog (VA) Filter Suite (In Progress)
-**Goal:** Implement industry-standard filter models using Topology-Preserving Transforms (TPT).
-*   [ ] **Milestone 2.1: TPT Integrator Core**: Implement the fundamental SVF structure.
-*   [ ] **Milestone 2.2: Moog-style Ladder**: 24dB resonant ladder filter with nonlinear saturation.
-*   [ ] **Milestone 2.3: Sallen-Key (SKF)**: MS-20 style scream and character.
-*   [ ] **Milestone 2.4: State Variable (SVF)**: Multi-mode (LP/HP/BP/Notch) with stable resonance.
-
-## Epic 3: High-Performance Web UI 🚀
-**Goal:** A "Wowed at first glance" interface using modern web technologies.
-*   [ ] **Vite + React Migration**: Move from basic JS to a modern development workflow.
-*   [ ] **Glassmorphism Design**: High-end aesthetic with semi-transparent panels and vibrant accents.
-*   [ ] **Interactive Visualizers**: Real-time waveform and spectrum displays.
-*   [ ] **Responsive Layout**: Fluid UI that scales from small plugin windows to 4K displays.
-
-## Epic 4: Effects Engine 🌈
-**Goal:** Integrated signal processing to create finished, mix-ready sounds.
-*   [ ] **Stereo Delay**: Tempo-synced delays with feedback filtering.
-*   [ ] **Dimensional Chorus**: BBD-style thickening and width.
-*   [ ] **Plate/Hall Reverb**: Lush spatialization for pads and leads.
-*   [ ] **Master Limiter**: Transparent protection against clipping.
-
-## Epic 5: Preset System & Browser 📂
-**Goal:** Effortless sound discovery and management.
-*   [ ] **Advanced Preset Browser**: Category/Tag-based searching.
-*   [ ] **Cloud Sync (Future)**: Sharing presets between sessions and devices.
-*   [ ] **User Save/Load**: Persistent storage of custom sounds in JSON format.
-
-## Epic 6: Professional Distribution 📦
-**Goal:** Seamless installation and platform compatibility.
-*   [ ] **VST3/AU Validation**: Passing Steinberg and Apple validation suites.
-*   [ ] **Universal Installers**: Pkg (macOS) and MSI (Windows) with signing/notarization.
-*   [ ] **CI/CD Deployment**: Automatic builds for every release tag.
+This document defines the strategic roadmap for PolySynth, scaling from a foundational demo into a professional-grade Virtual Analog synthesizer inspired by the Sequential Circuits Prophet-5 topology.
 
 ---
 
-## Technical Debt & Maintenance
-*   [ ] **SIMD Optimization**: Vectorizing oscillator and filter loops for lower CPU usage.
-*   [ ] **Internal Oversampling**: 2x/4x oversampling option for high-resonance filtering.
-*   [ ] **Documentation**: Complete API docs for the Core DSP engine.
+## Phase 1: The Prophet Core (Foundation) ✅
+**Goal:** Implement the "Digital Control Brain" and the basic "Polyphonic Voice Engine".
+
+### Epic 1.1: The Brain (State Management) ✅
+*   [x] **Single Source of Truth (SSOT)**: Implement `SynthState` pod to hold all active parameters. (Hint: UI updates State; State updates Engine).
+*   [x] **Preset Library (NVRAM)**: Implement `PresetManager` for JSON serialization/deserialization.
+*   [x] **The Edit Buffer**: Implement active state syncing between the Web UI and the C++ Engine.
+
+### Epic 1.2: The Conductor (Voice Allocation) ✅
+*   [x] **Voice Allocation Logic**: Implement 8-voice polyphony with Round-Robin and Oldest-Voice Stealing.
+*   [x] **MIDI Event Loop**: Strictly decouple MIDI handling from the audio-rate voice processing.
+*   [x] **Global CV Logic**: Implement the shared modulation bus (LFO/Mod Wheel) that feeds all voices.
+
+### Epic 1.3: The Sound Generator (DSP Architecture) ✅
+*   [x] **Unified Voice Class**: Create a re-instantiable `Voice` container holding Oscillators, Filter, and Envelopes.
+*   [x] **Dual Oscillator Architecture**: Independent waveforms (Saw, Square, Triangle, Sine) for VCO A and VCO B.
+*   [x] **Integrated Mixer**: Blending stage for VCO A/B before hitting the Filter stage.
+*   [x] **Demos & Verification**: Created `demo_waveforms`, `demo_osc_mix`, and `demo_engine_poly`.
+
+---
+
+## Phase 2: High-Fidelity Signal Path (In Progress)
+**Goal:** Implement the "Analog Soul" - VA Filters and Audio-Rate Modulation.
+
+### Epic 2.1: Virtual Analog (VA) Filter Suite
+*   [ ] **TPT Integrator Core**: Implement Topology-Preserving Transforms for alias-free stable filters.
+*   [ ] **Moog-style Ladder filter**: 24dB resonant ladder with nonlinear saturation.
+*   [ ] **Prophet-style 4-Pole**: Selectable 12dB/24dB models with stable resonance behavior.
+*   [x] **Verification**: Created `demo_filter_resonance` and `demo_filter_envelope`.
+
+### Epic 2.2: Poly-Mod Matrix (Audio-Rate)
+*   [ ] **VCO B to VCO A Frequency**: Implement audio-rate pitch modulation (FM).
+*   [ ] **VCO B to Filter Cutoff**: Implement audio-rate filter modulation.
+*   [ ] **Envelope to VCO A Width**: Poly-mod logic for PWM shaping.
+
+---
+
+## Phase 3: Premium User Experience (In Progress)
+**Goal:** A "Wowed at first glance" interface and modern workflow.
+
+### Epic 3.1: Modern UI Infrastructure
+*   [ ] **Vite + React Migration**: Move existing UI to a professional React workflow (In Progress).
+*   [ ] **Bidirectional Param Sync**: Hardened bridge between React components and `SynthState`.
+*   [ ] **Developer Testing**: Integrate Vitest for UI logic and component verification.
+
+### Epic 3.2: High-End Aesthetics
+*   [ ] **Glassmorphism Design**: Semi-transparent panels with vibrant gradients and "Prophet" wood-end accents.
+*   [ ] **Interactive Visualizers**: Real-time FFT spectrum and Oscilloscope views using Canvas/WebGL.
+*   [ ] **Responsive Layout**: Fluid scaling for 4K displays and small plugin windows.
+
+---
+
+## Phase 4: Expansion & Effects
+**Goal:** Post-processing and additional sonic character.
+
+### Epic 4.1: The FX Engine
+*   [ ] **Dimensional Chorus**: BBD-style thickening.
+*   [ ] **Stereo Delay**: Tempo-synced feedback delays.
+*   [ ] **Master Limiter**: Transparent protection stage (Hint: Use look-ahead buffer for zero digital clipping).
+
+---
+
+## Phase 5: Professional Release
+**Goal:** Distribution-ready artifacts and industry validation.
+
+*   [ ] **Validation Suite**: Passing `auval` (Apple) and Steinberg VST3 validator.
+*   [ ] **Installers**: DMG (macOS) and MSI (Windows) with signing and notarization.
+*   [ ] **Automated Release**: CI/CD pipeline that builds installers on every release tag.
+
+---
+
+## Maintenance & Tech Debt
+*   [ ] **SIMD Optimization**: Vectorizing VCO core loops.
+*   [ ] **Oversampling**: 2x/4x switchable oversampling for the Filter stage.
+*   [ ] **Docs**: Complete Doxygen documentation for the Core DSP engine.
