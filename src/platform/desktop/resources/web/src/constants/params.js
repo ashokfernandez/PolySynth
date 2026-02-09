@@ -10,7 +10,17 @@ export const PARAMS = {
     CUTOFF: 11,
     RESONANCE: 12,
     OSC_WAVE: 13,
-    OSC_MIX: 14
+    OSC_B_WAVE: 14,
+    OSC_MIX: 15,
+    OSC_PULSE_A: 16,
+    OSC_PULSE_B: 17,
+    FILTER_ENV: 18,
+    POLY_OSC_B_FREQ_A: 19,
+    POLY_OSC_B_PWM: 20,
+    POLY_OSC_B_FILTER: 21,
+    POLY_ENV_FREQ_A: 22,
+    POLY_ENV_PWM: 23,
+    POLY_ENV_FILTER: 24
 };
 
 export const PARAM_META = {
@@ -25,7 +35,17 @@ export const PARAM_META = {
     [PARAMS.CUTOFF]: { name: 'Cutoff', min: 20, max: 20000, unit: 'Hz', decimals: 0 },
     [PARAMS.RESONANCE]: { name: 'Resonance', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.OSC_WAVE]: { name: 'Osc Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
-    [PARAMS.OSC_MIX]: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 }
+    [PARAMS.OSC_B_WAVE]: { name: 'Osc B Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
+    [PARAMS.OSC_MIX]: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.OSC_PULSE_A]: { name: 'Pulse Width A', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.OSC_PULSE_B]: { name: 'Pulse Width B', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.FILTER_ENV]: { name: 'Filter Env', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.POLY_OSC_B_FREQ_A]: { name: 'B -> Freq A', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.POLY_OSC_B_PWM]: { name: 'B -> PWM A', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.POLY_OSC_B_FILTER]: { name: 'B -> Filter', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.POLY_ENV_FREQ_A]: { name: 'Env -> Freq A', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.POLY_ENV_PWM]: { name: 'Env -> PWM A', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.POLY_ENV_FILTER]: { name: 'Env -> Filter', min: 0, max: 100, unit: '%', decimals: 0 }
 };
 
 export const mapParamValue = (idx, normalized) => {

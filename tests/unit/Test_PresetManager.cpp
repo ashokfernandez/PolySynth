@@ -53,6 +53,7 @@ CATCH_TEST_CASE("PresetManager serialization round-trip", "[preset]") {
   original.polyModOscBToPWM = 0.2;
   original.polyModOscBToFilter = 0.3;
   original.polyModFilterEnvToFreqA = 0.4;
+  original.polyModFilterEnvToPWM = 0.45;
   original.polyModFilterEnvToFilter = 0.5;
 
   // Serialize
@@ -111,6 +112,8 @@ CATCH_TEST_CASE("PresetManager serialization round-trip", "[preset]") {
   CATCH_CHECK(loaded.polyModOscBToFilter == original.polyModOscBToFilter);
   CATCH_CHECK(loaded.polyModFilterEnvToFreqA ==
               original.polyModFilterEnvToFreqA);
+  CATCH_CHECK(loaded.polyModFilterEnvToPWM ==
+              original.polyModFilterEnvToPWM);
   CATCH_CHECK(loaded.polyModFilterEnvToFilter ==
               original.polyModFilterEnvToFilter);
 }

@@ -65,6 +65,7 @@ struct SynthState {
   double polyModOscBToFilter = 0.0;
 
   double polyModFilterEnvToFreqA = 0.0;
+  double polyModFilterEnvToPWM = 0.0;
   double polyModFilterEnvToFilter = 0.0; // This is usually "Filter Env Amount"
 
   // --- Helper Methods -----------------------

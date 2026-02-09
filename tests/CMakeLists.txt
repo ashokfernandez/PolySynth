@@ -34,6 +34,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_PresetManager.cpp
     unit/Test_FactoryPresets.cpp
     unit/Test_PresetFileIO.cpp
+    unit/Test_PolyMod.cpp
     ../src/core/PresetManager.cpp
 )
 
@@ -45,6 +46,7 @@ add_executable(demo_adsr demos/demo_adsr.cpp)
 add_executable(demo_engine_poly demos/demo_engine_poly.cpp)
 add_executable(demo_filter_sweep demos/demo_filter_sweep.cpp)
 add_executable(demo_poly_chords demos/demo_poly_chords.cpp)
+add_executable(demo_polymod demos/demo_polymod.cpp)
 
 # Oscillator demos
 add_executable(demo_waveforms demos/demo_waveforms.cpp)
@@ -62,4 +64,3 @@ add_executable(demo_lfo_filter_wobble demos/demo_lfo_filter_wobble.cpp)
 
 # Preset demo
 add_executable(demo_factory_presets demos/demo_factory_presets.cpp)
-

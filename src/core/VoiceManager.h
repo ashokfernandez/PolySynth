@@ -20,6 +20,10 @@ public:
     mOscB.Init(sampleRate);
     mOscA.SetFrequency(440.0);
     mOscB.SetFrequency(440.0 * std::pow(2.0, mDetuneB / 1200.0));
+    mBasePulseWidthA = 0.5;
+    mBasePulseWidthB = 0.5;
+    mOscA.SetPulseWidth(mBasePulseWidthA);
+    mOscB.SetPulseWidth(mBasePulseWidthB);
 
     mFilter.Init(sampleRate);
     mFilter.SetParams(FilterType::LowPass, 2000.0, 0.707);
@@ -40,6 +44,12 @@ public:
     mAge = 0;
     mBaseCutoff = 2000.0;
     mBaseRes = 0.707;
+    mPolyModOscBToFreqA = 0.0;
+    mPolyModOscBToPWM = 0.0;
+    mPolyModOscBToFilter = 0.0;
+    mPolyModFilterEnvToFreqA = 0.0;
+    mPolyModFilterEnvToPWM = 0.0;
+    mPolyModFilterEnvToFilter = 0.0;
   }
 
   void NoteOn(int note, int velocity) {
@@ -68,6 +78,7 @@ public:
       return 0.0;
 
     sample_t lfoVal = mLfo.Process();
+    sample_t filterEnvVal = mFilterEnv.Process();
 
     // Pitch Modulation (Vibrato)
     double modFreqA = mFreq;
@@ -79,18 +90,38 @@ public:
       modFreqB *= modMult;
     }
 
-    mOscA.SetFrequency(modFreqA);
     mOscB.SetFrequency(modFreqB);
+    sample_t oscB = mOscB.Process();
+
+    if (mPolyModOscBToFreqA != 0.0 || mPolyModFilterEnvToFreqA != 0.0) {
+      double freqMod =
+          (oscB * mPolyModOscBToFreqA) +
+          (filterEnvVal * mPolyModFilterEnvToFreqA);
+      modFreqA *= (1.0 + freqMod);
+      modFreqA = std::max(1.0, modFreqA);
+    }
+
+    mOscA.SetFrequency(modFreqA);
+
+    if (mPolyModOscBToPWM != 0.0 || mPolyModFilterEnvToPWM != 0.0) {
+      double pwmMod = (oscB * mPolyModOscBToPWM) +
+                      (filterEnvVal * mPolyModFilterEnvToPWM);
+      double pwmA = mBasePulseWidthA + (pwmMod * 0.5);
+      mOscA.SetPulseWidth(std::clamp(pwmA, 0.01, 0.99));
+    } else {
+      mOscA.SetPulseWidth(mBasePulseWidthA);
+    }
 
     sample_t oscA = mOscA.Process();
-    sample_t oscB = mOscB.Process();
     sample_t mixed = (oscA * mMixA) + (oscB * mMixB);
-
-    sample_t filterEnvVal = mFilterEnv.Process();
 
     // Filter Modulation: Base + Keyboard + Env + LFO
     double cutoff = mBaseCutoff;
-    cutoff += filterEnvVal * mFilterEnvAmount * 10000.0;
+    cutoff += filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) *
+              10000.0;
+    if (mPolyModOscBToFilter != 0.0) {
+      cutoff += oscB * mPolyModOscBToFilter * mBaseCutoff;
+    }
     cutoff *= (1.0 + lfoVal * mLfoFilterDepth);
     cutoff = std::clamp(cutoff, 20.0, 20000.0);
 
@@ -140,8 +171,14 @@ public:
   void SetWaveformB(Oscillator::WaveformType type) { mOscB.SetWaveform(type); }
 
   void SetPulseWidth(double pw) { SetPulseWidthA(pw); }
-  void SetPulseWidthA(double pw) { mOscA.SetPulseWidth(pw); }
-  void SetPulseWidthB(double pw) { mOscB.SetPulseWidth(pw); }
+  void SetPulseWidthA(double pw) {
+    mBasePulseWidthA = std::clamp(pw, 0.01, 0.99);
+    mOscA.SetPulseWidth(mBasePulseWidthA);
+  }
+  void SetPulseWidthB(double pw) {
+    mBasePulseWidthB = std::clamp(pw, 0.01, 0.99);
+    mOscB.SetPulseWidth(mBasePulseWidthB);
+  }
 
   void SetMixer(double mixA, double mixB, double detuneB) {
     mMixA = std::clamp(mixA, 0.0, 1.0);
@@ -159,6 +196,19 @@ public:
     mLfoPitchDepth = pitch;
     mLfoFilterDepth = filter;
     mLfoAmpDepth = amp;
+  }
+
+  void SetPolyModOscBToFreqA(double amount) { mPolyModOscBToFreqA = amount; }
+  void SetPolyModOscBToPWM(double amount) { mPolyModOscBToPWM = amount; }
+  void SetPolyModOscBToFilter(double amount) { mPolyModOscBToFilter = amount; }
+  void SetPolyModFilterEnvToFreqA(double amount) {
+    mPolyModFilterEnvToFreqA = amount;
+  }
+  void SetPolyModFilterEnvToPWM(double amount) {
+    mPolyModFilterEnvToPWM = amount;
+  }
+  void SetPolyModFilterEnvToFilter(double amount) {
+    mPolyModFilterEnvToFilter = amount;
   }
 
 private:
@@ -182,10 +232,19 @@ private:
   double mMixA = 1.0;
   double mMixB = 0.0;
   double mDetuneB = 0.0;
+  double mBasePulseWidthA = 0.5;
+  double mBasePulseWidthB = 0.5;
 
   double mLfoPitchDepth = 0.0;
   double mLfoFilterDepth = 0.0;
   double mLfoAmpDepth = 0.0;
+
+  double mPolyModOscBToFreqA = 0.0;
+  double mPolyModOscBToPWM = 0.0;
+  double mPolyModOscBToFilter = 0.0;
+  double mPolyModFilterEnvToFreqA = 0.0;
+  double mPolyModFilterEnvToPWM = 0.0;
+  double mPolyModFilterEnvToFilter = 0.0;
 };
 
 class VoiceManager {
@@ -307,6 +366,42 @@ public:
   void SetLFORouting(double pitch, double filter, double amp) {
     for (auto &voice : mVoices) {
       voice.SetLFORouting(pitch, filter, amp);
+    }
+  }
+
+  void SetPolyModOscBToFreqA(double amount) {
+    for (auto &voice : mVoices) {
+      voice.SetPolyModOscBToFreqA(amount);
+    }
+  }
+
+  void SetPolyModOscBToPWM(double amount) {
+    for (auto &voice : mVoices) {
+      voice.SetPolyModOscBToPWM(amount);
+    }
+  }
+
+  void SetPolyModOscBToFilter(double amount) {
+    for (auto &voice : mVoices) {
+      voice.SetPolyModOscBToFilter(amount);
+    }
+  }
+
+  void SetPolyModFilterEnvToFreqA(double amount) {
+    for (auto &voice : mVoices) {
+      voice.SetPolyModFilterEnvToFreqA(amount);
+    }
+  }
+
+  void SetPolyModFilterEnvToPWM(double amount) {
+    for (auto &voice : mVoices) {
+      voice.SetPolyModFilterEnvToPWM(amount);
+    }
+  }
+
+  void SetPolyModFilterEnvToFilter(double amount) {
+    for (auto &voice : mVoices) {
+      voice.SetPolyModFilterEnvToFilter(amount);
     }
   }
 
