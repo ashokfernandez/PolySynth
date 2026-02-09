@@ -33,6 +33,24 @@ const DemoSection = ({ sendMsg }) => {
       >
         Demo Poly
       </button>
+      <div style={{ borderTop: '1px solid #444', paddingTop: '10px', marginTop: '5px' }}>
+        <span style={{ fontSize: '12px', color: '#888', marginBottom: '8px', display: 'block' }}>Preset Demo</span>
+        <button
+          className="demo-btn preset-btn"
+          onClick={() => sendMsg(9)}
+          title="Save current settings to Desktop"
+        >
+          💾 Save Preset
+        </button>
+        <button
+          className="demo-btn preset-btn"
+          onClick={() => sendMsg(10)}
+          style={{ marginTop: '5px' }}
+          title="Load preset from Desktop"
+        >
+          📂 Load Preset
+        </button>
+      </div>
     </div>
   );
 };

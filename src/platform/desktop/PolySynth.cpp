@@ -1,4 +1,5 @@
 #include "PolySynth.h"
+#include "../../core/PresetManager.h"
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_src.h"
 #include "LFO.h"
@@ -235,6 +236,48 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mDemoMode = 2;
       mDemoSampleCounter = (int)(GetSampleRate() * 0.25); // Trigger immediately
       mDemoNoteIndex = -1;
+    }
+    return true;
+  } else if (msgTag == kMsgTagSavePreset) {
+    // Save current state to demo preset file
+    WDL_String presetPath;
+    DesktopPath(presetPath);
+    presetPath.Append("/PolySynth_DemoPreset.json");
+    bool success =
+        PolySynthCore::PresetManager::SaveToFile(mState, presetPath.Get());
+    printf("PRESET_SAVE: %s (%s)\n", presetPath.Get(), success ? "OK" : "FAIL");
+    return true;
+  } else if (msgTag == kMsgTagLoadPreset) {
+    // Load state from demo preset file
+    WDL_String presetPath;
+    DesktopPath(presetPath);
+    presetPath.Append("/PolySynth_DemoPreset.json");
+    PolySynthCore::SynthState loadedState;
+    bool success = PolySynthCore::PresetManager::LoadFromFile(presetPath.Get(),
+                                                              loadedState);
+    if (success) {
+      mState = loadedState;
+      // Sync UI with loaded state by updating all parameters
+      GetParam(kParamGain)->Set(mState.masterGain * 100.0);
+      GetParam(kParamAttack)->Set(mState.ampAttack * 1000.0);
+      GetParam(kParamDecay)->Set(mState.ampDecay * 1000.0);
+      GetParam(kParamSustain)->Set(mState.ampSustain * 100.0);
+      GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
+      GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
+      GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+      GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
+      GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
+      GetParam(kParamLFORateHz)->Set(mState.lfoRate);
+      GetParam(kParamLFODepth)->Set(mState.lfoDepth * 100.0);
+
+      // Notify UI of all param changes
+      for (int i = 0; i < kNumParams; ++i) {
+        SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
+      }
+      printf("PRESET_LOAD: %s (OK)\n", presetPath.Get());
+    } else {
+      printf("PRESET_LOAD: %s (FAIL - file not found or invalid)\n",
+             presetPath.Get());
     }
     return true;
   }

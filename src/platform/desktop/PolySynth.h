@@ -37,6 +37,8 @@ enum EControlTags {
   kMsgTagTestLoaded,
   kMsgTagDemoMono,
   kMsgTagDemoPoly,
+  kMsgTagSavePreset,
+  kMsgTagLoadPreset,
   kNumCtrlTags
 };
 

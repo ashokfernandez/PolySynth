@@ -33,6 +33,7 @@ iplug_add_plugin(${PROJECT_NAME}
     PolySynth.h
     PolySynth_DSP.h
     resources/resource.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../core/PresetManager.cpp
   RESOURCES
     resources/fonts/Roboto-Regular.ttf
     ${WEB_RESOURCES}
