@@ -19,6 +19,11 @@ public:
   // Prepare the integrator for the current sample
   // cutoff: Cutoff frequency in Hz
   inline void Prepare(double cutoff) {
+    if (mSampleRate <= 0.0) {
+      g = 0.0;
+      return;
+    }
+    cutoff = ClampCutoff(cutoff);
     double wd = kTwoPi * cutoff;
     double T = 1.0 / mSampleRate;
     double wa = (2.0 / T) * std::tan(wd * T / 2.0);
@@ -63,6 +68,16 @@ private:
   double mSampleRate = 44100.0;
   double s = 0.0; // State
   double g = 0.0; // Instantaneous gain
+
+  double ClampCutoff(double cutoff) const {
+    double nyquist = 0.5 * mSampleRate;
+    double maxCutoff = nyquist * 0.49;
+    if (cutoff < 0.0)
+      return 0.0;
+    if (cutoff > maxCutoff)
+      return maxCutoff;
+    return cutoff;
+  }
 };
 
 } // namespace PolySynthCore

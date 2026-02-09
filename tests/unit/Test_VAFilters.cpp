@@ -60,6 +60,13 @@ TEST_CASE("SVF Response", "[VAFilter][SVF]") {
   for (int i = 0; i < 1000; ++i)
     svf.ProcessLP((i % 2 == 0) ? 1.0 : -1.0); // Noise/Signal
                                               // Just ensure stability
+
+  // Extreme params should not generate NaNs
+  svf.SetParams(50000.0, 0.0);
+  auto outputs = svf.Process(0.25);
+  REQUIRE(std::isfinite(outputs.lp));
+  REQUIRE(std::isfinite(outputs.bp));
+  REQUIRE(std::isfinite(outputs.hp));
 }
 
 TEST_CASE("Ladder Filter Stability", "[VAFilter][Ladder]") {
@@ -113,4 +120,8 @@ TEST_CASE("Sallen-Key Filter Check", "[VAFilter][SKF]") {
   // Check stability
   for (int i = 0; i < 500; ++i)
     skf.Process(0.0); // Decay check
+
+  skf.SetParams(20000.0, 3.0);
+  double out = skf.Process(0.1);
+  REQUIRE(std::isfinite(out));
 }

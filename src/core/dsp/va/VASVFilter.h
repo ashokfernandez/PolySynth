@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TPTIntegrator.h"
+#include <algorithm>
 #include <cmath>
 
 namespace PolySynthCore {
@@ -22,8 +23,8 @@ public:
   }
 
   void SetParams(double cutoff, double Q) {
-    mCutoff = cutoff;
-    mQ = Q;
+    mCutoff = ClampCutoff(cutoff);
+    mQ = std::max(0.05, Q);
     CalculateCoefficients();
   }
 
@@ -89,6 +90,14 @@ private:
 
   TPTIntegrator integrator1;
   TPTIntegrator integrator2;
+
+  double ClampCutoff(double cutoff) const {
+    if (mSampleRate <= 0.0)
+      return 0.0;
+    double nyquist = 0.5 * mSampleRate;
+    double maxCutoff = nyquist * 0.49;
+    return std::clamp(cutoff, 0.0, maxCutoff);
+  }
 };
 
 } // namespace PolySynthCore
