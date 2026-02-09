@@ -230,5 +230,34 @@ document.addEventListener('DOMContentLoaded', () => {
             ctrlTag: 0,
             data: ''
         });
+
+        const btnDemoMono = document.getElementById('btn-demo-mono');
+        const btnDemoPoly = document.getElementById('btn-demo-poly');
+
+        if (btnDemoMono) {
+            btnDemoMono.addEventListener('click', () => {
+                const isActive = btnDemoMono.classList.toggle('active');
+                if (isActive) btnDemoPoly.classList.remove('active');
+                window.IPlugSendMsg({
+                    msg: 'SAMFUI',
+                    msgTag: 7, // kMsgTagDemoMono
+                    ctrlTag: 0,
+                    data: ''
+                });
+            });
+        }
+
+        if (btnDemoPoly) {
+            btnDemoPoly.addEventListener('click', () => {
+                const isActive = btnDemoPoly.classList.toggle('active');
+                if (isActive) btnDemoMono.classList.remove('active');
+                window.IPlugSendMsg({
+                    msg: 'SAMFUI',
+                    msgTag: 8, // kMsgTagDemoPoly
+                    ctrlTag: 0,
+                    data: ''
+                });
+            });
+        }
     }
 });

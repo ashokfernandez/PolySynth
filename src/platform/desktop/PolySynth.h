@@ -34,6 +34,8 @@ enum EControlTags {
   kCtrlTagKeyboard,
   kCtrlTagBender,
   kMsgTagTestLoaded,
+  kMsgTagDemoMono,
+  kMsgTagDemoPoly,
   kNumCtrlTags
 };
 
@@ -66,5 +68,8 @@ public:
 
 private:
   PolySynthDSP mDSP{8};
+  int mDemoMode = 0; // 0 = Off, 1 = Mono, 2 = Poly
+  long long mDemoSampleCounter = 0;
+  int mDemoNoteIndex = 0;
 #endif
 };

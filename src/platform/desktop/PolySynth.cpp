@@ -71,6 +71,50 @@ void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
 #if IPLUG_DSP
 void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
                                    int nFrames) {
+  if (mDemoMode > 0) {
+    int samplesPerStep = (int)(GetSampleRate() * 0.25);
+    mDemoSampleCounter += nFrames;
+
+    if (mDemoSampleCounter > samplesPerStep) {
+      mDemoSampleCounter = 0;
+      mDemoNoteIndex++;
+
+      IMidiMsg msg;
+      if (mDemoMode == 1) { // Mono
+        int seq[] = {48, 55, 60, 67};
+        int prevNote = seq[(mDemoNoteIndex - 1) % 4];
+        int currNote = seq[mDemoNoteIndex % 4];
+
+        if (mDemoNoteIndex > 0) {
+          msg.MakeNoteOffMsg(prevNote, 0);
+          mDSP.ProcessMidiMsg(msg);
+        }
+        msg.MakeNoteOnMsg(currNote, 100, 0);
+        mDSP.ProcessMidiMsg(msg);
+      } else if (mDemoMode == 2) { // Poly
+        int chords[4][3] = {
+            {60, 64, 67}, // C
+            {60, 65, 69}, // F
+            {59, 62, 67}, // G
+            {60, 64, 67}  // C
+        };
+
+        int prevIdx = (mDemoNoteIndex - 1) % 4;
+        int currIdx = mDemoNoteIndex % 4;
+
+        if (mDemoNoteIndex > 0) {
+          for (int i = 0; i < 3; i++) {
+            msg.MakeNoteOffMsg(chords[prevIdx][i], 0);
+            mDSP.ProcessMidiMsg(msg);
+          }
+        }
+        for (int i = 0; i < 3; i++) {
+          msg.MakeNoteOnMsg(chords[currIdx][i], 90, 0);
+          mDSP.ProcessMidiMsg(msg);
+        }
+      }
+    }
+  }
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
 }
 
@@ -92,6 +136,27 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     if (std::getenv("POLYSYNTH_TEST_UI")) {
       printf("TEST_PASS: UI Loaded\n");
       exit(0);
+    }
+  } else if (msgTag == kMsgTagDemoMono) {
+    if (mDemoMode == 1) {
+      mDemoMode = 0;
+      mDSP.Reset(GetSampleRate(), GetBlockSize());
+    } else {
+      mDSP.Reset(GetSampleRate(), GetBlockSize());
+      mDemoMode = 1;
+      mDemoSampleCounter = (int)(GetSampleRate() * 0.25); // Trigger immediately
+      mDemoNoteIndex = -1;
+    }
+    return true;
+  } else if (msgTag == kMsgTagDemoPoly) {
+    if (mDemoMode == 2) {
+      mDemoMode = 0;
+      mDSP.Reset(GetSampleRate(), GetBlockSize());
+    } else {
+      mDSP.Reset(GetSampleRate(), GetBlockSize());
+      mDemoMode = 2;
+      mDemoSampleCounter = (int)(GetSampleRate() * 0.25); // Trigger immediately
+      mDemoNoteIndex = -1;
     }
     return true;
   }

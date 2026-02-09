@@ -170,6 +170,27 @@
             width: 20px;
             height: 80px;
         }
+
+        .demo-btn {
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+            font-size: 0.8rem;
+        }
+
+        .demo-btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        .demo-btn.active {
+            background-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
     </style>
 </head>
 
@@ -274,6 +295,14 @@
                         <label>Gain</label>
                         <div class="param-value" data-param-value></div>
                     </div>
+                </div>
+            </div>
+
+            <div class="module demo">
+                <h2>Demo</h2>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button id="btn-demo-mono" class="demo-btn">Demo Mono</button>
+                    <button id="btn-demo-poly" class="demo-btn">Demo Poly</button>
                 </div>
             </div>
         </div>
