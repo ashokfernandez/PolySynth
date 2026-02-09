@@ -42,17 +42,23 @@ export const useIPlug = () => {
     }, []);
 
     useEffect(() => {
-        // Expose global callback for C++ to call
+        // Expose global SPVFD function for C++ WebViewEditorDelegate to call
+        // The C++ side calls: SPVFD(paramIdx, value)
+        window.SPVFD = (paramIdx, value) => {
+            console.log('SPVFD received:', paramIdx, value);
+            setParams(prev => {
+                const next = new Map(prev);
+                next.set(paramIdx, value);
+                return next;
+            });
+        };
+
+        // Also expose legacy names for compatibility
         window.SPVFUI = {
             paramChanged: (paramIdx, value) => {
-                setParams(prev => {
-                    const next = new Map(prev);
-                    next.set(paramIdx, value);
-                    return next;
-                });
+                window.SPVFD(paramIdx, value);
             },
             initParams: (paramArray) => {
-                // paramArray is [val0, val1, ...] index mapped
                 if (Array.isArray(paramArray)) {
                     setParams(prev => {
                         const next = new Map(prev);
@@ -71,6 +77,7 @@ export const useIPlug = () => {
         sendMsg(6); // kMsgTagTestLoaded
 
         return () => {
+            delete window.SPVFD;
             delete window.SPVFUI;
         };
     }, [sendMsg]);

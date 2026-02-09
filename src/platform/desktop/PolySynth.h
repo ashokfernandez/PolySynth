@@ -1,4 +1,5 @@
 #pragma once
+#include "../../core/SynthState.h"
 #include "IPlug_include_in_plug_hdr.h"
 
 const int kNumPresets = 1;
@@ -36,6 +37,11 @@ enum EControlTags {
   kMsgTagTestLoaded,
   kMsgTagDemoMono,
   kMsgTagDemoPoly,
+  kMsgTagSavePreset,
+  kMsgTagLoadPreset,
+  kMsgTagPreset1, // Warm Pad
+  kMsgTagPreset2, // Bright Lead
+  kMsgTagPreset3, // Dark Bass
   kNumCtrlTags
 };
 
@@ -68,6 +74,7 @@ public:
 
 private:
   PolySynthDSP mDSP{8};
+  PolySynthCore::SynthState mState;
   int mDemoMode = 0; // 0 = Off, 1 = Mono, 2 = Poly
   long long mDemoSampleCounter = 0;
   int mDemoNoteIndex = 0;

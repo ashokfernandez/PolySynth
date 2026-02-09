@@ -1,4 +1,5 @@
 #include "PolySynth.h"
+#include "../../core/PresetManager.h"
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_src.h"
 #include "LFO.h"
@@ -131,19 +132,81 @@ void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
       }
     }
   }
+
+  // Push state to DSP before processing
+  mDSP.UpdateState(mState);
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
 }
 
 void PolySynthPlugin::OnIdle() {}
 
-void PolySynthPlugin::OnReset() { mDSP.Reset(GetSampleRate(), GetBlockSize()); }
+void PolySynthPlugin::OnReset() {
+  mDSP.Reset(GetSampleRate(), GetBlockSize());
+  // Ensure DSP has latest state on reset
+  mDSP.UpdateState(mState);
+}
 
 void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
   mDSP.ProcessMidiMsg(msg);
 }
 
 void PolySynthPlugin::OnParamChange(int paramIdx) {
-  mDSP.SetParam(paramIdx, GetParam(paramIdx)->Value());
+  double value = GetParam(paramIdx)->Value();
+
+  switch (paramIdx) {
+  case kParamGain:
+    mState.masterGain = value / 100.0;
+    break;
+  case kParamNoteGlideTime:
+    mState.glideTime = value / 1000.0;
+    break;
+  case kParamAttack:
+    mState.ampAttack = value / 1000.0;
+    break;
+  case kParamDecay:
+    mState.ampDecay = value / 1000.0;
+    break;
+  case kParamSustain:
+    mState.ampSustain = value / 100.0;
+    break;
+  case kParamRelease:
+    mState.ampRelease = value / 1000.0;
+    break;
+  case kParamLFOShape:
+    mState.lfoShape = (int)value;
+    break;
+  case kParamLFORateHz:
+    mState.lfoRate = value;
+    break;
+  case kParamLFORateTempo:
+    // TODO: Tempo sync
+    break;
+  case kParamLFORateMode:
+    // TODO: Sync mode
+    break;
+  case kParamLFODepth:
+    mState.lfoDepth = value / 100.0;
+    break;
+  case kParamFilterCutoff:
+    mState.filterCutoff = value;
+    break;
+  case kParamFilterResonance:
+    mState.filterResonance = value / 100.0;
+    break;
+  case kParamOscWave:
+    mState.oscAWaveform = (int)value;
+    break;
+  case kParamOscMix:
+    mState.mixOscA = 1.0 - (value / 100.0);
+    mState.mixOscB = value / 100.0;
+    static_cast<void>(mState.mixOscB); // Suppress unused for now
+    break;
+  default:
+    break;
+  }
+
+  // Legacy support for direct param setting is removed in favor of UpdateState
+  // loop mDSP.SetParam(paramIdx, GetParam(paramIdx)->Value());
 }
 
 bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
@@ -173,6 +236,113 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mDemoMode = 2;
       mDemoSampleCounter = (int)(GetSampleRate() * 0.25); // Trigger immediately
       mDemoNoteIndex = -1;
+    }
+    return true;
+  } else if (msgTag == kMsgTagSavePreset) {
+    // Save current state to demo preset file
+    WDL_String presetPath;
+    DesktopPath(presetPath);
+    presetPath.Append("/PolySynth_DemoPreset.json");
+    bool success =
+        PolySynthCore::PresetManager::SaveToFile(mState, presetPath.Get());
+    printf("PRESET_SAVE: %s (%s)\n", presetPath.Get(), success ? "OK" : "FAIL");
+    return true;
+  } else if (msgTag == kMsgTagLoadPreset) {
+    // Load state from demo preset file
+    WDL_String presetPath;
+    DesktopPath(presetPath);
+    presetPath.Append("/PolySynth_DemoPreset.json");
+    PolySynthCore::SynthState loadedState;
+    bool success = PolySynthCore::PresetManager::LoadFromFile(presetPath.Get(),
+                                                              loadedState);
+    if (success) {
+      mState = loadedState;
+      // Sync UI with loaded state by updating all parameters
+      GetParam(kParamGain)->Set(mState.masterGain * 100.0);
+      GetParam(kParamAttack)->Set(mState.ampAttack * 1000.0);
+      GetParam(kParamDecay)->Set(mState.ampDecay * 1000.0);
+      GetParam(kParamSustain)->Set(mState.ampSustain * 100.0);
+      GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
+      GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
+      GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+      GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
+      GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
+      GetParam(kParamLFORateHz)->Set(mState.lfoRate);
+      GetParam(kParamLFODepth)->Set(mState.lfoDepth * 100.0);
+
+      // Notify UI of all param changes
+      for (int i = 0; i < kNumParams; ++i) {
+        SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
+      }
+      printf("PRESET_LOAD: %s (OK)\n", presetPath.Get());
+    } else {
+      printf("PRESET_LOAD: %s (FAIL - file not found or invalid)\n",
+             presetPath.Get());
+    }
+    return true;
+  } else if (msgTag == kMsgTagPreset1 || msgTag == kMsgTagPreset2 ||
+             msgTag == kMsgTagPreset3) {
+    // Factory Presets with distinct sounds
+    if (msgTag == kMsgTagPreset1) {
+      // Warm Pad - Slow attack, low cutoff, no resonance
+      mState.masterGain = 0.8;
+      mState.ampAttack = 0.5; // 500ms
+      mState.ampDecay = 0.3;
+      mState.ampSustain = 0.7;
+      mState.ampRelease = 1.0; // 1 second
+      mState.filterCutoff = 800.0;
+      mState.filterResonance = 0.1;
+      mState.oscAWaveform = 0; // Saw
+      mState.lfoShape = 0;     // Sine
+      mState.lfoRate = 0.5;
+      mState.lfoDepth = 0.3;
+      printf("PRESET: Warm Pad loaded\n");
+    } else if (msgTag == kMsgTagPreset2) {
+      // Bright Lead - Fast attack, high cutoff, high resonance
+      mState.masterGain = 1.0;
+      mState.ampAttack = 0.005; // 5ms
+      mState.ampDecay = 0.1;
+      mState.ampSustain = 0.6;
+      mState.ampRelease = 0.2;
+      mState.filterCutoff = 18000.0;
+      mState.filterResonance = 0.7;
+      mState.oscAWaveform = 1; // Square
+      mState.lfoShape = 2;     // Square LFO
+      mState.lfoRate = 6.0;
+      mState.lfoDepth = 0.0; // No LFO
+      printf("PRESET: Bright Lead loaded\n");
+    } else if (msgTag == kMsgTagPreset3) {
+      // Dark Bass - Medium attack, very low cutoff, medium resonance
+      mState.masterGain = 0.9;
+      mState.ampAttack = 0.02; // 20ms
+      mState.ampDecay = 0.5;
+      mState.ampSustain = 0.4;
+      mState.ampRelease = 0.15;
+      mState.filterCutoff = 300.0;
+      mState.filterResonance = 0.5;
+      mState.oscAWaveform = 0; // Saw
+      mState.lfoShape = 1;     // Triangle
+      mState.lfoRate = 2.0;
+      mState.lfoDepth = 0.5;
+      printf("PRESET: Dark Bass loaded\n");
+    }
+
+    // Sync UI with loaded state by updating all parameters
+    GetParam(kParamGain)->Set(mState.masterGain * 100.0);
+    GetParam(kParamAttack)->Set(mState.ampAttack * 1000.0);
+    GetParam(kParamDecay)->Set(mState.ampDecay * 1000.0);
+    GetParam(kParamSustain)->Set(mState.ampSustain * 100.0);
+    GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
+    GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
+    GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+    GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
+    GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
+    GetParam(kParamLFORateHz)->Set(mState.lfoRate);
+    GetParam(kParamLFODepth)->Set(mState.lfoDepth * 100.0);
+
+    // Notify UI of all param changes
+    for (int i = 0; i < kNumParams; ++i) {
+      SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
     }
     return true;
   }

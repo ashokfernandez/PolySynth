@@ -25,16 +25,55 @@ describe('App Integration', () => {
         expect(screen.getByTestId('envelope-mock')).toBeInTheDocument();
     });
 
+    it('renders Presets section', () => {
+        render(<App />);
+        expect(screen.getByText('Presets')).toBeInTheDocument();
+        expect(screen.getByText('Factory Presets')).toBeInTheDocument();
+        expect(screen.getByText('User Preset')).toBeInTheDocument();
+    });
+
+    it('renders factory preset buttons', () => {
+        render(<App />);
+        expect(screen.getByText('🎹 Warm Pad')).toBeInTheDocument();
+        expect(screen.getByText('⚡ Bright Lead')).toBeInTheDocument();
+        expect(screen.getByText('🎸 Dark Bass')).toBeInTheDocument();
+    });
+
+    it('renders user preset buttons', () => {
+        render(<App />);
+        expect(screen.getByText('💾 Save')).toBeInTheDocument();
+        expect(screen.getByText('📂 Load')).toBeInTheDocument();
+    });
+
     it('sends message when demo button is clicked', () => {
         render(<App />);
-        const monoBtn = screen.getByText('Demo Mono');
+        const monoBtn = screen.getByText('🎵 Mono');
         fireEvent.click(monoBtn);
-        // Expect active class to be present? 
-        // Note: checking class requires inspecting the element.
         expect(monoBtn.className).toContain('active');
         expect(window.IPlugSendMsg).toHaveBeenLastCalledWith(expect.objectContaining({
             msg: 'SAMFUI',
             msgTag: 7
+        }));
+    });
+
+    it('sends preset message when factory preset is clicked', () => {
+        render(<App />);
+        const warmPadBtn = screen.getByText('🎹 Warm Pad');
+        fireEvent.click(warmPadBtn);
+        expect(warmPadBtn.className).toContain('active');
+        expect(window.IPlugSendMsg).toHaveBeenLastCalledWith(expect.objectContaining({
+            msg: 'SAMFUI',
+            msgTag: 11  // kMsgTagPreset1
+        }));
+    });
+
+    it('sends save message when Save button is clicked', () => {
+        render(<App />);
+        const saveBtn = screen.getByText('💾 Save');
+        fireEvent.click(saveBtn);
+        expect(window.IPlugSendMsg).toHaveBeenLastCalledWith(expect.objectContaining({
+            msg: 'SAMFUI',
+            msgTag: 9  // kMsgTagSavePreset
         }));
     });
 });
