@@ -10,10 +10,13 @@ mkdir -p "$EXTERNAL_DIR"
 
 # iPlug2
 if [ ! -d "$EXTERNAL_DIR/iPlug2" ]; then
-    echo "Cloning iPlug2..."
-    git clone https://github.com/iPlug2/iPlug2.git "$EXTERNAL_DIR/iPlug2"
+    echo "Cloning iPlug2 with submodules..."
+    git clone --recursive https://github.com/iPlug2/iPlug2.git "$EXTERNAL_DIR/iPlug2"
 else
-    echo "iPlug2 already exists."
+    echo "iPlug2 already exists. Updating submodules..."
+    cd "$EXTERNAL_DIR/iPlug2"
+    git submodule update --init --recursive
+    cd "$BASE_DIR"
 fi
 
 # Catch2 (for consistency, though CMake handles it too, let's have it explicitly)
