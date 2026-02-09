@@ -54,6 +54,7 @@ add_executable(demo_osc_mix demos/demo_osc_mix.cpp)
 # Filter demos
 add_executable(demo_filter_resonance demos/demo_filter_resonance.cpp)
 add_executable(demo_filter_envelope demos/demo_filter_envelope.cpp)
+add_executable(demo_prophet_filter demos/demo_prophet_filter.cpp)
 
 # LFO demos
 add_executable(demo_lfo_vibrato demos/demo_lfo_vibrato.cpp)
@@ -62,4 +63,3 @@ add_executable(demo_lfo_filter_wobble demos/demo_lfo_filter_wobble.cpp)
 
 # Preset demo
 add_executable(demo_factory_presets demos/demo_factory_presets.cpp)
-

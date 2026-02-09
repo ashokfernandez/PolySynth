@@ -20,6 +20,7 @@ enum EParams {
   kParamFilterResonance,
   kParamOscWave,
   kParamOscMix,
+  kParamFilterModel,
   kNumParams
 };
 

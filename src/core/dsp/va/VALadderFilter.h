@@ -86,12 +86,13 @@ private:
     double k = mResonance * 4.0; // Is this scaling standard?
     // Self oscillation at k=4 usually for Moog ladder.
 
-    double u = (in - k * S_total) / (1.0 + k * BETA);
+    double u = (std::tanh(in) - k * S_total) / (1.0 + k * BETA);
 
     // Compute stages
-    double v = u;
+    double v = std::tanh(u);
     for (int i = 0; i < 4; ++i) {
       double v_out = (g * v + integrators[i].GetS()) / (1.0 + g);
+      v_out = std::tanh(v_out);
       integrators[i].SetS(2.0 * v_out - integrators[i].GetS());
       v = v_out;
     }

@@ -23,7 +23,9 @@ public:
     // This is a temporary bridge until VoiceManager reads state directly
     mVoiceManager.SetADSR(state.ampAttack, state.ampDecay, state.ampSustain,
                           state.ampRelease);
-    mVoiceManager.SetFilter(state.filterCutoff, state.filterResonance);
+    mVoiceManager.SetFilter(state.filterCutoff, state.filterResonance,
+                            state.filterEnvAmount);
+    mVoiceManager.SetFilterModel(state.filterModel);
 
     // Map Oscillator types
     // SynthState uses: 0=Saw, 1=Square (Osc A)
