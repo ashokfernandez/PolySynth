@@ -1,68 +1,217 @@
 # PolySynth
 
-**PolySynth** is a professional-grade, cross-platform polyphonic synthesizer built with C++ and iPlug2. It features a custom "Platform Agnostic" DSP engine designed for high performance and portability, targeting macOS (AU/VST3/APP) and Windows, with future embedded hardware support.
+<p align="center">
+  <strong>A professional-grade, cross-platform polyphonic synthesizer</strong><br>
+  <em>Built with C++ and iPlug2 for maximum performance and portability</em>
+</p>
 
-## 🌟 Features
-
-*   **Custom DSP Engine**: A pure C++ audio engine, decoupled from any specific framework.
-*   **Polyphony**: Supports up to 8 voices with efficient voice allocation.
-*   **Oscillators**: Multi-waveform oscillators (Sawtooth, Square, Triangle, Sine) with band-limited synthesis.
-*   **Filters**: Resonant Low-Pass Filter (LPF) with cutoff and resonance control.
-*   **Envelopes**: ADSR (Attack, Decay, Sustain, Release) envelopes for amplitude and filter modulation.
-*   **Cross-Platform**: Builds as a VST3, Audio Unit, and Standalone App for macOS and Windows.
-*   **Headless Testing**: Comprehensive unit testing and audio artifact generation without requiring a DAW.
-
-## 📚 Documentation & Architecture
-
-The project follows a strict "Hub & Spoke" architecture:
-
-*   [**Vision & Strategy**](plans/01_vision_and_strategy.md): High-level goals and "Hybrid" approach.
-*   [**Architecture**](plans/02_architecture.md): Technical design and component breakdown.
-*   [**Agentic Workflow**](plans/03_agentic_workflow.md): Development process using AI personas.
-*   [**Testing Strategy**](plans/04_testing_strategy.md): "Headless" and "Golden Master" testing methodologies.
-
-## 🎧 Audio Demos
-
-We automatically generate audio samples from our test suite on every commit to ensure DSP correctness.
-[**Listen to the latest Audio Artifacts & Test Report**](https://ashokfernandez.github.io/PolySynth/)
-
-## 🏗 Directory Structure
-
-*   `src/core/`: **The Engine**. Pure C++ DSP code. No framework dependencies.
-*   `src/platform/`: **The Wrapper**. iPlug2 and hardware integration layers.
-*   `tests/`: **The Verification**. Catch2 unit tests and offline rendering tools.
-*   `plans/`: **The Brain**. extensive project documentation and architectural decision records (ADRs).
-*   `scripts/`: Utility scripts for building dependencies and generating reports.
-
-## 🚀 Getting Started
-
-### Prerequisites
-*   **CMake**: 3.14 or later.
-*   **Git**: For version control.
-*   **C++ Compiler**: Clang (macOS) or MSVC (Windows).
-
-### Building
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/ashokfernandez/PolySynth.git
-    cd PolySynth
-    ```
-2.  **Download Dependencies**:
-    ```bash
-    ./polysynth/scripts/download_dependencies.sh
-    ```
-3.  **Build (Headless Tests)**:
-    ```bash
-    cd polysynth/tests
-    mkdir build && cd build
-    cmake ..
-    make
-    ./run_tests
-    ```
-
-## 🤝 Contributing
-
-Please read the [Vision & Strategy](plans/01_vision_and_strategy.md) before contributing. All changes must be verified with headless tests.
+<p align="center">
+  <a href="https://github.com/ashokfernandez/PolySynth/actions"><img src="https://github.com/ashokfernandez/PolySynth/workflows/CI/badge.svg" alt="CI Status"></a>
+  <a href="https://ashokfernandez.github.io/PolySynth/"><img src="https://img.shields.io/badge/Audio%20Demos-Listen%20Now-blue" alt="Audio Demos"></a>
+</p>
 
 ---
-*Built with ❤️ by Ashok & Antigravity*
+
+## Overview
+
+PolySynth is a classic-style virtual analog synthesizer designed for musicians, producers, and audio developers. It features a clean signal path with hands-on control over every parameter, inspired by the golden era of analog polysynths.
+
+### Key Features
+
+- **5-Voice Polyphony** — Rich, stackable voices with intelligent voice allocation
+- **Dual Oscillators** — Sawtooth, Square, Triangle, and Sine with mix control
+- **Resonant Filter** — 24dB/oct low-pass filter with self-oscillating resonance
+- **ADSR Envelopes** — Dedicated amplitude and filter envelopes
+- **LFO Modulation** — Multiple waveforms for vibrato, tremolo, and filter sweeps
+- **Preset System** — Factory sounds + user preset save/load
+- **Cross-Platform** — macOS (AU/VST3/Standalone), Windows (VST3)
+
+---
+
+## Architecture
+
+PolySynth follows a **Hub & Spoke** architecture that cleanly separates concerns:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Platform                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Desktop   │  │   Plugin    │  │      Embedded       │  │
+│  │  (iPlug2)   │  │ (AU/VST3)   │  │   (Future: Daisy)   │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
+└─────────┼────────────────┼────────────────────┼─────────────┘
+          │                │                    │
+          └────────────────┼────────────────────┘
+                           │
+          ┌────────────────▼────────────────┐
+          │           Core Engine           │
+          │  ┌──────────────────────────┐   │
+          │  │       SynthState         │   │  ← Single Source of Truth
+          │  │   (All Parameters)       │   │
+          │  └────────────┬─────────────┘   │
+          │               │                 │
+          │  ┌────────────▼─────────────┐   │
+          │  │     Voice Manager        │   │  ← Polyphony & Allocation
+          │  │  ┌─────┐ ┌─────┐ ┌─────┐ │   │
+          │  │  │ V1  │ │ V2  │ │ ... │ │   │
+          │  │  └──┬──┘ └──┬──┘ └──┬──┘ │   │
+          │  └─────┼───────┼───────┼────┘   │
+          │        └───────┼───────┘        │
+          │                ▼                │
+          │  ┌──────────────────────────┐   │
+          │  │     DSP Components       │   │
+          │  │  • Oscillators (BLIT)    │   │
+          │  │  • Filters (VA/Biquad)   │   │
+          │  │  • Envelopes (ADSR)      │   │
+          │  │  • LFO                   │   │
+          │  └──────────────────────────┘   │
+          └─────────────────────────────────┘
+```
+
+### Design Principles
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Platform Agnostic** | Core DSP has zero framework dependencies |
+| **Single Source of Truth** | `SynthState` struct holds all parameters |
+| **Testable** | Headless rendering without DAW required |
+| **Real-time Safe** | No allocations in audio thread |
+
+---
+
+## Project Structure
+
+```
+PolySynth/
+├── src/
+│   ├── core/                    # Pure C++ DSP Engine
+│   │   ├── dsp/                 # DSP building blocks
+│   │   │   ├── Oscillator.h     # Band-limited oscillators
+│   │   │   ├── ADSREnvelope.h   # Envelope generator
+│   │   │   ├── BiquadFilter.h   # IIR filter
+│   │   │   └── va/              # Virtual Analog filters (TPT)
+│   │   ├── Engine.h             # Main synthesis engine
+│   │   ├── Voice.h              # Single voice (osc + env + filter)
+│   │   ├── VoiceManager.h       # Polyphony & allocation
+│   │   ├── SynthState.h         # Central state struct
+│   │   └── PresetManager.h      # JSON preset I/O
+│   │
+│   └── platform/
+│       └── desktop/             # iPlug2 wrapper
+│           ├── PolySynth.cpp    # Plugin entry point
+│           ├── PolySynth_DSP.h  # DSP ↔ Plugin bridge
+│           └── resources/
+│               └── web/         # React UI
+│
+├── tests/
+│   ├── unit/                    # Catch2 unit tests
+│   └── demos/                   # Audio rendering demos
+│
+└── external/
+    └── iPlug2/                  # Audio plugin framework
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **CMake** 3.14+
+- **Node.js** 16+ (for UI development)
+- **Xcode** (macOS) or **MSVC** (Windows)
+
+### Quick Start
+
+```bash
+# Clone with submodules
+git clone --recursive https://github.com/ashokfernandez/PolySynth.git
+cd PolySynth
+
+# Download iPlug2 dependencies
+./scripts/download_dependencies.sh
+
+# Build and run tests
+cd tests && mkdir build && cd build
+cmake .. && make
+./run_tests
+
+# Build desktop app (macOS)
+cd ../../src/platform/desktop
+cmake -B build
+cmake --build build --target PolySynth-app
+
+# Launch the app
+open ~/Applications/PolySynth.app
+```
+
+---
+
+## Audio Demos
+
+Every commit generates audio artifacts to verify DSP correctness:
+
+🎧 **[Listen to the latest demos →](https://ashokfernandez.github.io/PolySynth/)**
+
+---
+
+## Testing
+
+PolySynth uses a comprehensive testing strategy:
+
+| Test Type | Description | Count |
+|-----------|-------------|-------|
+| **Unit Tests** | Component-level DSP verification | 30 cases |
+| **Golden Master** | WAV comparison for regression detection | Automated |
+| **UI Tests** | React component testing | 16 cases |
+| **Integration** | Full build verification | CI/CD |
+
+Run the test suite:
+
+```bash
+# C++ unit tests
+./tests/build/run_tests
+
+# JavaScript tests
+cd src/platform/desktop/resources/web
+npm test
+```
+
+---
+
+## Factory Presets
+
+| Preset | Character | Key Settings |
+|--------|-----------|--------------|
+| 🎹 **Warm Pad** | Soft, evolving | Slow attack, low cutoff |
+| ⚡ **Bright Lead** | Punchy, present | Fast attack, high resonance |
+| 🎸 **Dark Bass** | Deep, growling | Very low cutoff, LFO modulation |
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Write tests for your changes
+4. Ensure all tests pass (`./tests/build/run_tests`)
+5. Submit a pull request
+
+Please read the [Architecture documentation](.agent/rules/architecture.md) before contributing.
+
+---
+
+## License
+
+This project is provided for educational and personal use. See [LICENSE](LICENSE) for details.
+
+---
+
+## Acknowledgments
+
+Built with these excellent open-source projects:
+
+- [iPlug2](https://github.com/iPlug2/iPlug2) — Cross-platform audio plugin framework
+- [Catch2](https://github.com/catchorg/Catch2) — C++ testing framework
+- [nlohmann/json](https://github.com/nlohmann/json) — JSON for Modern C++
+- [Vite](https://vitejs.dev/) + [React](https://react.dev/) — Modern web UI toolkit
