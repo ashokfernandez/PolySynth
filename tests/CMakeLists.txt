@@ -32,6 +32,8 @@ set(UNIT_TEST_SOURCES
     unit/Test_VoiceManager_Poly.cpp
     unit/Test_VAFilters.cpp
     unit/Test_PresetManager.cpp
+    unit/Test_FactoryPresets.cpp
+    unit/Test_PresetFileIO.cpp
     ../src/core/PresetManager.cpp
 )
 
