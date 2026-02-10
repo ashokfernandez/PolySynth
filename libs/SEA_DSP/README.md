@@ -12,7 +12,7 @@ SEA_DSP is a collection of high-quality DSP algorithms designed for synthesizers
 - **Dual-Precision**: Compile-time selection between `double` (desktop) and `float` (embedded) precision
 - **Template-Based Filters**: Type-safe filter implementations work with any floating-point type
 - **Real-Time Safe**: No allocations in audio processing paths (with noted exceptions)
-- **Extensively Tested**: 186+ assertions across 18 test cases verify correctness on both platforms
+- **Extensively Tested**: 206+ assertions across 30 test cases verify correctness on both platforms
 - **Backend Flexibility**: Optional DaisySP integration for band-limited oscillators (requires linking DaisySP library)
 
 ## What's Inside
@@ -234,11 +234,16 @@ double output = lpf.Process(input);
 
 ### Test Coverage
 
-The library includes **18 test cases** with **186 assertions** covering:
+The library includes **30 test cases** with **206 assertions** covering:
 
-**Type Safety** (`Test_TypeSafety.cpp`):
+**Self-Contained Headers** (individual test files per filter):
+- Each filter header tested in isolation to verify it brings all dependencies
+- BiquadFilter, TPTIntegrator, LadderFilter, ClassicalFilter, CascadeFilter, SKFilter
+- Prevents transitive dependency masking where includes can hide missing dependencies
+
+**Type Safety** (individual test files):
 - Float vs double consistency for all templated filters
-- Math constant casting correctness
+- Math constant casting correctness (`Test_MathConstants.cpp`)
 - Long-running precision tests (1000+ samples)
 
 **Filter Behavior** (`Test_Filters.cpp`):

@@ -46,10 +46,15 @@ set(TEST_SOURCES
     Test_Filters.cpp
     Test_ADSR.cpp
     Test_LFO.cpp
-    Test_TypeSafety.cpp
     Test_ADSR_Performance.cpp
+    # Self-contained header tests (each header tested in isolation)
+    Test_BiquadFilter.cpp
+    Test_TPTIntegrator.cpp
+    Test_LadderFilter.cpp
     Test_ClassicalFilter.cpp
-    Test_CascadeAndSK.cpp
+    Test_CascadeFilter.cpp
+    Test_SKFilter.cpp
+    Test_MathConstants.cpp
 )
 
 add_executable(sea_tests ${TEST_SOURCES})
