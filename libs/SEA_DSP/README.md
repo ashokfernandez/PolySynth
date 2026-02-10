@@ -45,6 +45,20 @@ Public headers are under `include/sea_dsp/`.
 - Default mode (`double` precision) for desktop-class builds
 - Embedded mode (`float` precision) by defining `SEA_PLATFORM_EMBEDDED`
 - Optional fast-math hook (`SEA_FAST_MATH`) is available in `sea_math.h`
+- Target platform option:
+  - `SEA_DSP_TARGET_PLATFORM=desktop` (default)
+  - `SEA_DSP_TARGET_PLATFORM=daisy_mcu` (enables embedded precision path)
+
+## Backend Configuration
+
+SEA_DSP supports per-component backend selection for basics:
+
+- `SEA_DSP_OSC_BACKEND=sea_core|daisysp`
+- `SEA_DSP_ADSR_BACKEND=sea_core|daisysp`
+- `SEA_DSP_LFO_BACKEND=sea_core|daisysp`
+
+This allows mixed builds (for example, TPT filters in `sea_core` while
+oscillator/modulation comes from `daisysp`).
 
 ## Dependencies
 
@@ -52,7 +66,8 @@ Core library:
 
 - C++17
 - CMake 3.15+
-- C++ standard library headers only
+- `sea_core` path: C++ standard library headers only
+- `daisysp` path (optional): DaisySP source in `external/daisysp`
 
 Tests:
 
@@ -68,6 +83,19 @@ Build and run the standalone SEA_DSP tests:
 cmake -S libs/SEA_DSP -B build/sea_dsp_tests -DSEA_BUILD_TESTS=ON
 cmake --build build/sea_dsp_tests
 ./build/sea_dsp_tests/tests/sea_tests
+```
+
+Run with explicit backend/platform selection:
+
+```bash
+cmake -S libs/SEA_DSP -B build/sea_dsp_tests_daisysp \
+  -DSEA_BUILD_TESTS=ON \
+  -DSEA_DSP_TARGET_PLATFORM=daisy_mcu \
+  -DSEA_DSP_OSC_BACKEND=daisysp \
+  -DSEA_DSP_ADSR_BACKEND=daisysp \
+  -DSEA_DSP_LFO_BACKEND=daisysp
+cmake --build build/sea_dsp_tests_daisysp
+./build/sea_dsp_tests_daisysp/tests/sea_tests
 ```
 
 ## Test Coverage (Current)
@@ -87,6 +115,36 @@ Current suite size: 9 test cases, 45 assertions.
 
 The repository CI runs the SEA_DSP suite by building and executing `sea_tests`
 as a dedicated workflow step.
+
+## Current TODOs
+
+- Embedded performance pass:
+  - remove or replace dynamic allocations in `sea_classical_filter.h`
+  - review `SEA_FAST_MATH` approximations and error bounds before enabling by default
+- Coverage expansion:
+  - add stronger response/accuracy tests for all filter variants
+  - add behavior parity tests for both `double` and `float` paths
+- Packaging polish:
+  - provide a clean external-consumer integration example
+  - document versioning and API stability policy
+
+## Roadmap
+
+Short-term:
+
+- keep the current stable, header-only core as the baseline
+- improve tests and embedded readiness without changing public API semantics
+
+Mid-term:
+
+- add optional facade/adaptor layers for alternative DSP backends where needed
+- keep public `sea_*` headers backend-agnostic
+
+DaisySP status:
+
+- DaisySP is now supported as an optional backend for oscillator/ADSR/LFO
+- filters remain on the `sea_core` implementation path
+- backend mixing is supported through per-component backend options
 
 ## Notes
 
