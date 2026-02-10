@@ -4,6 +4,7 @@
 #include "../../core/VoiceManager.h"
 #include "../../core/dsp/fx/FXEngine.h"
 #include "IPlugConstants.h"
+#include "IPlug_include_in_plug_hdr.h"
 
 using namespace iplug;
 
@@ -22,11 +23,8 @@ public:
 
   // Called from ProcessBlock in the plugin, before audio processing
   void UpdateState(const PolySynthCore::SynthState &state) {
-    // Global
     mGain = state.masterGain;
 
-    // Dispatch to VoiceManager which currently handles all voices uniformly
-    // This is a temporary bridge until VoiceManager reads state directly
     mVoiceManager.SetADSR(state.ampAttack, state.ampDecay, state.ampSustain,
                           state.ampRelease);
     mVoiceManager.SetFilterEnv(state.filterAttack, state.filterDecay,
@@ -35,9 +33,6 @@ public:
                             state.filterEnvAmount);
     mVoiceManager.SetFilterModel(state.filterModel);
 
-    // Map Oscillator types
-    // SynthState uses: 0=Saw, 1=Square (Osc A)
-    // Oscillator.h uses: Saw=0, Square=1. Matches.
     mVoiceManager.SetWaveformA(
         static_cast<PolySynthCore::Oscillator::WaveformType>(
             state.oscAWaveform));
@@ -49,10 +44,8 @@ public:
     mVoiceManager.SetMixer(state.mixOscA, state.mixOscB,
                            state.oscBFineTune * 100.0);
 
-    // LFO
     mVoiceManager.SetLFO(state.lfoShape, state.lfoRate, state.lfoDepth);
 
-    // Poly-Mod
     mVoiceManager.SetPolyModOscBToFreqA(state.polyModOscBToFreqA);
     mVoiceManager.SetPolyModOscBToPWM(state.polyModOscBToPWM);
     mVoiceManager.SetPolyModOscBToFilter(state.polyModOscBToFilter);
@@ -60,7 +53,6 @@ public:
     mVoiceManager.SetPolyModFilterEnvToPWM(state.polyModFilterEnvToPWM);
     mVoiceManager.SetPolyModFilterEnvToFilter(state.polyModFilterEnvToFilter);
 
-    // FX
     mFxEngine.SetChorus(state.fxChorusRate, state.fxChorusDepth,
                         state.fxChorusMix);
     mFxEngine.SetDelay(state.fxDelayTime, state.fxDelayFeedback,
@@ -78,21 +70,16 @@ public:
 
     // Process one sample at a time
     for (int s = 0; s < nFrames; s++) {
-      PolySynthCore::sample_t out = mVoiceManager.Process();
-
-      // Apply Gain
-      out *= mGain; // mGain is now 0.0-1.0 from state
+      PolySynthCore::sample_t out = mVoiceManager.Process() * mGain;
 
       PolySynthCore::sample_t left = out;
       PolySynthCore::sample_t right = out;
-      // FX Bypassed as per user request to focus on core synth
-      // mFxEngine.Process(left, right);
+      mFxEngine.Process(left, right);
 
-      // Mono to Stereo copy
       if (nOutputs > 0)
-        outputs[0][s] = (sample)left;
+        outputs[0][s] = static_cast<sample>(left);
       if (nOutputs > 1)
-        outputs[1][s] = (sample)right;
+        outputs[1][s] = static_cast<sample>(right);
     }
   }
 

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <sea_dsp/sea_platform.h>
 #include <stdint.h>
+#include <type_traits>
 
 namespace PolySynthCore {
 
@@ -10,6 +12,9 @@ using sample_t = float;
 #else
 using sample_t = double;
 #endif
+
+static_assert(std::is_same_v<sample_t, sea::Real>,
+              "sample_t and sea::Real must be the same type");
 
 // Constants
 constexpr double kPi = 3.14159265358979323846;

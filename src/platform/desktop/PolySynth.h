@@ -1,5 +1,6 @@
 #pragma once
 #include "../../core/SynthState.h"
+#include "DemoSequencer.h"
 #include "IPlug_include_in_plug_hdr.h"
 
 const int kNumPresets = 1;
@@ -57,9 +58,9 @@ enum EControlTags {
   kMsgTagDemoPoly = 8,
   kMsgTagSavePreset = 9,
   kMsgTagLoadPreset = 10,
-  kMsgTagPreset1 = 11, // Warm Pad
-  kMsgTagPreset2 = 12, // Bright Lead
-  kMsgTagPreset3 = 13, // Dark Bass
+  kMsgTagPreset1 = 11,
+  kMsgTagPreset2 = 12,
+  kMsgTagPreset3 = 13,
   kMsgTagDemoFX = 14,
   kMsgTagNoteOn = 20,
   kMsgTagNoteOff = 21,
@@ -93,11 +94,11 @@ public:
   bool OnMessage(int msgTag, int ctrlTag, int dataSize,
                  const void *pData) override;
 
+  void SyncUIState();
+
 private:
   PolySynthDSP mDSP{8};
   PolySynthCore::SynthState mState;
-  int mDemoMode = 0; // 0 = Off, 1 = Mono, 2 = Poly
-  long long mDemoSampleCounter = 0;
-  int mDemoNoteIndex = 0;
+  DemoSequencer mDemoSequencer;
 #endif
 };

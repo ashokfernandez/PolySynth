@@ -19,6 +19,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/oscillator
     ${IPLUG2_DIR}/IPlug/Extras/WebView
     ${IPLUG2_DIR}/Dependencies/Extras/nlohmann
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/SEA_DSP/include
 )
 
 # Glob web resources from the dist folder (Vite output)
@@ -30,6 +31,7 @@ file(GLOB WEB_RESOURCES
 iplug_add_plugin(${PROJECT_NAME}
   SOURCES
     PolySynth.cpp
+    DemoSequencer.cpp
     PolySynth.h
     PolySynth_DSP.h
     resources/resource.h

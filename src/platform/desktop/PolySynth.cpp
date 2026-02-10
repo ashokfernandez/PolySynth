@@ -2,8 +2,57 @@
 #include "../../core/PresetManager.h"
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_src.h"
-#include "LFO.h"
 #include <cstdlib>
+
+namespace {
+static const double kToPercentage = 100.0;
+static const double kToMs = 1000.0;
+} // namespace
+
+void PolySynthPlugin::SyncUIState() {
+  GetParam(kParamGain)->Set(mState.masterGain * kToPercentage);
+  GetParam(kParamNoteGlideTime)->Set(mState.glideTime * kToMs);
+  GetParam(kParamAttack)->Set(mState.ampAttack * kToMs);
+  GetParam(kParamDecay)->Set(mState.ampDecay * kToMs);
+  GetParam(kParamSustain)->Set(mState.ampSustain * kToPercentage);
+  GetParam(kParamRelease)->Set(mState.ampRelease * kToMs);
+  GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
+  GetParam(kParamLFORateHz)->Set(mState.lfoRate);
+  GetParam(kParamLFODepth)->Set(mState.lfoDepth * kToPercentage);
+  GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
+  GetParam(kParamFilterResonance)->Set(mState.filterResonance * kToPercentage);
+  GetParam(kParamFilterEnvAmount)->Set(mState.filterEnvAmount * kToPercentage);
+  GetParam(kParamFilterModel)->Set((double)mState.filterModel);
+  GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
+  GetParam(kParamOscBWave)->Set((double)mState.oscBWaveform);
+  GetParam(kParamOscMix)->Set(mState.mixOscB * kToPercentage);
+  GetParam(kParamOscPulseWidthA)->Set(mState.oscAPulseWidth * kToPercentage);
+  GetParam(kParamOscPulseWidthB)->Set(mState.oscBPulseWidth * kToPercentage);
+  GetParam(kParamPolyModOscBToFreqA)
+      ->Set(mState.polyModOscBToFreqA * kToPercentage);
+  GetParam(kParamPolyModOscBToPWM)
+      ->Set(mState.polyModOscBToPWM * kToPercentage);
+  GetParam(kParamPolyModOscBToFilter)
+      ->Set(mState.polyModOscBToFilter * kToPercentage);
+  GetParam(kParamPolyModFilterEnvToFreqA)
+      ->Set(mState.polyModFilterEnvToFreqA * kToPercentage);
+  GetParam(kParamPolyModFilterEnvToPWM)
+      ->Set(mState.polyModFilterEnvToPWM * kToPercentage);
+  GetParam(kParamPolyModFilterEnvToFilter)
+      ->Set(mState.polyModFilterEnvToFilter * kToPercentage);
+  GetParam(kParamChorusRate)->Set(mState.fxChorusRate);
+  GetParam(kParamChorusDepth)->Set(mState.fxChorusDepth * kToPercentage);
+  GetParam(kParamChorusMix)->Set(mState.fxChorusMix * kToPercentage);
+  GetParam(kParamDelayTime)->Set(mState.fxDelayTime * kToMs);
+  GetParam(kParamDelayFeedback)->Set(mState.fxDelayFeedback * kToPercentage);
+  GetParam(kParamDelayMix)->Set(mState.fxDelayMix * kToPercentage);
+  GetParam(kParamLimiterThreshold)
+      ->Set(mState.fxLimiterThreshold * kToPercentage);
+
+  for (int i = 0; i < kNumParams; ++i) {
+    SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
+  }
+}
 
 PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
@@ -85,15 +134,7 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     path += "/resources/web/dist/index.html";
     LoadFile(path.c_str(), nullptr);
 #else
-#if defined _DEBUG
-    // In debug, load the built index.html from dist/ folder
-    std::string path = std::string(__FILE__);
-    path = path.substr(0, path.find_last_of("/\\"));
-    path += "/resources/web/dist/index.html";
-    LoadFile(path.c_str(), nullptr);
-#else
     LoadIndexHtml(__FILE__, "com.PolySynth.app.PolySynth");
-#endif
 #endif
     EnableScroll(false);
   };
@@ -118,52 +159,8 @@ void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
 #if IPLUG_DSP
 void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
                                    int nFrames) {
-  if (mDemoMode > 0) {
-    int samplesPerStep = (int)(GetSampleRate() * 0.25);
-    mDemoSampleCounter += nFrames;
+  mDemoSequencer.Process(nFrames, GetSampleRate(), mDSP);
 
-    if (mDemoSampleCounter > samplesPerStep) {
-      mDemoSampleCounter = 0;
-      mDemoNoteIndex++;
-
-      IMidiMsg msg;
-      if (mDemoMode == 1) { // Mono
-        int seq[] = {48, 55, 60, 67};
-        int prevNote = seq[(mDemoNoteIndex - 1) % 4];
-        int currNote = seq[mDemoNoteIndex % 4];
-
-        if (mDemoNoteIndex > 0) {
-          msg.MakeNoteOffMsg(prevNote, 0);
-          mDSP.ProcessMidiMsg(msg);
-        }
-        msg.MakeNoteOnMsg(currNote, 100, 0);
-        mDSP.ProcessMidiMsg(msg);
-      } else if (mDemoMode == 2 || mDemoMode == 3) { // Poly / FX
-        int chords[4][3] = {
-            {60, 64, 67}, // C
-            {60, 65, 69}, // F
-            {59, 62, 67}, // G
-            {60, 64, 67}  // C
-        };
-
-        int prevIdx = (mDemoNoteIndex - 1) % 4;
-        int currIdx = mDemoNoteIndex % 4;
-
-        if (mDemoNoteIndex > 0) {
-          for (int i = 0; i < 3; i++) {
-            msg.MakeNoteOffMsg(chords[prevIdx][i], 0);
-            mDSP.ProcessMidiMsg(msg);
-          }
-        }
-        for (int i = 0; i < 3; i++) {
-          msg.MakeNoteOnMsg(chords[currIdx][i], 90, 0);
-          mDSP.ProcessMidiMsg(msg);
-        }
-      }
-    }
-  }
-
-  // Push state to DSP before processing
   mDSP.UpdateState(mState);
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
 }
@@ -186,105 +183,98 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
 
   switch (paramIdx) {
   case kParamGain:
-    mState.masterGain = value / 100.0;
+    mState.masterGain = value / kToPercentage;
     break;
   case kParamNoteGlideTime:
-    mState.glideTime = value / 1000.0;
+    mState.glideTime = value / kToMs;
     break;
   case kParamAttack:
-    mState.ampAttack = value / 1000.0;
+    mState.ampAttack = value / kToMs;
     break;
   case kParamDecay:
-    mState.ampDecay = value / 1000.0;
+    mState.ampDecay = value / kToMs;
     break;
   case kParamSustain:
-    mState.ampSustain = value / 100.0;
+    mState.ampSustain = value / kToPercentage;
     break;
   case kParamRelease:
-    mState.ampRelease = value / 1000.0;
+    mState.ampRelease = value / kToMs;
     break;
   case kParamLFOShape:
-    mState.lfoShape = (int)value;
+    mState.lfoShape = static_cast<int>(value);
     break;
   case kParamLFORateHz:
     mState.lfoRate = value;
     break;
-  case kParamLFORateTempo:
-    // TODO: Tempo sync
-    break;
-  case kParamLFORateMode:
-    // TODO: Sync mode
-    break;
   case kParamLFODepth:
-    mState.lfoDepth = value / 100.0;
+    mState.lfoDepth = value / kToPercentage;
     break;
   case kParamFilterCutoff:
     mState.filterCutoff = value;
     break;
   case kParamFilterResonance:
-    mState.filterResonance = value / 100.0;
+    mState.filterResonance = value / kToPercentage;
     break;
   case kParamFilterEnvAmount:
-    mState.filterEnvAmount = value / 100.0;
+    mState.filterEnvAmount = value / kToPercentage;
     break;
   case kParamFilterModel:
     mState.filterModel = static_cast<int>(value);
     break;
   case kParamOscWave:
-    mState.oscAWaveform = (int)value;
+    mState.oscAWaveform = static_cast<int>(value);
     break;
   case kParamOscBWave:
-    mState.oscBWaveform = (int)value;
+    mState.oscBWaveform = static_cast<int>(value);
     break;
   case kParamOscMix:
-    mState.mixOscA = 1.0 - (value / 100.0);
-    mState.mixOscB = value / 100.0;
-    static_cast<void>(mState.mixOscB); // Suppress unused for now
+    mState.mixOscA = 1.0 - (value / kToPercentage);
+    mState.mixOscB = value / kToPercentage;
     break;
   case kParamOscPulseWidthA:
-    mState.oscAPulseWidth = value / 100.0;
+    mState.oscAPulseWidth = value / kToPercentage;
     break;
   case kParamOscPulseWidthB:
-    mState.oscBPulseWidth = value / 100.0;
+    mState.oscBPulseWidth = value / kToPercentage;
     break;
   case kParamPolyModOscBToFreqA:
-    mState.polyModOscBToFreqA = value / 100.0;
+    mState.polyModOscBToFreqA = value / kToPercentage;
     break;
   case kParamPolyModOscBToPWM:
-    mState.polyModOscBToPWM = value / 100.0;
+    mState.polyModOscBToPWM = value / kToPercentage;
     break;
   case kParamPolyModOscBToFilter:
-    mState.polyModOscBToFilter = value / 100.0;
+    mState.polyModOscBToFilter = value / kToPercentage;
     break;
   case kParamPolyModFilterEnvToFreqA:
-    mState.polyModFilterEnvToFreqA = value / 100.0;
+    mState.polyModFilterEnvToFreqA = value / kToPercentage;
     break;
   case kParamPolyModFilterEnvToPWM:
-    mState.polyModFilterEnvToPWM = value / 100.0;
+    mState.polyModFilterEnvToPWM = value / kToPercentage;
     break;
   case kParamPolyModFilterEnvToFilter:
-    mState.polyModFilterEnvToFilter = value / 100.0;
+    mState.polyModFilterEnvToFilter = value / kToPercentage;
     break;
   case kParamChorusRate:
     mState.fxChorusRate = value;
     break;
   case kParamChorusDepth:
-    mState.fxChorusDepth = value / 100.0;
+    mState.fxChorusDepth = value / kToPercentage;
     break;
   case kParamChorusMix:
-    mState.fxChorusMix = value / 100.0;
+    mState.fxChorusMix = value / kToPercentage;
     break;
   case kParamDelayTime:
-    mState.fxDelayTime = value / 1000.0;
+    mState.fxDelayTime = value / kToMs;
     break;
   case kParamDelayFeedback:
-    mState.fxDelayFeedback = value / 100.0;
+    mState.fxDelayFeedback = value / kToPercentage;
     break;
   case kParamDelayMix:
-    mState.fxDelayMix = value / 100.0;
+    mState.fxDelayMix = value / kToPercentage;
     break;
   case kParamLimiterThreshold:
-    mState.fxLimiterThreshold = value / 100.0;
+    mState.fxLimiterThreshold = value / kToPercentage;
     break;
   default:
     break;
@@ -302,39 +292,14 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       exit(0);
     }
   } else if (msgTag == kMsgTagDemoMono) {
-    if (mDemoMode == 1) {
-      mDemoMode = 0;
-      mDSP.Reset(GetSampleRate(), GetBlockSize());
-    } else {
-      mDSP.Reset(GetSampleRate(), GetBlockSize());
-      mDemoMode = 1;
-      mDemoSampleCounter = (int)(GetSampleRate() * 0.25); // Trigger immediately
-      mDemoNoteIndex = -1;
-    }
+    mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(), mDSP);
     return true;
   } else if (msgTag == kMsgTagDemoPoly) {
-    if (mDemoMode == 2) {
-      mDemoMode = 0;
-      mDSP.Reset(GetSampleRate(), GetBlockSize());
-    } else {
-      mDSP.Reset(GetSampleRate(), GetBlockSize());
-      mDemoMode = 2;
-      mDemoSampleCounter = (int)(GetSampleRate() * 0.25); // Trigger immediately
-      mDemoNoteIndex = -1;
-    }
+    mDemoSequencer.SetMode(DemoSequencer::Mode::Poly, GetSampleRate(), mDSP);
     return true;
   } else if (msgTag == kMsgTagDemoFX) {
-    if (mDemoMode == 3) {
-      mDemoMode = 0;
-      mState.fxChorusMix = 0.0;
-      mState.fxDelayMix = 0.0;
-      mState.fxLimiterThreshold = 0.95;
-      mDSP.Reset(GetSampleRate(), GetBlockSize());
-    } else {
-      mDSP.Reset(GetSampleRate(), GetBlockSize());
-      mDemoMode = 3;
-      mDemoSampleCounter = (int)(GetSampleRate() * 0.25);
-      mDemoNoteIndex = -1;
+    mDemoSequencer.SetMode(DemoSequencer::Mode::FX, GetSampleRate(), mDSP);
+    if (mDemoSequencer.GetMode() == DemoSequencer::Mode::FX) {
       mState.fxChorusRate = 0.35;
       mState.fxChorusDepth = 0.65;
       mState.fxChorusMix = 0.35;
@@ -342,18 +307,13 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.fxDelayFeedback = 0.45;
       mState.fxDelayMix = 0.35;
       mState.fxLimiterThreshold = 0.7;
+    } else {
+      mState.fxChorusMix = 0.0;
+      mState.fxDelayMix = 0.0;
+      mState.fxLimiterThreshold = 0.95;
     }
-    GetParam(kParamChorusRate)->Set(mState.fxChorusRate);
-    GetParam(kParamChorusDepth)->Set(mState.fxChorusDepth * 100.0);
-    GetParam(kParamChorusMix)->Set(mState.fxChorusMix * 100.0);
-    GetParam(kParamDelayTime)->Set(mState.fxDelayTime * 1000.0);
-    GetParam(kParamDelayFeedback)->Set(mState.fxDelayFeedback * 100.0);
-    GetParam(kParamDelayMix)->Set(mState.fxDelayMix * 100.0);
-    GetParam(kParamLimiterThreshold)->Set(mState.fxLimiterThreshold * 100.0);
-
-    for (int i = 0; i < kNumParams; ++i) {
-      SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
-    }
+    // Update UI and DSP
+    SyncUIState();
     return true;
   } else if (msgTag == kMsgTagSavePreset) {
     // Save current state to demo preset file

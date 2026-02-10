@@ -52,10 +52,8 @@ public:
     double delaySamplesR =
         (baseDelayMs + depthMs * (0.5 * (1.0 + lfoR))) * 0.001 * mSampleRate;
 
-    sample_t delayedL =
-        ReadDelayedSample(mBufferL, delaySamplesL, mWriteIndex);
-    sample_t delayedR =
-        ReadDelayedSample(mBufferR, delaySamplesR, mWriteIndex);
+    sample_t delayedL = ReadDelayedSample(mBufferL, delaySamplesL, mWriteIndex);
+    sample_t delayedR = ReadDelayedSample(mBufferR, delaySamplesR, mWriteIndex);
 
     const double dryMix = 1.0 - mMix;
     left = static_cast<sample_t>(left * dryMix + delayedL * mMix);
@@ -132,8 +130,7 @@ public:
       return;
     }
 
-    const int delaySamples =
-        static_cast<int>(mDelayTimeSec * mSampleRate);
+    const int delaySamples = static_cast<int>(mDelayTimeSec * mSampleRate);
     const int size = static_cast<int>(mBufferL.size());
     const int readIndex = (mWriteIndex - delaySamples + size) % size;
 
@@ -141,10 +138,8 @@ public:
     sample_t delayedR = static_cast<sample_t>(mBufferR[readIndex]);
 
     const double dryMix = 1.0 - mMix;
-    sample_t outL =
-        static_cast<sample_t>(left * dryMix + delayedL * mMix);
-    sample_t outR =
-        static_cast<sample_t>(right * dryMix + delayedR * mMix);
+    sample_t outL = static_cast<sample_t>(left * dryMix + delayedL * mMix);
+    sample_t outR = static_cast<sample_t>(right * dryMix + delayedR * mMix);
 
     mBufferL[mWriteIndex] = left + delayedL * mFeedback;
     mBufferR[mWriteIndex] = right + delayedR * mFeedback;
@@ -183,9 +178,13 @@ public:
 
   void SetParams(double threshold, double lookaheadMs, double releaseMs) {
     mThreshold = std::clamp(threshold, 0.01, 1.0);
-    mLookaheadMs = std::clamp(lookaheadMs, 0.0, 50.0);
     mReleaseMs = std::clamp(releaseMs, 1.0, 500.0);
-    UpdateLookaheadBuffer();
+
+    double newLookahead = std::clamp(lookaheadMs, 0.0, 50.0);
+    if (newLookahead != mLookaheadMs) {
+      mLookaheadMs = newLookahead;
+      UpdateLookaheadBuffer();
+    }
   }
 
   void Process(sample_t &left, sample_t &right) {
