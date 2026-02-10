@@ -230,6 +230,8 @@ function App() {
           <PresetBrowser sendMsg={sendMsg} />
         </div>
       </div>
+
+      <Keyboard sendMsg={sendMsg} />
     </div>
   );
 }

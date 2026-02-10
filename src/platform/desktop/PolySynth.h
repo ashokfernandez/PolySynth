@@ -21,7 +21,6 @@ enum EParams {
   kParamOscWave,
   kParamOscBWave,
   kParamOscMix,
-<<<<<<< HEAD
   kParamOscPulseWidthA,
   kParamOscPulseWidthB,
   kParamFilterEnvAmount,
@@ -32,7 +31,6 @@ enum EParams {
   kParamPolyModFilterEnvToPWM,
   kParamPolyModFilterEnvToFilter,
   kParamFilterModel,
-=======
   kParamChorusRate,
   kParamChorusDepth,
   kParamChorusMix,
@@ -40,7 +38,6 @@ enum EParams {
   kParamDelayFeedback,
   kParamDelayMix,
   kParamLimiterThreshold,
->>>>>>> codex/implement-epic-4.1-with-demos-and-testing
   kNumParams
 };
 
@@ -64,6 +61,8 @@ enum EControlTags {
   kMsgTagPreset2 = 12, // Bright Lead
   kMsgTagPreset3 = 13, // Dark Bass
   kMsgTagDemoFX = 14,
+  kMsgTagNoteOn = 20,
+  kMsgTagNoteOff = 21,
   kNumCtrlTags
 };
 

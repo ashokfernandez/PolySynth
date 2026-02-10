@@ -1,16 +1,18 @@
 export const PARAMS = {
     GAIN: 0,
+    NOTE_GLIDE: 1,
     ATTACK: 2,
     DECAY: 3,
     SUSTAIN: 4,
     RELEASE: 5,
     LFO_SHAPE: 6,
     LFO_RATE: 7,
+    LFO_RATE_TEMPO: 8,
+    LFO_RATE_MODE: 9,
     LFO_DEPTH: 10,
     CUTOFF: 11,
     RESONANCE: 12,
     OSC_WAVE: 13,
-<<<<<<< HEAD
     OSC_B_WAVE: 14,
     OSC_MIX: 15,
     OSC_PULSE_A: 16,
@@ -22,17 +24,14 @@ export const PARAMS = {
     POLY_ENV_FREQ_A: 22,
     POLY_ENV_PWM: 23,
     POLY_ENV_FILTER: 24,
-    FILTER_MODEL: 25
-=======
-    OSC_MIX: 14,
-    CHORUS_RATE: 15,
-    CHORUS_DEPTH: 16,
-    CHORUS_MIX: 17,
-    DELAY_TIME: 18,
-    DELAY_FEEDBACK: 19,
-    DELAY_MIX: 20,
-    LIMITER_THRESHOLD: 21
->>>>>>> codex/implement-epic-4.1-with-demos-and-testing
+    FILTER_MODEL: 25,
+    CHORUS_RATE: 26,
+    CHORUS_DEPTH: 27,
+    CHORUS_MIX: 28,
+    DELAY_TIME: 29,
+    DELAY_FEEDBACK: 30,
+    DELAY_MIX: 31,
+    LIMITER_THRESHOLD: 32
 };
 
 export const PARAM_META = {
@@ -51,7 +50,6 @@ export const PARAM_META = {
         items: ['Classic', 'Ladder', 'Prophet 12', 'Prophet 24']
     },
     [PARAMS.OSC_WAVE]: { name: 'Osc Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
-<<<<<<< HEAD
     [PARAMS.OSC_B_WAVE]: { name: 'Osc B Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
     [PARAMS.OSC_MIX]: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.OSC_PULSE_A]: { name: 'Pulse Width A', min: 0, max: 100, unit: '%', decimals: 0 },
@@ -62,9 +60,7 @@ export const PARAM_META = {
     [PARAMS.POLY_OSC_B_FILTER]: { name: 'B -> Filter', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.POLY_ENV_FREQ_A]: { name: 'Env -> Freq A', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.POLY_ENV_PWM]: { name: 'Env -> PWM A', min: 0, max: 100, unit: '%', decimals: 0 },
-    [PARAMS.POLY_ENV_FILTER]: { name: 'Env -> Filter', min: 0, max: 100, unit: '%', decimals: 0 }
-=======
-    [PARAMS.OSC_MIX]: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.POLY_ENV_FILTER]: { name: 'Env -> Filter', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.CHORUS_RATE]: { name: 'Chorus Rate', min: 0.05, max: 2, unit: 'Hz', decimals: 2 },
     [PARAMS.CHORUS_DEPTH]: { name: 'Chorus Depth', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.CHORUS_MIX]: { name: 'Chorus Mix', min: 0, max: 100, unit: '%', decimals: 0 },
@@ -72,7 +68,6 @@ export const PARAM_META = {
     [PARAMS.DELAY_FEEDBACK]: { name: 'Delay Feedback', min: 0, max: 95, unit: '%', decimals: 0 },
     [PARAMS.DELAY_MIX]: { name: 'Delay Mix', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.LIMITER_THRESHOLD]: { name: 'Limiter Threshold', min: 50, max: 100, unit: '%', decimals: 0 }
->>>>>>> codex/implement-epic-4.1-with-demos-and-testing
 };
 
 export const mapParamValue = (idx, normalized) => {

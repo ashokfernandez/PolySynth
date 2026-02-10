@@ -548,6 +548,16 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
     }
     return true;
+  } else if (msgTag == kMsgTagNoteOn) {
+    IMidiMsg msg;
+    msg.MakeNoteOnMsg(ctrlTag, 100, 0);
+    mDSP.ProcessMidiMsg(msg);
+    return true;
+  } else if (msgTag == kMsgTagNoteOff) {
+    IMidiMsg msg;
+    msg.MakeNoteOffMsg(ctrlTag, 0);
+    mDSP.ProcessMidiMsg(msg);
+    return true;
   }
   return false;
 }
