@@ -87,20 +87,3 @@ TEST_CASE("Biquad Filter Detailed Checks", "[Filter][Biquad]") {
     REQUIRE(out == Approx(1.0).margin(0.01));
   }
 }
-
-TEST_CASE("ClassicalFilter Include Dependencies", "[Filter][Classical]") {
-  // This test verifies that sea_classical_filter.h properly includes sea_math.h
-  // If the include is missing, this will fail to compile
-  sea::ClassicalFilter<double> filter;
-  filter.Init(48000.0);
-  filter.SetConfig(sea::ClassicalFilter<double>::Type::Butterworth, 4, 1.0);
-  filter.SetCutoff(1000.0);
-
-  filter.Reset();
-  double out = 0.0;
-  for (int i = 0; i < 100; ++i)
-    out = filter.Process(1.0);
-
-  REQUIRE(out > 0.0);
-  REQUIRE(out < 2.0);
-}
