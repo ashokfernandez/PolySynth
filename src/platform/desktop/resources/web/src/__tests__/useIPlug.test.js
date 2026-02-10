@@ -16,12 +16,14 @@ describe('IPlug Protocol Constants', () => {
             kMsgTagPreset1: 11, // Warm Pad
             kMsgTagPreset2: 12, // Bright Lead  
             kMsgTagPreset3: 13, // Dark Bass
+            kMsgTagDemoFX: 14
         };
 
         // Verify all expected tags are defined
         expect(expectedTags.kMsgTagPreset1).toBe(11);
         expect(expectedTags.kMsgTagPreset2).toBe(12);
         expect(expectedTags.kMsgTagPreset3).toBe(13);
+        expect(expectedTags.kMsgTagDemoFX).toBe(14);
         expect(expectedTags.kMsgTagSavePreset).toBe(9);
         expect(expectedTags.kMsgTagLoadPreset).toBe(10);
     });

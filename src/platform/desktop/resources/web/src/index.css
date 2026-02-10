@@ -294,13 +294,24 @@ canvas {
 .demo-row {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .demo-row .demo-btn {
-  flex: 1;
+  flex: 1 1 80px;
   margin-bottom: 0;
 }
 
 .module.presets {
   min-width: 200px;
+}
+
+.fx-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.module.fx .knob-group {
+  justify-content: space-between;
 }

@@ -10,7 +10,14 @@ export const PARAMS = {
     CUTOFF: 11,
     RESONANCE: 12,
     OSC_WAVE: 13,
-    OSC_MIX: 14
+    OSC_MIX: 14,
+    CHORUS_RATE: 15,
+    CHORUS_DEPTH: 16,
+    CHORUS_MIX: 17,
+    DELAY_TIME: 18,
+    DELAY_FEEDBACK: 19,
+    DELAY_MIX: 20,
+    LIMITER_THRESHOLD: 21
 };
 
 export const PARAM_META = {
@@ -25,7 +32,14 @@ export const PARAM_META = {
     [PARAMS.CUTOFF]: { name: 'Cutoff', min: 20, max: 20000, unit: 'Hz', decimals: 0 },
     [PARAMS.RESONANCE]: { name: 'Resonance', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.OSC_WAVE]: { name: 'Osc Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
-    [PARAMS.OSC_MIX]: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 }
+    [PARAMS.OSC_MIX]: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.CHORUS_RATE]: { name: 'Chorus Rate', min: 0.05, max: 2, unit: 'Hz', decimals: 2 },
+    [PARAMS.CHORUS_DEPTH]: { name: 'Chorus Depth', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.CHORUS_MIX]: { name: 'Chorus Mix', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.DELAY_TIME]: { name: 'Delay Time', min: 50, max: 1200, unit: 'ms', decimals: 0 },
+    [PARAMS.DELAY_FEEDBACK]: { name: 'Delay Feedback', min: 0, max: 95, unit: '%', decimals: 0 },
+    [PARAMS.DELAY_MIX]: { name: 'Delay Mix', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.LIMITER_THRESHOLD]: { name: 'Limiter Threshold', min: 50, max: 100, unit: '%', decimals: 0 }
 };
 
 export const mapParamValue = (idx, normalized) => {

@@ -84,6 +84,12 @@ const PresetBrowser = ({ sendMsg }) => {
           >
             🎶 Poly
           </button>
+          <button
+            className={`demo-btn ${activeDemo === 'fx' ? 'active' : ''}`}
+            onClick={() => handleDemo('fx', 14)}
+          >
+            ✨ FX
+          </button>
         </div>
       </div>
     </div>
@@ -174,6 +180,29 @@ function App() {
           <h2>Master</h2>
           <div className="knob-group">
             <Knob {...commonKnobProps(PARAMS.GAIN)} label="Gain" />
+          </div>
+        </div>
+
+        {/* FX */}
+        <div className="module fx">
+          <h2>FX</h2>
+          <div className="fx-grid">
+            <div className="knob-group">
+              <Knob {...commonKnobProps(PARAMS.CHORUS_RATE)} label="Chorus Rate" />
+              <Knob {...commonKnobProps(PARAMS.CHORUS_DEPTH)} label="Chorus Depth" />
+              <Knob {...commonKnobProps(PARAMS.CHORUS_MIX)} label="Chorus Mix" />
+            </div>
+            <div className="knob-group">
+              <Knob {...commonKnobProps(PARAMS.DELAY_TIME)} label="Delay Time" />
+              <Knob {...commonKnobProps(PARAMS.DELAY_FEEDBACK)} label="Delay Feedback" />
+              <Knob {...commonKnobProps(PARAMS.DELAY_MIX)} label="Delay Mix" />
+            </div>
+            <div className="knob-group">
+              <Knob
+                {...commonKnobProps(PARAMS.LIMITER_THRESHOLD)}
+                label="Limiter"
+              />
+            </div>
           </div>
         </div>
 

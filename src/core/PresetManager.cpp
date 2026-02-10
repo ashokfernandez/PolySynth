@@ -74,6 +74,15 @@ std::string PresetManager::Serialize(const SynthState &state) {
   SERIALIZE(j, state, polyModFilterEnvToFreqA);
   SERIALIZE(j, state, polyModFilterEnvToFilter);
 
+  // FX
+  SERIALIZE(j, state, fxChorusRate);
+  SERIALIZE(j, state, fxChorusDepth);
+  SERIALIZE(j, state, fxChorusMix);
+  SERIALIZE(j, state, fxDelayTime);
+  SERIALIZE(j, state, fxDelayFeedback);
+  SERIALIZE(j, state, fxDelayMix);
+  SERIALIZE(j, state, fxLimiterThreshold);
+
   return j.dump(2); // Pretty print with 2 space indent
 }
 
@@ -137,6 +146,15 @@ bool PresetManager::Deserialize(const std::string &jsonStr,
     DESERIALIZE(j, outState, polyModOscBToFilter);
     DESERIALIZE(j, outState, polyModFilterEnvToFreqA);
     DESERIALIZE(j, outState, polyModFilterEnvToFilter);
+
+    // FX
+    DESERIALIZE(j, outState, fxChorusRate);
+    DESERIALIZE(j, outState, fxChorusDepth);
+    DESERIALIZE(j, outState, fxChorusMix);
+    DESERIALIZE(j, outState, fxDelayTime);
+    DESERIALIZE(j, outState, fxDelayFeedback);
+    DESERIALIZE(j, outState, fxDelayMix);
+    DESERIALIZE(j, outState, fxLimiterThreshold);
 
     return true;
   } catch (const std::exception &e) {
