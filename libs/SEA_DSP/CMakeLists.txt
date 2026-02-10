@@ -8,7 +8,26 @@ target_include_directories(SEA_DSP INTERFACE
 )
 
 option(SEA_PLATFORM_EMBEDDED "Build for embedded platform (float)" OFF)
-set(SEA_DSP_TARGET_PLATFORM "desktop" CACHE STRING "SEA_DSP target platform (desktop or daisy_mcu)")
+
+# Target platform selection with legacy compatibility.
+# Priority:
+# 1) SEA_DSP_TARGET_PLATFORM (new)
+# 2) SEA_DSP_TARGET (legacy)
+# 3) desktop (default)
+if(DEFINED SEA_DSP_TARGET_PLATFORM)
+    set(_sea_dsp_target_platform "${SEA_DSP_TARGET_PLATFORM}")
+elseif(DEFINED SEA_DSP_TARGET)
+    set(_sea_dsp_target_platform "${SEA_DSP_TARGET}")
+else()
+    set(_sea_dsp_target_platform "desktop")
+endif()
+
+if(_sea_dsp_target_platform STREQUAL "armv7")
+    set(_sea_dsp_target_platform "daisy_mcu")
+endif()
+
+set(SEA_DSP_TARGET_PLATFORM "${_sea_dsp_target_platform}" CACHE STRING "SEA_DSP target platform (desktop or daisy_mcu)" FORCE)
+unset(_sea_dsp_target_platform)
 set_property(CACHE SEA_DSP_TARGET_PLATFORM PROPERTY STRINGS desktop daisy_mcu)
 set(SEA_DSP_OSC_BACKEND "sea_core" CACHE STRING "Oscillator backend (sea_core or daisysp)")
 set_property(CACHE SEA_DSP_OSC_BACKEND PROPERTY STRINGS sea_core daisysp)
@@ -16,14 +35,6 @@ set(SEA_DSP_ADSR_BACKEND "sea_core" CACHE STRING "ADSR backend (sea_core or dais
 set_property(CACHE SEA_DSP_ADSR_BACKEND PROPERTY STRINGS sea_core daisysp)
 set(SEA_DSP_LFO_BACKEND "sea_core" CACHE STRING "LFO backend (sea_core or daisysp)")
 set_property(CACHE SEA_DSP_LFO_BACKEND PROPERTY STRINGS sea_core daisysp)
-
-# Backward-compatibility shim for earlier SEA_DSP_TARGET naming.
-if(DEFINED SEA_DSP_TARGET AND NOT DEFINED SEA_DSP_TARGET_PLATFORM)
-    set(SEA_DSP_TARGET_PLATFORM "${SEA_DSP_TARGET}" CACHE STRING "SEA_DSP target platform" FORCE)
-endif()
-if(SEA_DSP_TARGET_PLATFORM STREQUAL "armv7")
-    set(SEA_DSP_TARGET_PLATFORM "daisy_mcu" CACHE STRING "SEA_DSP target platform" FORCE)
-endif()
 
 if(NOT SEA_DSP_TARGET_PLATFORM STREQUAL "desktop" AND NOT SEA_DSP_TARGET_PLATFORM STREQUAL "daisy_mcu")
     message(FATAL_ERROR "Unknown SEA_DSP_TARGET_PLATFORM='${SEA_DSP_TARGET_PLATFORM}'. Use desktop or daisy_mcu.")
