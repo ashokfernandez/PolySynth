@@ -7,7 +7,12 @@ const int kNumPresets = 1;
 
 enum EParams
 {
-  kParamTestKnob = 0,
+  kParamKnob1 = 0,
+  kParamKnob2,
+  kParamKnob3,
+  kParamFader1,
+  kParamFader2,
+  kParamFader3,
   kNumParams
 };
 

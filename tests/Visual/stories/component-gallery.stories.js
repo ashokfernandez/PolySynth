@@ -1,4 +1,4 @@
-const createGalleryFrame = () => {
+const createGalleryFrame = (componentName) => {
   const wrapper = document.createElement('div');
   wrapper.style.width = '1024px';
   wrapper.style.height = '768px';
@@ -7,7 +7,7 @@ const createGalleryFrame = () => {
 
   const frame = document.createElement('iframe');
   frame.title = 'Component Gallery';
-  frame.src = 'gallery/index.html';
+  frame.src = `gallery/${componentName}/index.html`;
   frame.style.width = '100%';
   frame.style.height = '100%';
   frame.style.border = '0';
@@ -16,6 +16,7 @@ const createGalleryFrame = () => {
     const doc = frame.contentDocument;
     if (!doc) return;
 
+    // Hide UI buttons and greyout
     const buttons = doc.getElementById('buttons');
     if (buttons) {
       buttons.style.display = 'none';
@@ -32,12 +33,17 @@ const createGalleryFrame = () => {
 };
 
 export default {
-  title: 'ComponentGallery/UI Components'
+  title: 'ComponentGallery/Components'
 };
 
 export const Knob = {
-  render: () => createGalleryFrame(),
-  parameters: {
-    controls: { disable: true }
-  }
+  render: () => createGalleryFrame('knob')
+};
+
+export const Fader = {
+  render: () => createGalleryFrame('fader')
+};
+
+export const Envelope = {
+  render: () => createGalleryFrame('envelope')
 };
