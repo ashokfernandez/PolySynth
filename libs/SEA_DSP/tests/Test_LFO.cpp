@@ -10,7 +10,8 @@ TEST_CASE("LFO Basic", "[LFO]") {
 
   SECTION("Initial value") {
     // Phase starts at 0, Sine(2*pi*0) = 0
-    REQUIRE(lfo.Process() == Approx(0.0).margin(0.01));
+    // Use tight margin for values that should be exactly zero
+    REQUIRE(lfo.Process() == Approx(0.0).margin(1e-6));
   }
 
   SECTION("Peak value") {
@@ -24,6 +25,7 @@ TEST_CASE("LFO Basic", "[LFO]") {
       lfo.Process();
 
     // At sample 11025, phase is 0.25, Sin(pi/2) = 1.0
-    REQUIRE(lfo.Process() == Approx(1.0).margin(0.01));
+    // Use tighter margin - should be very close to 1.0
+    REQUIRE(lfo.Process() == Approx(1.0).margin(1e-6));
   }
 }

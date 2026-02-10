@@ -50,7 +50,7 @@ private:
     if (mSampleRate == static_cast<T>(0.0))
       return;
 
-    T omega = kTwoPi * mCutoff / mSampleRate;
+    T omega = static_cast<T>(kTwoPi) * mCutoff / mSampleRate;
     T sn = Math::Sin(omega);
     T cs = Math::Cos(omega);
     T alpha = sn / (static_cast<T>(2.0) * mQ);

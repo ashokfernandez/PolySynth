@@ -92,9 +92,8 @@ public:
         mLevel = static_cast<Real>(0.0);
         mStage = kIdle;
       } else {
-        mReleaseInc = (mR > static_cast<Real>(0.0))
-                          ? (mLevel / (mR * mSampleRate))
-                          : static_cast<Real>(0.0);
+        // Multiply instead of divide - much faster
+        mReleaseInc = mLevel * mReleaseRecip;
         mStage = kRelease;
       }
     }
@@ -198,8 +197,11 @@ private:
       mDecayInc = (mD > static_cast<Real>(0.0))
                       ? ((static_cast<Real>(1.0) - mS) / (mD * mSampleRate))
                       : static_cast<Real>(0.0);
-      mReleaseInc = (mR > static_cast<Real>(0.0)) ? (mS / (mR * mSampleRate))
-                                                  : static_cast<Real>(0.0);
+      // Pre-calculate reciprocal to avoid division in NoteOff
+      mReleaseRecip = (mR > static_cast<Real>(0.0))
+                          ? (static_cast<Real>(1.0) / (mR * mSampleRate))
+                          : static_cast<Real>(0.0);
+      mReleaseInc = mS * mReleaseRecip;  // Keep this for reference
     }
   }
 #endif
@@ -216,6 +218,7 @@ private:
   Real mAttackInc = static_cast<Real>(0.0);
   Real mDecayInc = static_cast<Real>(0.0);
   Real mReleaseInc = static_cast<Real>(0.0);
+  Real mReleaseRecip = static_cast<Real>(0.0);  // Pre-calculated 1/(R*SR)
 #ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
   bool mGate = false;
   daisysp::Adsr mAdsr;

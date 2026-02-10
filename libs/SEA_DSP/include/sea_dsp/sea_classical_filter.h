@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include "sea_math.h"
 
 namespace sea {
 
@@ -70,7 +71,7 @@ private:
       for (int k = 1; k <= numPairs; ++k) {
         T angle = (static_cast<T>(2.0) * static_cast<T>(k) +
                    static_cast<T>(mOrder) - static_cast<T>(1.0)) *
-                  kPi / (static_cast<T>(2.0) * static_cast<T>(mOrder));
+                  static_cast<T>(kPi) / (static_cast<T>(2.0) * static_cast<T>(mOrder));
         T q = static_cast<T>(-1.0) / (static_cast<T>(2.0) * Math::Cos(angle));
         mQFactors.push_back(q);
         stages.emplace_back();
@@ -91,7 +92,7 @@ private:
       for (int k = 1; k <= numPairs; ++k) {
         T theta =
             (static_cast<T>(2.0) * static_cast<T>(k) - static_cast<T>(1.0)) *
-            kPi / (static_cast<T>(2.0) * static_cast<T>(mOrder));
+            static_cast<T>(kPi) / (static_cast<T>(2.0) * static_cast<T>(mOrder));
         T re = -sinh_a * Math::Sin(theta);
         T im = cosh_a * Math::Cos(theta);
 
