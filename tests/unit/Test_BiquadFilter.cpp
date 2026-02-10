@@ -52,3 +52,23 @@ TEST_CASE("Biquad Stability", "[Biquad]") {
   // It should settle
   REQUIRE(std::abs(out) < 0.01);
 }
+
+TEST_CASE("Biquad BandPass and Notch Basics", "[Biquad]") {
+  PolySynthCore::BiquadFilter filter;
+  filter.Init(48000.0);
+
+  filter.SetParams(PolySynthCore::FilterType::BandPass, 1000.0, 0.707);
+  filter.Reset();
+  double out = 0.0;
+  for (int i = 0; i < 1000; ++i)
+    out = filter.Process(1.0);
+  // BandPass should reject DC
+  REQUIRE(std::abs(out) < 0.01);
+
+  filter.SetParams(PolySynthCore::FilterType::Notch, 1000.0, 0.707);
+  filter.Reset();
+  for (int i = 0; i < 1000; ++i)
+    out = filter.Process(1.0);
+  // Notch should pass DC
+  REQUIRE(out == Approx(1.0).margin(0.01));
+}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VASVFilter.h"
+#include <algorithm>
 #include <cmath>
 #include <complex>
 #include <vector>
@@ -21,20 +22,21 @@ public:
   }
 
   void Reset() {
-    stages.clear();
     for (auto &f : stages)
       f.Reset();
   }
 
   void SetConfig(Type type, int order, double rippleDb) {
     mType = type;
-    mOrder = order;
-    mRippleDb = rippleDb;
+    mOrder = std::max(2, order);
+    if (mOrder % 2 != 0)
+      mOrder += 1;
+    mRippleDb = std::max(0.01, rippleDb);
     CalculatePoles();
   }
 
   void SetCutoff(double cutoff) {
-    mCutoff = cutoff;
+    mCutoff = ClampCutoff(cutoff);
     // For classical filters, the calculated Q factors are constant for a given
     // order/type. We only update the cutoff of each stage, possibly scaled. For
     // simplicity, let's assume all stages track the main cutoff but with their
@@ -84,8 +86,8 @@ private:
 
     // Let's just implement a table or formula for Q.
 
-    // Butterworth
-    if (mType == Type::Butterworth) {
+    // Butterworth (Chebyshev2 falls back to Butterworth until implemented.)
+    if (mType == Type::Butterworth || mType == Type::Chebyshev2) {
       for (int k = 1; k <= numPairs; ++k) {
         double theta = (2.0 * k + mOrder - 1) * kPi / (2.0 * mOrder);
         // Real part is cos(theta)? No, typical formula:
@@ -149,8 +151,10 @@ private:
     }
 
     // Initialize the new stages
-    for (auto &s : stages)
-      s.Init(mSampleRate);
+    for (size_t i = 0; i < stages.size(); ++i) {
+      stages[i].Init(mSampleRate);
+      stages[i].SetParams(mCutoff, mQFactors[i]);
+    }
   }
 
   double mSampleRate = 44100.0;
@@ -161,6 +165,14 @@ private:
 
   std::vector<VASVFilter> stages;
   std::vector<double> mQFactors;
+
+  double ClampCutoff(double cutoff) const {
+    if (mSampleRate <= 0.0)
+      return 0.0;
+    double nyquist = 0.5 * mSampleRate;
+    double maxCutoff = nyquist * 0.49;
+    return std::clamp(cutoff, 0.0, maxCutoff);
+  }
 };
 
 } // namespace PolySynthCore

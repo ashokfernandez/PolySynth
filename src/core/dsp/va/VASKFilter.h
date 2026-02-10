@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TPTIntegrator.h"
+#include <algorithm>
 #include <cmath>
 
 namespace PolySynthCore {
@@ -26,8 +27,8 @@ public:
   // For SKF, Q = 1 / (2 - k).
   // range of k: [0, 2). Self oscillation at 2.
   void SetParams(double cutoff, double k) {
-    mCutoff = cutoff;
-    mK = k;
+    mCutoff = ClampCutoff(cutoff);
+    mK = std::clamp(k, 0.0, 1.98);
     lpf1.Prepare(mCutoff);
     lpf2.Prepare(mCutoff);
   }
@@ -117,6 +118,14 @@ private:
 
   TPTIntegrator lpf1;
   TPTIntegrator lpf2;
+
+  double ClampCutoff(double cutoff) const {
+    if (mSampleRate <= 0.0)
+      return 0.0;
+    double nyquist = 0.5 * mSampleRate;
+    double maxCutoff = nyquist * 0.49;
+    return std::clamp(cutoff, 0.0, maxCutoff);
+  }
 };
 
 } // namespace PolySynthCore
