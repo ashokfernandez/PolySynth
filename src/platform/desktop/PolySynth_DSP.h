@@ -85,7 +85,8 @@ public:
 
       PolySynthCore::sample_t left = out;
       PolySynthCore::sample_t right = out;
-      mFxEngine.Process(left, right);
+      // FX Bypassed as per user request to focus on core synth
+      // mFxEngine.Process(left, right);
 
       // Mono to Stereo copy
       if (nOutputs > 0)

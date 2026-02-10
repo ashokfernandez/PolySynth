@@ -176,6 +176,7 @@ void PolySynthPlugin::OnReset() {
   mDSP.UpdateState(mState);
 }
 
+// Log note on messages
 void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
   mDSP.ProcessMidiMsg(msg);
 }

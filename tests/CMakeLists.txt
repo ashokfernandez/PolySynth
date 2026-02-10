@@ -19,6 +19,9 @@ if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../external/catch2/catch.hpp)
 endif()
 include_directories(../external/catch2)
 
+# --- SEA_DSP Library ---
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../libs/SEA_DSP" "${CMAKE_CURRENT_BINARY_DIR}/libs/SEA_DSP")
+
 # --- Unit Tests ---
 set(UNIT_TEST_SOURCES
     main_test.cpp
@@ -37,6 +40,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_PresetFileIO.cpp
     unit/Test_PolyMod.cpp
     ../src/core/PresetManager.cpp
+    unit/Test_SEA_DSP_Platform.cpp
 )
 
 add_executable(run_tests ${UNIT_TEST_SOURCES})
@@ -69,3 +73,23 @@ add_executable(demo_factory_presets demos/demo_factory_presets.cpp)
 
 # FX demo
 add_executable(demo_fx_engine demos/demo_fx_engine.cpp)
+
+# Link SEA_DSP to all targets
+target_link_libraries(run_tests PRIVATE SEA_DSP)
+target_link_libraries(demo_render_wav PRIVATE SEA_DSP)
+target_link_libraries(demo_adsr PRIVATE SEA_DSP)
+target_link_libraries(demo_engine_poly PRIVATE SEA_DSP)
+target_link_libraries(demo_filter_sweep PRIVATE SEA_DSP)
+target_link_libraries(demo_poly_chords PRIVATE SEA_DSP)
+target_link_libraries(demo_polymod PRIVATE SEA_DSP)
+target_link_libraries(demo_waveforms PRIVATE SEA_DSP)
+target_link_libraries(demo_pulse_width PRIVATE SEA_DSP)
+target_link_libraries(demo_osc_mix PRIVATE SEA_DSP)
+target_link_libraries(demo_filter_resonance PRIVATE SEA_DSP)
+target_link_libraries(demo_filter_envelope PRIVATE SEA_DSP)
+target_link_libraries(demo_prophet_filter PRIVATE SEA_DSP)
+target_link_libraries(demo_lfo_vibrato PRIVATE SEA_DSP)
+target_link_libraries(demo_lfo_tremolo PRIVATE SEA_DSP)
+target_link_libraries(demo_lfo_filter_wobble PRIVATE SEA_DSP)
+target_link_libraries(demo_factory_presets PRIVATE SEA_DSP)
+target_link_libraries(demo_fx_engine PRIVATE SEA_DSP)
