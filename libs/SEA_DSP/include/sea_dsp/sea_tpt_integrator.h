@@ -32,7 +32,7 @@ public:
     else if (cutoff > maxCutoff)
       cutoff = maxCutoff;
 
-    T wd = kTwoPi * cutoff;
+    T wd = static_cast<T>(kTwoPi) * cutoff;
     T T_period = static_cast<T>(1.0) / mSampleRate;
     T wa = (static_cast<T>(2.0) / T_period) *
            Math::Tan(wd * T_period / static_cast<T>(2.0));
