@@ -95,11 +95,11 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   // Oscillator Params
   GetParam(kParamOscWave)
       ->InitEnum("Osc Waveform",
-                 (int)PolySynthCore::Oscillator::WaveformType::Saw,
+                 (int)sea::Oscillator::WaveformType::Saw,
                  {"Saw", "Square", "Triangle", "Sine"});
   GetParam(kParamOscBWave)
       ->InitEnum("Osc B Waveform",
-                 (int)PolySynthCore::Oscillator::WaveformType::Sine,
+                 (int)sea::Oscillator::WaveformType::Sine,
                  {"Saw", "Square", "Triangle", "Sine"});
   GetParam(kParamOscMix)->InitDouble("Osc Mix", 0., 0., 100., 1., "%");
   GetParam(kParamOscPulseWidthA)->InitPercentage("Pulse Width A");

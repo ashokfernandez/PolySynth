@@ -61,6 +61,14 @@ jobs:
       run: |
         python3 scripts/generate_test_report.py
 
+    - name: Install visual test dependencies
+      working-directory: tests/Visual
+      run: npm ci
+
+    - name: Install Playwright browsers
+      working-directory: tests/Visual
+      run: npx playwright install --with-deps chromium
+
     - name: Run Gallery Visual Test Pipeline
       run: |
         chmod +x test_gallery_visual.sh

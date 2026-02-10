@@ -145,7 +145,13 @@ replacement = """function startWebAudio() {
           return;
         }
         window.__componentGalleryAudioStarting = true;
-        var actx = new AudioContext();"""
+        var actx;
+        try {
+          actx = new AudioContext();
+        } catch (err) {
+          window.__componentGalleryAudioStarting = false;
+          throw err;
+        }"""
 
 new_html, count = re.subn(pattern, replacement, html, count=1)
 if count == 1:
@@ -176,6 +182,9 @@ replacement = """postRun: function() {
                 startWebAudio();
               } catch (err) {
                 console.log("Auto-start failed: " + err);
+                window.__componentGalleryAudioStarting = false;
+                window.__componentGalleryAudioStarted = false;
+                window.__componentGalleryAutoStarted = false;
                 const wam = document.getElementById('wam');
                 if (wam) {
                   wam.hidden = false;

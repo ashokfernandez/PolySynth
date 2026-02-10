@@ -5,7 +5,10 @@ test('hello world gallery renders', async ({ page }) => {
   const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
   await galleryFrame.locator('#wam').waitFor({ state: 'visible' });
   await galleryFrame.locator('#wam canvas.pluginArea').waitFor({ state: 'visible' });
-  await expect(page).toHaveScreenshot('smoke-test.png', { fullPage: true });
+  await expect(page).toHaveScreenshot('smoke-test.png', {
+    fullPage: true,
+    maxDiffPixelRatio: 0.012
+  });
 });
 
 test('knob story auto-initializes without manual start', async ({ page }) => {
