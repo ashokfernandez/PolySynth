@@ -39,6 +39,7 @@ enum EParams {
   kParamDelayFeedback,
   kParamDelayMix,
   kParamLimiterThreshold,
+  kParamDemoMode,
   kNumParams
 };
 
@@ -64,6 +65,7 @@ enum EControlTags {
   kMsgTagDemoFX = 14,
   kMsgTagNoteOn = 20,
   kMsgTagNoteOff = 21,
+  kCtrlTagEnvelope,
   kNumCtrlTags
 };
 
@@ -82,6 +84,7 @@ public:
 #if IPLUG_EDITOR
   void OnUIOpen() override;
   void OnParamChangeUI(int paramIdx, EParamSource source) override;
+  void OnLayout(IGraphics *pGraphics) override;
 #endif
 
 #if IPLUG_DSP

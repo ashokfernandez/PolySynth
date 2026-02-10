@@ -1,0 +1,20 @@
+timestamp=20260210_140938
+config=Debug
+app_path=/Users/ashokfernandez/Software/PolySynth/build_desktop/out/Debug/PolySynth.app
+binary=/Users/ashokfernandez/Software/PolySynth/build_desktop/out/Debug/PolySynth.app/Contents/MacOS/PolySynth
+mode=lldb
+git_commit=385859339f2a4fa79f5189840a17e22858d5da16
+git_status:
+ M .gitignore
+ M README.md
+ M src/core/VoiceManager.h
+ M src/platform/desktop/CMakeLists.txt
+ M src/platform/desktop/PolySynth.cpp
+ M src/platform/desktop/PolySynth.h
+?? docs/DEBUGGING.md
+?? dsp_refactor.md
+?? libs/
+?? plans/dsp_refactor.md
+?? scripts/debug_desktop.sh
+?? tests/sea_test/
+lldb_exit_status=0

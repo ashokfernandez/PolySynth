@@ -2,6 +2,9 @@
 #include "../../core/PresetManager.h"
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_src.h"
+#if IPLUG_EDITOR
+#include "Envelope.h"
+#endif
 #include <cstdlib>
 
 namespace {
@@ -94,12 +97,10 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 
   // Oscillator Params
   GetParam(kParamOscWave)
-      ->InitEnum("Osc Waveform",
-                 (int)sea::Oscillator::WaveformType::Saw,
+      ->InitEnum("Osc Waveform", (int)sea::Oscillator::WaveformType::Saw,
                  {"Saw", "Square", "Triangle", "Sine"});
   GetParam(kParamOscBWave)
-      ->InitEnum("Osc B Waveform",
-                 (int)sea::Oscillator::WaveformType::Sine,
+      ->InitEnum("Osc B Waveform", (int)sea::Oscillator::WaveformType::Sine,
                  {"Saw", "Square", "Triangle", "Sine"});
   GetParam(kParamOscMix)->InitDouble("Osc Mix", 0., 0., 100., 1., "%");
   GetParam(kParamOscPulseWidthA)->InitPercentage("Pulse Width A");
@@ -122,22 +123,15 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamDelayFeedback)
       ->InitDouble("Delay Feedback", 35., 0., 95., 1., "%");
   GetParam(kParamDelayMix)->InitDouble("Delay Mix", 0., 0., 100., 1., "%");
-  GetParam(kParamLimiterThreshold)
-      ->InitDouble("Limiter Threshold", 95., 50., 100., 1., "%");
+  GetParam(kParamDemoMode)->InitBool("Demo Mode", false);
 
 #if IPLUG_EDITOR
-  mEditorInitFunc = [&]() {
-#if defined _DEBUG
-    // In debug, load the built index.html from dist/ folder
-    std::string path = std::string(__FILE__);
-    path = path.substr(0, path.find_last_of("/\\"));
-    path += "/resources/web/dist/index.html";
-    LoadFile(path.c_str(), nullptr);
-#else
-    LoadIndexHtml(__FILE__, "com.PolySynth.app.PolySynth");
-#endif
-    EnableScroll(false);
+  mMakeGraphicsFunc = [&]() {
+    return MakeGraphics(*this, PLUG_WIDTH, PLUG_HEIGHT, PLUG_FPS,
+                        GetScaleForScreen(PLUG_WIDTH, PLUG_HEIGHT));
   };
+
+  mLayoutFunc = [this](IGraphics *pGraphics) { OnLayout(pGraphics); };
 #endif
 }
 
@@ -153,6 +147,64 @@ void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
   (void)source;
   SendParameterValueFromDelegate(paramIdx, GetParam(paramIdx)->GetNormalized(),
                                  true);
+}
+
+void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
+  if (pGraphics->NControls())
+    return;
+
+  pGraphics->AttachPanelBackground(COLOR_DARK_GRAY);
+
+  const IRECT b = pGraphics->GetBounds();
+  const float footerH = 50.f;
+  const IRECT mainArea = b.ReduceFromBottom(footerH);
+  const IRECT footerArea = b.FracRectVertical(1.f, true).SubRectVertical(
+      footerH, false); // Bottom 50 pixels
+
+  // 3-column layout
+  const int nCols = 3;
+  const IRECT oscCol = mainArea.GetGridCell(0, 0, 1, nCols);
+  const IRECT filterCol = mainArea.GetGridCell(0, 1, 1, nCols);
+  const IRECT envCol = mainArea.GetGridCell(0, 2, 1, nCols);
+
+  // Oscillators Section
+  pGraphics->AttachControl(new IVKnobControl(oscCol.GetCentredInside(100.f),
+                                             kParamOscWave, "Osc Wave"));
+
+  // Filter Section
+  const IRECT filterKnobs = filterCol.GetCentredInside(100.f, 220.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      filterKnobs.GetGridCell(0, 0, 2, 1), kParamFilterCutoff, "Cutoff"));
+  pGraphics->AttachControl(new IVKnobControl(
+      filterKnobs.GetGridCell(1, 0, 2, 1), kParamFilterResonance, "Resonance"));
+
+  // Envelope Section
+  const IRECT envVisualizerArea =
+      envCol.SubRectVertical(0.4f, true).Padding(10.f);
+  const IRECT envFadersArea = envCol.SubRectVertical(0.6f, false).Padding(10.f);
+
+  Envelope *pEnvelope = new Envelope(envVisualizerArea);
+  pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
+                     GetParam(kParamDecay)->Value() / 1000.f,
+                     GetParam(kParamSustain)->Value() / 100.f,
+                     GetParam(kParamRelease)->Value() / 1000.f);
+  pGraphics->AttachControl(pEnvelope, kCtrlTagEnvelope);
+
+  const int nFaders = 4;
+  pGraphics->AttachControl(new IVSliderControl(
+      envFadersArea.GetGridCell(0, 0, 1, nFaders), kParamAttack, "A"));
+  pGraphics->AttachControl(new IVSliderControl(
+      envFadersArea.GetGridCell(0, 1, 1, nFaders), kParamDecay, "D"));
+  pGraphics->AttachControl(new IVSliderControl(
+      envFadersArea.GetGridCell(0, 2, 1, nFaders), kParamSustain, "S"));
+  pGraphics->AttachControl(new IVSliderControl(
+      envFadersArea.GetGridCell(0, 3, 1, nFaders), kParamRelease, "R"));
+
+  // Footer
+  IVStyle pillStyle = DEFAULT_STYLE.WithRoundness(1.0f);
+  pGraphics->AttachControl(
+      new IVSwitchControl(footerArea.GetCentredInside(120.f, 35.f),
+                          kParamDemoMode, "Demo", pillStyle));
 }
 #endif
 
@@ -276,12 +328,31 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
   case kParamLimiterThreshold:
     mState.fxLimiterThreshold = value / kToPercentage;
     break;
+  case kParamDemoMode:
+    if (value > 0.5) {
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(), mDSP);
+    } else {
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+    }
+    break;
   default:
     break;
   }
 
-  // Legacy support for direct param setting is removed in favor of UpdateState
-  // loop mDSP.SetParam(paramIdx, GetParam(paramIdx)->Value());
+  // Feedback loop for Envelope visualizer
+  if (paramIdx == kParamAttack || paramIdx == kParamDecay ||
+      paramIdx == kParamSustain || paramIdx == kParamRelease) {
+    if (GetUI()) {
+      Envelope *pEnvelope = dynamic_cast<Envelope *>(
+          GetUI()->GetControlWithTag(kCtrlTagEnvelope));
+      if (pEnvelope) {
+        pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
+                           GetParam(kParamDecay)->Value() / 1000.f,
+                           GetParam(kParamSustain)->Value() / 100.f,
+                           GetParam(kParamRelease)->Value() / 1000.f);
+      }
+    }
+  }
 }
 
 bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,

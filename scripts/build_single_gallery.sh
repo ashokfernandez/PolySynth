@@ -30,6 +30,14 @@ if ! command -v emmake >/dev/null 2>&1; then
   fi
 fi
 
+# Handle arguments
+SKIP_PROCESSOR=0
+for arg in "$@"; do
+  if [ "$arg" == "--skip-processor" ]; then
+    SKIP_PROCESSOR=1
+  fi
+done
+
 # Clean and create output directory
 rm -rf "${OUTPUT_DIR}"
 mkdir -p "${OUTPUT_DIR}/scripts"
@@ -39,15 +47,26 @@ mkdir -p "${OUTPUT_DIR}/styles"
 mkdir -p "${BUILD_ROOT}/scripts"
 
 # Build WAM processor (DSP - no component flag needed)
-echo "Building ${COMPONENT_NAME} WAM processor..."
-cd "${PROJECT_ROOT}/projects"
-emmake make --makefile ComponentGallery-wam-processor.mk
-mv ../build-web/scripts/ComponentGallery-wam.js "${OUTPUT_DIR}/scripts/"
+if [ "${SKIP_PROCESSOR}" -eq 0 ]; then
+  echo "Building ${COMPONENT_NAME} WAM processor..."
+  cd "${PROJECT_ROOT}/projects"
+  emmake make --makefile ComponentGallery-wam-processor.mk
+  cp ../build-web/scripts/ComponentGallery-wam.js "${OUTPUT_DIR}/scripts/"
+else
+  echo "Skipping WAM processor build (reusing base artifact)..."
+  cp "${BUILD_ROOT}/scripts/ComponentGallery-wam.js" "${OUTPUT_DIR}/scripts/"
+fi
 
 # Build WAM controller (UI - with component flag)
-echo "Building ${COMPONENT_NAME} WAM controller..."
-emmake make --makefile ComponentGallery-wam-controller.mk EXTRA_CFLAGS="${COMPONENT_FLAG} -DWEBSOCKET_CLIENT=0"
-mv ../build-web/scripts/ComponentGallery-web.js "${OUTPUT_DIR}/scripts/"
+# Use a unique target name to avoid collisions during parallel builds
+TARGET_JS="ComponentGallery-${COMPONENT_NAME}.js"
+echo "Building ${COMPONENT_NAME} WAM controller -> ${TARGET_JS}..."
+cd "${PROJECT_ROOT}/projects"
+emmake make --makefile ComponentGallery-wam-controller.mk \
+    TARGET="../build-web/scripts/${TARGET_JS}" \
+    EXTRA_CFLAGS="${COMPONENT_FLAG} -DWEBSOCKET_CLIENT=0"
+
+cp "../build-web/scripts/${TARGET_JS}" "${OUTPUT_DIR}/scripts/ComponentGallery-web.js"
 
 # Copy WAM runtime scripts
 echo "Setting up WAM runtime..."
@@ -55,13 +74,17 @@ IPLUG2_ROOT="${REPO_ROOT}/external/iPlug2"
 SCRIPTS_DIR="${OUTPUT_DIR}/scripts"
 
 cd "${SCRIPTS_DIR}"
-{
-  echo "AudioWorkletGlobalScope.WAM = AudioWorkletGlobalScope.WAM || {};"
-  echo "AudioWorkletGlobalScope.WAM.ComponentGallery = { ENVIRONMENT: 'WEB' };"
-  echo "const ModuleFactory = AudioWorkletGlobalScope.WAM.ComponentGallery;"
-  cat "ComponentGallery-wam.js"
-} > "ComponentGallery-wam.tmp.js"
-mv "ComponentGallery-wam.tmp.js" "ComponentGallery-wam.js"
+# Prepend the ModuleFactory declaration for WAM if not already present
+if ! grep -q "const ModuleFactory =" "ComponentGallery-wam.js"; then
+  echo "Adding ModuleFactory declaration to WAM processor..."
+  {
+    echo "AudioWorkletGlobalScope.WAM = AudioWorkletGlobalScope.WAM || {};"
+    echo "AudioWorkletGlobalScope.WAM.ComponentGallery = { ENVIRONMENT: 'WEB' };"
+    echo "const ModuleFactory = AudioWorkletGlobalScope.WAM.ComponentGallery;"
+    cat "ComponentGallery-wam.js"
+  } > "ComponentGallery-wam.tmp.js"
+  mv "ComponentGallery-wam.tmp.js" "ComponentGallery-wam.js"
+fi
 
 cp "${IPLUG2_ROOT}/Dependencies/IPlug/WAM_SDK/wamsdk/"*.js "${SCRIPTS_DIR}/"
 cp "${IPLUG2_ROOT}/Dependencies/IPlug/WAM_AWP/"*.js "${SCRIPTS_DIR}/"

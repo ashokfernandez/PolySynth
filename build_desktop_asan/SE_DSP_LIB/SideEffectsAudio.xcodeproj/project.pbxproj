@@ -1,0 +1,1110 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		333C7ABE37EA418AB1C40603 /* ZERO_CHECK */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 33CDA47241E34742A54E6E47 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */;
+			buildPhases = (
+				B08AD3E2639F2CAB3B31AC18 /* Generate CMakeFiles/ZERO_CHECK */,
+			);
+			dependencies = (
+			);
+			name = ZERO_CHECK;
+			productName = ZERO_CHECK;
+		};
+		91C39E6C3C214934A766E424 /* ALL_BUILD */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 21CE9B171FE04AB89FE5BED3 /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */;
+			buildPhases = (
+				ECC0F63A6BA1CE58802A2C2C /* Generate CMakeFiles/ALL_BUILD */,
+			);
+			dependencies = (
+				CC3B53AE44D4472B99545F98 /* PBXTargetDependency */,
+				3DBBDE7DFD4E404FA71BA890 /* PBXTargetDependency */,
+				1A662465C734474FB0E1C7E4 /* PBXTargetDependency */,
+			);
+			name = ALL_BUILD;
+			productName = ALL_BUILD;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		09BEFA5E627446FEAEF0AFC5 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variablesawosc.cpp */ = {isa = PBXBuildFile; fileRef = 47468CD0885641D88C86D9E3 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variablesawosc.cpp */; };
+		0C336510C74F43729F85EE44 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/autowah.cpp */ = {isa = PBXBuildFile; fileRef = E6CB32A8C68944CA9EB95AF7 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/autowah.cpp */; };
+		0EB87CC3B9724F418E8A5EB3 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/resonator.cpp */ = {isa = PBXBuildFile; fileRef = 1D8D2447438B4B0289631E3D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/resonator.cpp */; };
+		17D3B6D4623E4029A75EE2D8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Sampling/granularplayer.cpp */ = {isa = PBXBuildFile; fileRef = 265BC8D5542345BBA892F64F /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Sampling/granularplayer.cpp */; };
+		20FC23A80522423A8DF42769 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 707DB1A6A62D41D9A33CBEF5 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/CMakeLists.txt */; };
+		2637FFD331684F1080817D23 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/phaser.cpp */ = {isa = PBXBuildFile; fileRef = BB25ECA202FB4D49AD3558DE /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/phaser.cpp */; };
+		29AD1A75E2FE48F1A6647C3D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillator.cpp */ = {isa = PBXBuildFile; fileRef = 837F26F66F614936BDECA5D3 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillator.cpp */; };
+		30DD3A3786CF4133926307F8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/modalvoice.cpp */ = {isa = PBXBuildFile; fileRef = 93A50EE842314E4598133139 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/modalvoice.cpp */; };
+		39F3E7E3AC544F4FA9A6011F /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/chorus.cpp */ = {isa = PBXBuildFile; fileRef = ADBC3674551F468CB1EB19AA /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/chorus.cpp */; };
+		3C02DE12913A47EDACC33D8A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/fm2.cpp */ = {isa = PBXBuildFile; fileRef = 04F4F49AF0564B828D2B5618 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/fm2.cpp */; };
+		3CFB0E6163034C35A4343066 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adenv.cpp */ = {isa = PBXBuildFile; fileRef = FA8D05D94E454C73B147BA38 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adenv.cpp */; };
+		3E7CFC08B8D341339C2887DD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/soap.cpp */ = {isa = PBXBuildFile; fileRef = C21F5F0B1F904919829FF9DD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/soap.cpp */; };
+		413531AC30414507BA22869C /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/crossfade.cpp */ = {isa = PBXBuildFile; fileRef = 51429229A9B1446D8F807E99 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/crossfade.cpp */; };
+		46070239FC5147E3BC373ECE /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/zoscillator.cpp */ = {isa = PBXBuildFile; fileRef = D8C9D9C43CF34670A09EEABE /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/zoscillator.cpp */; };
+		4A2C0813B88942D2B6E48554 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/overdrive.cpp */ = {isa = PBXBuildFile; fileRef = 1F8E056D84BC43A19F85F8BB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/overdrive.cpp */; };
+		603A02C157984928A35FF990 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthbassdrum.cpp */ = {isa = PBXBuildFile; fileRef = 876E3CAD11D942438229EF34 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthbassdrum.cpp */; };
+		6B1801052A7B4B6CBE054CD6 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/flanger.cpp */ = {isa = PBXBuildFile; fileRef = 688A23B1BA3640DDA44906D0 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/flanger.cpp */; };
+		6CA67796E98B4ADABC2577A9 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/decimator.cpp */ = {isa = PBXBuildFile; fileRef = CC9BDD4F97CA4A33B6216B41 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/decimator.cpp */; };
+		6D3E36EE7D7441F987C7B4E8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillatorbank.cpp */ = {isa = PBXBuildFile; fileRef = 6E62980356BD47D881253C67 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillatorbank.cpp */; };
+		7F71EAB447CA48E5BAFF4968 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/grainlet.cpp */ = {isa = PBXBuildFile; fileRef = 4F7B8A5E4CCA442A9387BF79 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/grainlet.cpp */; };
+		82AAE08441754CC2A811EE42 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/clockednoise.cpp */ = {isa = PBXBuildFile; fileRef = 2F24795E6CFC4BB9AD834F19 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/clockednoise.cpp */; };
+		82E247DD7D624F779B7FAB0D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variableshapeosc.cpp */ = {isa = PBXBuildFile; fileRef = 0455C451E444488A8B43F8B8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variableshapeosc.cpp */; };
+		83C79801BB9D4683977D1A00 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/metro.cpp */ = {isa = PBXBuildFile; fileRef = 5927FB2EB69A460994E872FF /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/metro.cpp */; };
+		859CEAD19CAC4FB0B1ABAB55 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 23FC625B501C41AFBFDB56A5 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/CMakeLists.txt */; };
+		860374C3561D4CD8B8DCDCAB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthsnaredrum.cpp */ = {isa = PBXBuildFile; fileRef = FFC6E4B27DC2484FBB6E650C /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthsnaredrum.cpp */; };
+		905736E92FC94233A0D641D3 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_oscillator.cpp */ = {isa = PBXBuildFile; fileRef = FFCCE0466AAA423598E56F58 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_oscillator.cpp */; };
+		93AAD32E918E490BBBCCE7AD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/limiter.cpp */ = {isa = PBXBuildFile; fileRef = 164916566DE841FCBE50CFCA /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/limiter.cpp */; };
+		93E617EB09DC42C188419CE0 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/KarplusString.cpp */ = {isa = PBXBuildFile; fileRef = 2C5C3F5B21CB442DB7391A3B /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/KarplusString.cpp */; };
+		96430D690D0F4C188DCB16C6 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/particle.cpp */ = {isa = PBXBuildFile; fileRef = 1E650CC47D064462BE155970 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/particle.cpp */; };
+		9F985C60145D4C4C8AE04E33 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/hihat.cpp */ = {isa = PBXBuildFile; fileRef = 4D5C693585D34932A037E791 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/hihat.cpp */; };
+		A3E00DD0023947F99E0B1C46 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogsnaredrum.cpp */ = {isa = PBXBuildFile; fileRef = 8821443A620D4A3DAD171188 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogsnaredrum.cpp */; };
+		A4497AEA7B1A43299538BACB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/stringvoice.cpp */ = {isa = PBXBuildFile; fileRef = 348DB64471C549C89D825CF6 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/stringvoice.cpp */; };
+		B656F3B06B044E62B93A01B8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/drip.cpp */ = {isa = PBXBuildFile; fileRef = 4C73FD99AB404265BEBAF0A8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/drip.cpp */; };
+		B8C37897FC0342B1B9767A23 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/tremolo.cpp */ = {isa = PBXBuildFile; fileRef = 501979CC4DED45F9B69A9083 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/tremolo.cpp */; };
+		C16FD34299C34F97BF713973 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adsr.cpp */ = {isa = PBXBuildFile; fileRef = 6F7602C05DCC4BAE8BBDFFD9 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adsr.cpp */; };
+		CC85322500FD4395BECE2848 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/formantosc.cpp */ = {isa = PBXBuildFile; fileRef = 4CA5322C9A684BFF8A24E84F /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/formantosc.cpp */; };
+		CF6E220AE3D547228AA13CA0 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_env.cpp */ = {isa = PBXBuildFile; fileRef = DB5F6F943D1B4932AB8FFEAC /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_env.cpp */; };
+		D4EF215577F241CE8A5818F8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/sampleratereducer.cpp */ = {isa = PBXBuildFile; fileRef = 582F965480574347BB4EABFD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/sampleratereducer.cpp */; };
+		D6C564D5A8FA408293C23A58 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/dcblock.cpp */ = {isa = PBXBuildFile; fileRef = A001F820558A4E0F8CDC7062 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/dcblock.cpp */; };
+		DECD45D738224C8899AFFE1E /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/svf.cpp */ = {isa = PBXBuildFile; fileRef = D90E5D3D07DC4FC284250F4A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/svf.cpp */; };
+		E197644C4D474BD0A1264312 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/ladder.cpp */ = {isa = PBXBuildFile; fileRef = 27CC0CFE4EA147F1A7E09904 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/ladder.cpp */; };
+		E35424D11B754AD1A4025C5D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/wavefolder.cpp */ = {isa = PBXBuildFile; fileRef = 190FE93DCE6C445C8787DD98 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/wavefolder.cpp */; };
+		E52B0996FD1144B39A07ACEC /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/phasor.cpp */ = {isa = PBXBuildFile; fileRef = 626D4F10E2504E6282A76F2E /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/phasor.cpp */; };
+		E9D5B8C8AD894D889356920E /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogbassdrum.cpp */ = {isa = PBXBuildFile; fileRef = 5103657249BC4292B6110BBB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogbassdrum.cpp */; };
+		FA835387D084495696BB631A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source/Synthesis/blosc.cpp */ = {isa = PBXBuildFile; fileRef = 2C8A8CC3BBAF45E7AD3C1521 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source/Synthesis/blosc.cpp */; settings = {COMPILER_FLAGS = "-w"; }; };
+		FB4C7613E94647DC9DF7EA96 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/vosim.cpp */ = {isa = PBXBuildFile; fileRef = 6355AC4040F64B26BCAEB43A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/vosim.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildStyle section */
+		4A492EF093D84CF3A26300FF /* Release */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Release;
+		};
+		8439D2BAC98A46BC97666094 /* Debug */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Debug;
+		};
+		B571EA46B6764EB3971D8063 /* RelWithDebInfo */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = RelWithDebInfo;
+		};
+		EA219F06B6B949FDA09076C2 /* MinSizeRel */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = MinSizeRel;
+		};
+/* End PBXBuildStyle section */
+
+/* Begin PBXContainerItemProxy section */
+		06A4B262367C4558935D874D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 12C217AA69FA4E5D8E520EDA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 06D866B1A7FA408BA29C7468;
+			remoteInfo = DaisySP;
+		};
+		38587B821000450BA495C6E0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 12C217AA69FA4E5D8E520EDA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 333C7ABE37EA418AB1C40603;
+			remoteInfo = ZERO_CHECK;
+		};
+		50040FED345D416EB21CC82D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 12C217AA69FA4E5D8E520EDA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 06D866B1A7FA408BA29C7468;
+			remoteInfo = DaisySP;
+		};
+		F33F80BB94394AA1A9A640CB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 12C217AA69FA4E5D8E520EDA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 333C7ABE37EA418AB1C40603;
+			remoteInfo = ZERO_CHECK;
+		};
+		F51FF931CC21485B90C067F6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 12C217AA69FA4E5D8E520EDA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2D5899477ED64BAE88B445D8;
+			remoteInfo = SE_DSP;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0455C451E444488A8B43F8B8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variableshapeosc.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = variableshapeosc.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variableshapeosc.cpp"; sourceTree = "<absolute>"; };
+		04F4F49AF0564B828D2B5618 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/fm2.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = fm2.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/fm2.cpp"; sourceTree = "<absolute>"; };
+		164916566DE841FCBE50CFCA /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/limiter.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = limiter.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/limiter.cpp"; sourceTree = "<absolute>"; };
+		190FE93DCE6C445C8787DD98 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/wavefolder.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = wavefolder.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/wavefolder.cpp"; sourceTree = "<absolute>"; };
+		1D8D2447438B4B0289631E3D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/resonator.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = resonator.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/resonator.cpp"; sourceTree = "<absolute>"; };
+		1E650CC47D064462BE155970 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/particle.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = particle.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/particle.cpp"; sourceTree = "<absolute>"; };
+		1F8E056D84BC43A19F85F8BB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/overdrive.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = overdrive.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/overdrive.cpp"; sourceTree = "<absolute>"; };
+		23FC625B501C41AFBFDB56A5 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/CMakeLists.txt"; sourceTree = "<absolute>"; };
+		265BC8D5542345BBA892F64F /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Sampling/granularplayer.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = granularplayer.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Sampling/granularplayer.cpp"; sourceTree = "<absolute>"; };
+		27CC0CFE4EA147F1A7E09904 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/ladder.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = ladder.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/ladder.cpp"; sourceTree = "<absolute>"; };
+		2BE54818F006462A85A4763A /* DaisySP */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libDaisySP.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		2C5C3F5B21CB442DB7391A3B /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/KarplusString.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = KarplusString.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/KarplusString.cpp"; sourceTree = "<absolute>"; };
+		2C8A8CC3BBAF45E7AD3C1521 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source/Synthesis/blosc.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = blosc.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source/Synthesis/blosc.cpp"; sourceTree = "<absolute>"; };
+		2D461841B0674DE2BD731EC8 /* SE_DSP */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libSE_DSP.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		2F24795E6CFC4BB9AD834F19 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/clockednoise.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = clockednoise.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/clockednoise.cpp"; sourceTree = "<absolute>"; };
+		348DB64471C549C89D825CF6 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/stringvoice.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = stringvoice.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/stringvoice.cpp"; sourceTree = "<absolute>"; };
+		47468CD0885641D88C86D9E3 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variablesawosc.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = variablesawosc.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variablesawosc.cpp"; sourceTree = "<absolute>"; };
+		4C73FD99AB404265BEBAF0A8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/drip.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = drip.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/drip.cpp"; sourceTree = "<absolute>"; };
+		4CA5322C9A684BFF8A24E84F /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/formantosc.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = formantosc.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/formantosc.cpp"; sourceTree = "<absolute>"; };
+		4D5C693585D34932A037E791 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/hihat.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = hihat.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/hihat.cpp"; sourceTree = "<absolute>"; };
+		4F7B8A5E4CCA442A9387BF79 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/grainlet.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = grainlet.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/grainlet.cpp"; sourceTree = "<absolute>"; };
+		501979CC4DED45F9B69A9083 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/tremolo.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = tremolo.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/tremolo.cpp"; sourceTree = "<absolute>"; };
+		5103657249BC4292B6110BBB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogbassdrum.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = analogbassdrum.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogbassdrum.cpp"; sourceTree = "<absolute>"; };
+		51429229A9B1446D8F807E99 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/crossfade.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = crossfade.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/crossfade.cpp"; sourceTree = "<absolute>"; };
+		582F965480574347BB4EABFD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/sampleratereducer.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = sampleratereducer.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/sampleratereducer.cpp"; sourceTree = "<absolute>"; };
+		5927FB2EB69A460994E872FF /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/metro.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = metro.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/metro.cpp"; sourceTree = "<absolute>"; };
+		626D4F10E2504E6282A76F2E /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/phasor.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = phasor.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/phasor.cpp"; sourceTree = "<absolute>"; };
+		6355AC4040F64B26BCAEB43A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/vosim.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = vosim.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/vosim.cpp"; sourceTree = "<absolute>"; };
+		688A23B1BA3640DDA44906D0 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/flanger.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = flanger.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/flanger.cpp"; sourceTree = "<absolute>"; };
+		6E62980356BD47D881253C67 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillatorbank.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = oscillatorbank.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillatorbank.cpp"; sourceTree = "<absolute>"; };
+		6F7602C05DCC4BAE8BBDFFD9 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adsr.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = adsr.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adsr.cpp"; sourceTree = "<absolute>"; };
+		707DB1A6A62D41D9A33CBEF5 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		837F26F66F614936BDECA5D3 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillator.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = oscillator.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillator.cpp"; sourceTree = "<absolute>"; };
+		876E3CAD11D942438229EF34 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthbassdrum.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = synthbassdrum.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthbassdrum.cpp"; sourceTree = "<absolute>"; };
+		8821443A620D4A3DAD171188 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogsnaredrum.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = analogsnaredrum.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogsnaredrum.cpp"; sourceTree = "<absolute>"; };
+		93A50EE842314E4598133139 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/modalvoice.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = modalvoice.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/modalvoice.cpp"; sourceTree = "<absolute>"; };
+		A001F820558A4E0F8CDC7062 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/dcblock.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = dcblock.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/dcblock.cpp"; sourceTree = "<absolute>"; };
+		ADBC3674551F468CB1EB19AA /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/chorus.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = chorus.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/chorus.cpp"; sourceTree = "<absolute>"; };
+		BB25ECA202FB4D49AD3558DE /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/phaser.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = phaser.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/phaser.cpp"; sourceTree = "<absolute>"; };
+		C21F5F0B1F904919829FF9DD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/soap.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = soap.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/soap.cpp"; sourceTree = "<absolute>"; };
+		CC9BDD4F97CA4A33B6216B41 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/decimator.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = decimator.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/decimator.cpp"; sourceTree = "<absolute>"; };
+		D8C9D9C43CF34670A09EEABE /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/zoscillator.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = zoscillator.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/zoscillator.cpp"; sourceTree = "<absolute>"; };
+		D90E5D3D07DC4FC284250F4A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/svf.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = svf.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/svf.cpp"; sourceTree = "<absolute>"; };
+		DB5F6F943D1B4932AB8FFEAC /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_env.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = sea_env.cpp; path = src/sea_env.cpp; sourceTree = SOURCE_ROOT; };
+		E6CB32A8C68944CA9EB95AF7 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/autowah.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = autowah.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/autowah.cpp"; sourceTree = "<absolute>"; };
+		FA8D05D94E454C73B147BA38 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adenv.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = adenv.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adenv.cpp"; sourceTree = "<absolute>"; };
+		FF16E34545F54DC5991C4AFC /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		FFC6E4B27DC2484FBB6E650C /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthsnaredrum.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = synthsnaredrum.cpp; path = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthsnaredrum.cpp"; sourceTree = "<absolute>"; };
+		FFCCE0466AAA423598E56F58 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_oscillator.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = sea_oscillator.cpp; path = src/sea_oscillator.cpp; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		73E65CE11E684A99A78C7C52 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B842705AB5F24781BFDC8C62 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5F7230639ADC42BEB78ABB74 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2BE54818F006462A85A4763A /* DaisySP */,
+				2D461841B0674DE2BD731EC8 /* SE_DSP */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		78BAF5D3F04A4413A3CB73F2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		8AEE63E3F3BF4FBE89BB018A /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		93AB6B5840F34EAE8CA98B23 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				2C8A8CC3BBAF45E7AD3C1521 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source/Synthesis/blosc.cpp */,
+				DB5F6F943D1B4932AB8FFEAC /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_env.cpp */,
+				FFCCE0466AAA423598E56F58 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_oscillator.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		C11D8A1427D6410A89D27767 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				FA8D05D94E454C73B147BA38 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adenv.cpp */,
+				6F7602C05DCC4BAE8BBDFFD9 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adsr.cpp */,
+				626D4F10E2504E6282A76F2E /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/phasor.cpp */,
+				5103657249BC4292B6110BBB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogbassdrum.cpp */,
+				8821443A620D4A3DAD171188 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogsnaredrum.cpp */,
+				4D5C693585D34932A037E791 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/hihat.cpp */,
+				876E3CAD11D942438229EF34 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthbassdrum.cpp */,
+				FFC6E4B27DC2484FBB6E650C /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthsnaredrum.cpp */,
+				51429229A9B1446D8F807E99 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/crossfade.cpp */,
+				164916566DE841FCBE50CFCA /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/limiter.cpp */,
+				E6CB32A8C68944CA9EB95AF7 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/autowah.cpp */,
+				ADBC3674551F468CB1EB19AA /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/chorus.cpp */,
+				CC9BDD4F97CA4A33B6216B41 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/decimator.cpp */,
+				688A23B1BA3640DDA44906D0 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/flanger.cpp */,
+				1F8E056D84BC43A19F85F8BB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/overdrive.cpp */,
+				BB25ECA202FB4D49AD3558DE /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/phaser.cpp */,
+				582F965480574347BB4EABFD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/sampleratereducer.cpp */,
+				501979CC4DED45F9B69A9083 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/tremolo.cpp */,
+				190FE93DCE6C445C8787DD98 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/wavefolder.cpp */,
+				27CC0CFE4EA147F1A7E09904 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/ladder.cpp */,
+				C21F5F0B1F904919829FF9DD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/soap.cpp */,
+				D90E5D3D07DC4FC284250F4A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/svf.cpp */,
+				2F24795E6CFC4BB9AD834F19 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/clockednoise.cpp */,
+				4F7B8A5E4CCA442A9387BF79 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/grainlet.cpp */,
+				1E650CC47D064462BE155970 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/particle.cpp */,
+				2C5C3F5B21CB442DB7391A3B /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/KarplusString.cpp */,
+				4C73FD99AB404265BEBAF0A8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/drip.cpp */,
+				93A50EE842314E4598133139 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/modalvoice.cpp */,
+				1D8D2447438B4B0289631E3D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/resonator.cpp */,
+				348DB64471C549C89D825CF6 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/stringvoice.cpp */,
+				265BC8D5542345BBA892F64F /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Sampling/granularplayer.cpp */,
+				04F4F49AF0564B828D2B5618 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/fm2.cpp */,
+				4CA5322C9A684BFF8A24E84F /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/formantosc.cpp */,
+				837F26F66F614936BDECA5D3 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillator.cpp */,
+				6E62980356BD47D881253C67 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillatorbank.cpp */,
+				47468CD0885641D88C86D9E3 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variablesawosc.cpp */,
+				0455C451E444488A8B43F8B8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variableshapeosc.cpp */,
+				6355AC4040F64B26BCAEB43A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/vosim.cpp */,
+				D8C9D9C43CF34670A09EEABE /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/zoscillator.cpp */,
+				A001F820558A4E0F8CDC7062 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/dcblock.cpp */,
+				5927FB2EB69A460994E872FF /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/metro.cpp */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		C283F7496F3049DEB8F623B3 /* DaisySP */ = {
+			isa = PBXGroup;
+			children = (
+				C11D8A1427D6410A89D27767 /* Source Files */,
+				23FC625B501C41AFBFDB56A5 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/CMakeLists.txt */,
+			);
+			name = DaisySP;
+			sourceTree = "<group>";
+		};
+		E144A190D8E644A08EED6431 = {
+			isa = PBXGroup;
+			children = (
+				E23B212B93BA41619A801290 /* SE_DSP */,
+				E4E6A30E5DEA4E189F02C291 /* ALL_BUILD */,
+				C283F7496F3049DEB8F623B3 /* DaisySP */,
+				5F7230639ADC42BEB78ABB74 /* Products */,
+				78BAF5D3F04A4413A3CB73F2 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		E23B212B93BA41619A801290 /* SE_DSP */ = {
+			isa = PBXGroup;
+			children = (
+				93AB6B5840F34EAE8CA98B23 /* Source Files */,
+				707DB1A6A62D41D9A33CBEF5 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/CMakeLists.txt */,
+			);
+			name = SE_DSP;
+			sourceTree = "<group>";
+		};
+		E4E6A30E5DEA4E189F02C291 /* ALL_BUILD */ = {
+			isa = PBXGroup;
+			children = (
+				8AEE63E3F3BF4FBE89BB018A /* CMake Rules */,
+				FF16E34545F54DC5991C4AFC /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/CMakeLists.txt */,
+			);
+			name = ALL_BUILD;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		06D866B1A7FA408BA29C7468 /* DaisySP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D36F61A79DCB4F7F9D4D987C /* Build configuration list for PBXNativeTarget "DaisySP" */;
+			buildPhases = (
+				9AB54F7BEA784878AFF2BEDF /* Sources */,
+				B842705AB5F24781BFDC8C62 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DaisySP;
+			productName = DaisySP;
+			productReference = 2BE54818F006462A85A4763A /* DaisySP */;
+			productType = "com.apple.product-type.library.static";
+		};
+		2D5899477ED64BAE88B445D8 /* SE_DSP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 685A415932FB4D0693B690DF /* Build configuration list for PBXNativeTarget "SE_DSP" */;
+			buildPhases = (
+				2F7C6F10B6B34DAD88A237D5 /* Sources */,
+				73E65CE11E684A99A78C7C52 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				610BA9780C0E4B649FF321E4 /* PBXTargetDependency */,
+				092B51C327294C5694F6C161 /* PBXTargetDependency */,
+			);
+			name = SE_DSP;
+			productName = SE_DSP;
+			productReference = 2D461841B0674DE2BD731EC8 /* SE_DSP */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		12C217AA69FA4E5D8E520EDA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = F59E904029CC4426AD264EC3 /* Build configuration list for PBXProject "SideEffectsAudio" */;
+			buildSettings = {
+			};
+			buildStyles = (
+				8439D2BAC98A46BC97666094 /* Debug */,
+				4A492EF093D84CF3A26300FF /* Release */,
+				EA219F06B6B949FDA09076C2 /* MinSizeRel */,
+				B571EA46B6764EB3971D8063 /* RelWithDebInfo */,
+			);
+			compatibilityVersion = "Xcode 3.2";
+			hasScannedForEncodings = 0;
+			mainGroup = E144A190D8E644A08EED6431;
+			projectDirPath = /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP;
+			projectRoot = "";
+			targets = (
+				91C39E6C3C214934A766E424 /* ALL_BUILD */,
+				06D866B1A7FA408BA29C7468 /* DaisySP */,
+				2D5899477ED64BAE88B445D8 /* SE_DSP */,
+				333C7ABE37EA418AB1C40603 /* ZERO_CHECK */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3C0110FC8322DE7E50886E21 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		9B50530E35CC49C82C2FACCF = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		B08AD3E2639F2CAB3B31AC18 /* Generate CMakeFiles/ZERO_CHECK */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ZERO_CHECK";
+			outputPaths = (
+/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/CMakeFiles/ZERO_CHECK			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB
+  make -f /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB
+  make -f /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB
+  make -f /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB
+  make -f /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/CMakeScripts/ReRunCMake.make
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		ECC0F63A6BA1CE58802A2C2C /* Generate CMakeFiles/ALL_BUILD */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ALL_BUILD";
+			outputPaths = (
+/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/CMakeFiles/ALL_BUILD			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB
+  echo Build\\ all\\ projects
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2F7C6F10B6B34DAD88A237D5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA835387D084495696BB631A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source/Synthesis/blosc.cpp */,
+				CF6E220AE3D547228AA13CA0 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_env.cpp */,
+				905736E92FC94233A0D641D3 /* /Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/src/sea_oscillator.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9AB54F7BEA784878AFF2BEDF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3CFB0E6163034C35A4343066 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adenv.cpp */,
+				C16FD34299C34F97BF713973 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/adsr.cpp */,
+				E52B0996FD1144B39A07ACEC /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control/phasor.cpp */,
+				E9D5B8C8AD894D889356920E /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogbassdrum.cpp */,
+				A3E00DD0023947F99E0B1C46 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/analogsnaredrum.cpp */,
+				9F985C60145D4C4C8AE04E33 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/hihat.cpp */,
+				603A02C157984928A35FF990 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthbassdrum.cpp */,
+				860374C3561D4CD8B8DCDCAB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums/synthsnaredrum.cpp */,
+				413531AC30414507BA22869C /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/crossfade.cpp */,
+				93AAD32E918E490BBBCCE7AD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics/limiter.cpp */,
+				0C336510C74F43729F85EE44 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/autowah.cpp */,
+				39F3E7E3AC544F4FA9A6011F /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/chorus.cpp */,
+				6CA67796E98B4ADABC2577A9 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/decimator.cpp */,
+				6B1801052A7B4B6CBE054CD6 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/flanger.cpp */,
+				4A2C0813B88942D2B6E48554 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/overdrive.cpp */,
+				2637FFD331684F1080817D23 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/phaser.cpp */,
+				D4EF215577F241CE8A5818F8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/sampleratereducer.cpp */,
+				B8C37897FC0342B1B9767A23 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/tremolo.cpp */,
+				E35424D11B754AD1A4025C5D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects/wavefolder.cpp */,
+				E197644C4D474BD0A1264312 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/ladder.cpp */,
+				3E7CFC08B8D341339C2887DD /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/soap.cpp */,
+				DECD45D738224C8899AFFE1E /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters/svf.cpp */,
+				82AAE08441754CC2A811EE42 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/clockednoise.cpp */,
+				7F71EAB447CA48E5BAFF4968 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/grainlet.cpp */,
+				96430D690D0F4C188DCB16C6 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise/particle.cpp */,
+				93E617EB09DC42C188419CE0 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/KarplusString.cpp */,
+				B656F3B06B044E62B93A01B8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/drip.cpp */,
+				30DD3A3786CF4133926307F8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/modalvoice.cpp */,
+				0EB87CC3B9724F418E8A5EB3 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/resonator.cpp */,
+				A4497AEA7B1A43299538BACB /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling/stringvoice.cpp */,
+				17D3B6D4623E4029A75EE2D8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Sampling/granularplayer.cpp */,
+				3C02DE12913A47EDACC33D8A /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/fm2.cpp */,
+				CC85322500FD4395BECE2848 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/formantosc.cpp */,
+				29AD1A75E2FE48F1A6647C3D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillator.cpp */,
+				6D3E36EE7D7441F987C7B4E8 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/oscillatorbank.cpp */,
+				09BEFA5E627446FEAEF0AFC5 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variablesawosc.cpp */,
+				82E247DD7D624F779B7FAB0D /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/variableshapeosc.cpp */,
+				FB4C7613E94647DC9DF7EA96 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/vosim.cpp */,
+				46070239FC5147E3BC373ECE /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis/zoscillator.cpp */,
+				D6C564D5A8FA408293C23A58 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/dcblock.cpp */,
+				83C79801BB9D4683977D1A00 /* /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility/metro.cpp */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		092B51C327294C5694F6C161 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 333C7ABE37EA418AB1C40603 /* ZERO_CHECK */;
+			targetProxy = 38587B821000450BA495C6E0 /* PBXContainerItemProxy */;
+		};
+		1A662465C734474FB0E1C7E4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 333C7ABE37EA418AB1C40603 /* ZERO_CHECK */;
+			targetProxy = F33F80BB94394AA1A9A640CB /* PBXContainerItemProxy */;
+		};
+		3DBBDE7DFD4E404FA71BA890 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 06D866B1A7FA408BA29C7468 /* DaisySP */;
+			targetProxy = 06A4B262367C4558935D874D /* PBXContainerItemProxy */;
+		};
+		610BA9780C0E4B649FF321E4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 06D866B1A7FA408BA29C7468 /* DaisySP */;
+			targetProxy = 50040FED345D416EB21CC82D /* PBXContainerItemProxy */;
+		};
+		CC3B53AE44D4472B99545F98 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2D5899477ED64BAE88B445D8 /* SE_DSP */;
+			targetProxy = F51FF931CC21485B90C067F6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		18C7F43EE64D419C864A8927 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/RelWithDebInfo;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",USE_DAISYSP_LGPL,SEA_PLATFORM_DESKTOP,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/include,"/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CPLUSPLUSFLAGS = "-fsanitize=address -fno-omit-frame-pointer        -DNDEBUG '-std=c++17' ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = SE_DSP;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build/SE_DSP.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		1DF0CC7E074B43D38D9EECF3 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/MinSizeRel;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",USE_DAISYSP_LGPL,SEA_PLATFORM_DESKTOP,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/include,"/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CPLUSPLUSFLAGS = "-fsanitize=address -fno-omit-frame-pointer     -DNDEBUG '-std=c++17' ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = SE_DSP;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build/SE_DSP.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		23B7199A8EDA4FAE8B0CDA74 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		24E103D1F24449E387A506EF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-build/Debug";
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",SEA_PLATFORM_DESKTOP,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = ("/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CPLUSPLUSFLAGS = "-fsanitize=address -fno-omit-frame-pointer    '-std=c++17' -w ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = DaisySP;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build/DaisySP.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		370820A6B2B34C9082376039 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		3D9D3051F05946B3A0331565 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		41D3B89911AF43418F90C8C6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-build/Release";
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",SEA_PLATFORM_DESKTOP,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = ("/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CPLUSPLUSFLAGS = "-fsanitize=address -fno-omit-frame-pointer     -DNDEBUG '-std=c++17' -w ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = DaisySP;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build/DaisySP.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		4904099B5DF244AAB44289A8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build;
+			};
+			name = Release;
+		};
+		54802A70713C4CA88EEAC8C8 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build;
+			};
+			name = RelWithDebInfo;
+		};
+		66B593398B0944EA8300F668 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/Debug;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",USE_DAISYSP_LGPL,SEA_PLATFORM_DESKTOP,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/include,"/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CPLUSPLUSFLAGS = "-fsanitize=address -fno-omit-frame-pointer    '-std=c++17' ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = SE_DSP;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build/SE_DSP.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		6D7367A9330D4629A93D955E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		7DA41CDF2C7044A19C40BCDC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/SE_DSP_LIB/Release;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",USE_DAISYSP_LGPL,SEA_PLATFORM_DESKTOP,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/ashokfernandez/Software/PolySynth/libs/SE_DSP/include,"/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/DaisySP-LGPL/Source","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CPLUSPLUSFLAGS = "-fsanitize=address -fno-omit-frame-pointer     -DNDEBUG '-std=c++17' ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = SE_DSP;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build/SE_DSP.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		87772956A2A94EB68F9A413A /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build;
+			};
+			name = MinSizeRel;
+		};
+		896C3AD6D14E4EC7B87FCE1E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk;
+				SYMROOT = /Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build;
+			};
+			name = Debug;
+		};
+		98EF86F2FB1E44FBB249D16E /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		AC843EC7685B4F21AD2D065A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		CD5B5AFC7EAB44E6B01DE5E3 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-build/MinSizeRel";
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",SEA_PLATFORM_DESKTOP,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = ("/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CPLUSPLUSFLAGS = "-fsanitize=address -fno-omit-frame-pointer     -DNDEBUG '-std=c++17' -w ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = DaisySP;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build/DaisySP.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		DCCA140ABAB84E988F15DA38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		ED0D375F17CF4B8CA1B19EE7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		F8E2F1AA08A34174B27D3F16 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-build/RelWithDebInfo";
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",SEA_PLATFORM_DESKTOP,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = ("/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Control","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Drums","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Dynamics","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Effects","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Filters","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Noise","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/PhysicalModeling","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Synthesis","/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-src/Source/Utility","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CPLUSPLUSFLAGS = "-fsanitize=address -fno-omit-frame-pointer        -DNDEBUG '-std=c++17' -w ";
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = DaisySP;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/build/DaisySP.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		21CE9B171FE04AB89FE5BED3 /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ED0D375F17CF4B8CA1B19EE7 /* Debug */,
+				DCCA140ABAB84E988F15DA38 /* Release */,
+				98EF86F2FB1E44FBB249D16E /* MinSizeRel */,
+				370820A6B2B34C9082376039 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		33CDA47241E34742A54E6E47 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC843EC7685B4F21AD2D065A /* Debug */,
+				6D7367A9330D4629A93D955E /* Release */,
+				23B7199A8EDA4FAE8B0CDA74 /* MinSizeRel */,
+				3D9D3051F05946B3A0331565 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		685A415932FB4D0693B690DF /* Build configuration list for PBXNativeTarget "SE_DSP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				66B593398B0944EA8300F668 /* Debug */,
+				7DA41CDF2C7044A19C40BCDC /* Release */,
+				1DF0CC7E074B43D38D9EECF3 /* MinSizeRel */,
+				18C7F43EE64D419C864A8927 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D36F61A79DCB4F7F9D4D987C /* Build configuration list for PBXNativeTarget "DaisySP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				24E103D1F24449E387A506EF /* Debug */,
+				41D3B89911AF43418F90C8C6 /* Release */,
+				CD5B5AFC7EAB44E6B01DE5E3 /* MinSizeRel */,
+				F8E2F1AA08A34174B27D3F16 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F59E904029CC4426AD264EC3 /* Build configuration list for PBXProject "SideEffectsAudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				896C3AD6D14E4EC7B87FCE1E /* Debug */,
+				4904099B5DF244AAB44289A8 /* Release */,
+				87772956A2A94EB68F9A413A /* MinSizeRel */,
+				54802A70713C4CA88EEAC8C8 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 12C217AA69FA4E5D8E520EDA /* Project object */;
+}

@@ -1,0 +1,34 @@
+(lldb) target create "/Users/ashokfernandez/Software/PolySynth/build_desktop/out/Debug/PolySynth.app/Contents/MacOS/PolySynth"
+Current executable set to '/Users/ashokfernandez/Software/PolySynth/build_desktop/out/Debug/PolySynth.app/Contents/MacOS/PolySynth' (arm64).
+(lldb) settings set target.process.stop-on-sharedlibrary-events false
+(lldb) run
+
+BEGIN IPLUG CHANNEL IO PARSER --------------------------------------------------
+Channel I/O #1 - 0-2
+               - input bus count: 0, output bus count 1
+               - channel count on output bus 1: 2
+               - input channel count across all buses: 0, output channel count across all buses 2
+
+1 I/O configs detected
+Total # in chans: 0, Total # out chans: 2 
+
+END IPLUG CHANNEL IO PARSER --------------------------------------------------
+Reading ini file from /Users/ashokfernandez/Library/Application Support/PolySynth/settings.ini
+2026-02-10 14:09:47.383964+0100 PolySynth[71249:12898557] [plugin] AddInstanceForFactory: No factory registered for id <CFUUID 0x147b1bf40> F8BB1C28-BAE8-11D6-9C31-00039315CD46
+2026-02-10 14:09:47.419642+0100 PolySynth[71249:12898557]       HALC_ShellObject.mm:615    HALC_ShellObject::SetPropertyData: call to the proxy failed, Error: 1852797029 (nope)
+
+RtAudio Version 6.0.1
+errorCallback: RtApiCore::probeDeviceInfo: system error (CoreAudio unknown error) getting sample rate info.
+
+Process 71249 stopped
+* thread #1, stop reason = EXC_BAD_ACCESS (code=2, address=0x16f603ff0)
+    frame #0: 0x0000000100049f74 PolySynth`double const& std::__1::max[abi:v15006]<double, std::__1::__less<double, double> >(__a=<unavailable>, __b=<unavailable>, __comp=__less<double, double> @ 0x000000016f603fff) at max.h:32
+   29  	_LIBCPP_INLINE_VISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX11
+   30  	const _Tp&
+   31  	max(const _Tp& __a, const _Tp& __b, _Compare __comp)
+-> 32  	{
+   33  	    return __comp(__a, __b) ? __b : __a;
+   34  	}
+   35  	
+Target 0: (PolySynth) stopped.
+Process 71249 launched: '/Users/ashokfernandez/Software/PolySynth/build_desktop/out/Debug/PolySynth.app/Contents/MacOS/PolySynth' (arm64)

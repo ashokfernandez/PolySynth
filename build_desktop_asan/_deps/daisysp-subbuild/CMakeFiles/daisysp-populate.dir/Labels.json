@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/CMakeFiles/daisysp-populate"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/CMakeFiles/daisysp-populate.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/CMakeFiles/CMakeFiles/daisysp-populate-complete.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/daisysp-populate-prefix/src/daisysp-populate-stamp/CMakeFiles/daisysp-populate-build.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/daisysp-populate-prefix/src/daisysp-populate-stamp/CMakeFiles/daisysp-populate-configure.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/daisysp-populate-prefix/src/daisysp-populate-stamp/CMakeFiles/daisysp-populate-download.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/daisysp-populate-prefix/src/daisysp-populate-stamp/CMakeFiles/daisysp-populate-install.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/daisysp-populate-prefix/src/daisysp-populate-stamp/CMakeFiles/daisysp-populate-mkdir.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/daisysp-populate-prefix/src/daisysp-populate-stamp/CMakeFiles/daisysp-populate-patch.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/daisysp-populate-prefix/src/daisysp-populate-stamp/CMakeFiles/daisysp-populate-test.rule"
+		},
+		{
+			"file" : "/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/daisysp-populate-prefix/src/daisysp-populate-stamp/CMakeFiles/daisysp-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"daisysp-populate"
+		],
+		"name" : "daisysp-populate"
+	}
+}
