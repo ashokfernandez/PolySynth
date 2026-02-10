@@ -49,6 +49,7 @@ set(TEST_SOURCES
     Test_TypeSafety.cpp
     Test_ADSR_Performance.cpp
     Test_ClassicalFilter.cpp
+    Test_CascadeAndSK.cpp
 )
 
 add_executable(sea_tests ${TEST_SOURCES})

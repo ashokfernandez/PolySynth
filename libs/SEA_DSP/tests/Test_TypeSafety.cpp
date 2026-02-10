@@ -3,7 +3,10 @@
 #include <sea_dsp/sea_classical_filter.h>
 #include <sea_dsp/sea_ladder_filter.h>
 #include <sea_dsp/sea_tpt_integrator.h>
-#include <sea_dsp/sea_math.h>
+// NOTE: sea_math.h deliberately NOT included here - each filter must bring
+// its own dependencies. If we include it, we can't detect missing includes.
+// We do need sea_platform.h for the Math Constants test to access kPi/kTwoPi.
+#include <sea_dsp/sea_platform.h>
 #include <cmath>
 #include <vector>
 
@@ -95,7 +98,8 @@ TEST_CASE("ClassicalFilter Type Safety - Float vs Double", "[Filter][TypeSafety]
 
 // Verify kPi constant casting works correctly
 TEST_CASE("Math Constants Type Casting", "[Math][TypeSafety]") {
-  // Test that casting kPi and kTwoPi produces correct values
+  // This test accesses sea::kPi and sea::kTwoPi constants from sea_platform.h
+  // (included at top of file). Tests that casting produces correct values.
   float piF = static_cast<float>(sea::kPi);
   double piD = static_cast<double>(sea::kPi);
 
