@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('knob component renders isolated', async ({ page }) => {
-  await page.goto('/iframe.html?id=componentgallery-ui-components--knob&viewMode=story');
+  await page.goto('/iframe.html?id=componentgallery-components--knob&viewMode=story');
   const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
 
   // Wait for WAM to load
@@ -19,7 +19,7 @@ test('knob component renders isolated', async ({ page }) => {
 });
 
 test('fader component renders isolated', async ({ page }) => {
-  await page.goto('/iframe.html?id=componentgallery-ui-components--fader&viewMode=story');
+  await page.goto('/iframe.html?id=componentgallery-components--fader&viewMode=story');
   const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
 
   // Wait for WAM to load
@@ -37,7 +37,7 @@ test('fader component renders isolated', async ({ page }) => {
 });
 
 test('envelope component renders isolated', async ({ page }) => {
-  await page.goto('/iframe.html?id=componentgallery-ui-components--envelope&viewMode=story');
+  await page.goto('/iframe.html?id=componentgallery-components--envelope&viewMode=story');
   const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
 
   // Wait for WAM to load
@@ -55,7 +55,7 @@ test('envelope component renders isolated', async ({ page }) => {
 });
 
 test('knob story auto-initializes without manual start', async ({ page }) => {
-  await page.goto('/iframe.html?id=componentgallery-ui-components--knob&viewMode=story');
+  await page.goto('/iframe.html?id=componentgallery-components--knob&viewMode=story');
   const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
   await galleryFrame.locator('#wam').waitFor({ state: 'visible' });
   await galleryFrame.locator('#wam canvas.pluginArea').waitFor({ state: 'visible' });
@@ -66,7 +66,7 @@ test('components render with correct dimensions', async ({ page }) => {
   const components = ['knob', 'fader', 'envelope'];
 
   for (const component of components) {
-    await page.goto(`/iframe.html?id=componentgallery-ui-components--${component}&viewMode=story`);
+    await page.goto(`/iframe.html?id=componentgallery-components--${component}&viewMode=story`);
     const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
 
     // Wait for WAM to load
