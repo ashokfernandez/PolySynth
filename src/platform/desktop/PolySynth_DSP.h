@@ -34,11 +34,9 @@ public:
     mVoiceManager.SetFilterModel(state.filterModel);
 
     mVoiceManager.SetWaveformA(
-        static_cast<PolySynthCore::Oscillator::WaveformType>(
-            state.oscAWaveform));
+        static_cast<sea::Oscillator::WaveformType>(state.oscAWaveform));
     mVoiceManager.SetWaveformB(
-        static_cast<PolySynthCore::Oscillator::WaveformType>(
-            state.oscBWaveform));
+        static_cast<sea::Oscillator::WaveformType>(state.oscBWaveform));
     mVoiceManager.SetPulseWidthA(state.oscAPulseWidth);
     mVoiceManager.SetPulseWidthB(state.oscBPulseWidth);
     mVoiceManager.SetMixer(state.mixOscA, state.mixOscB,

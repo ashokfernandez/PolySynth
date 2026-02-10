@@ -145,6 +145,37 @@ cmake --build build --target PolySynth-app
 open ~/Applications/PolySynth.app
 ```
 
+### Component Gallery Quick Commands
+
+Requires Node 22+ for Storybook 10 in `tests/Visual`.
+If you use `nvm`, run `nvm use` from repo root (`.nvmrc` is set to Node 22.22.0).
+
+```bash
+# Build gallery plugin output (WAM/web assets)
+./build_gallery.sh
+
+# Rebuild gallery (clean build)
+./rebuild_gallery.sh
+
+# View gallery in Storybook (localhost:6006 by default)
+./view_gallery.sh
+
+# Rebuild + immediately view
+./rebuild_and_view_gallery.sh
+
+# Build static gallery docs page (for docs/component-gallery/index.html)
+./build_gallery_pages.sh
+
+# View static gallery docs over HTTP (required; file:// is blocked by browser CORS)
+./view_gallery_pages.sh
+
+# Build + run visual regression tests
+./test_gallery_visual.sh
+
+# Run Storybook Vitest checks only
+cd tests/Visual && npm run test:stories
+```
+
 ---
 
 ## Audio Demos

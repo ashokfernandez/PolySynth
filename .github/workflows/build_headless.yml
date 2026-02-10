@@ -20,12 +20,29 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake
+        sudo apt-get install -y cmake make python3
+
+    - name: Setup Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: latest
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: tests/Visual/package-lock.json
         
     - name: Download External Deps
       run: |
         chmod +x scripts/download_dependencies.sh
         ./scripts/download_dependencies.sh
+
+    - name: Ensure iPlug2 WAM dependencies
+      run: |
+        chmod +x scripts/download_iPlug2.sh
+        ./scripts/download_iPlug2.sh
         
     - name: Build Tests
       run: |
@@ -43,6 +60,37 @@ jobs:
     - name: Generate Audio Docs
       run: |
         python3 scripts/generate_test_report.py
+
+    - name: Install visual test dependencies
+      working-directory: tests/Visual
+      run: npm ci
+
+    - name: Install Playwright browsers
+      working-directory: tests/Visual
+      run: npx playwright install --with-deps chromium
+
+    - name: Run Gallery Visual Test Pipeline
+      run: |
+        chmod +x test_gallery_visual.sh
+        ./test_gallery_visual.sh
+
+    - name: Build Storybook Static Site
+      working-directory: tests/Visual
+      run: npm run build-storybook
+
+    - name: Upload Storybook static artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: component-gallery-storybook-static
+        path: tests/Visual/storybook-static
+        if-no-files-found: error
+
+    - name: Publish Storybook Into docs/
+      run: |
+        rm -rf docs/component-gallery
+        mkdir -p docs/component-gallery
+        cp -R tests/Visual/storybook-static/. docs/component-gallery/
+        touch docs/.nojekyll
 
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'

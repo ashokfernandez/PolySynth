@@ -19,6 +19,8 @@ TEST_BUILD_DIR = os.path.join(PROJECT_ROOT, "tests", "build")
 DOCS_DIR = os.path.join(PROJECT_ROOT, "docs")
 AUDIO_DIR = os.path.join(DOCS_DIR, "audio")
 INDEX_FILE = os.path.join(DOCS_DIR, "index.html")
+GALLERY_DIR = os.path.join(DOCS_DIR, "component-gallery")
+GALLERY_INDEX_FILE = os.path.join(GALLERY_DIR, "index.html")
 
 # Demo descriptions for rich documentation
 # Keys should match the .wav filename (without extension)
@@ -166,6 +168,71 @@ def collect_artifacts():
             
     return artifacts
 
+def ensure_gallery_entrypoint():
+    """Ensure docs/component-gallery/index.html exists for local browsing."""
+    os.makedirs(GALLERY_DIR, exist_ok=True)
+
+    if os.path.exists(GALLERY_INDEX_FILE):
+        return
+
+    with open(GALLERY_INDEX_FILE, "w") as f:
+        f.write("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Gallery (Local)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #101114;
+            color: #e5e7eb;
+            line-height: 1.6;
+        }
+        .card {
+            max-width: 760px;
+            margin: 2rem auto;
+            background: #181b21;
+            border: 1px solid #2b3340;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+        code {
+            background: #232936;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        a {
+            color: #7cb6ff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Component Gallery Not Built Locally Yet</h1>
+        <p>This path is populated by CI on GitHub Pages. For local viewing, run:</p>
+        <p><code>./build_gallery_pages.sh</code></p>
+        <p>Then serve over HTTP (not <code>file://</code>, which browsers block for Storybook scripts):</p>
+        <p><code>./view_gallery_pages.sh</code></p>
+        <p>Or use live interactive mode with:</p>
+        <p><code>./view_gallery.sh</code></p>
+        <p><a href="../index.html">← Back to PolySynth Audio Labs</a></p>
+    </div>
+</body>
+</html>
+""")
+
 def generate_index(artifacts):
     """Generate a beautiful HTML report page."""
     print(f"Generating {INDEX_FILE}...")
@@ -303,6 +370,18 @@ def generate_index(artifacts):
         .info-card p {
             font-size: 1.1rem;
             color: var(--text-primary);
+        }
+
+        .info-card .card-link {
+            display: inline-block;
+            margin-top: 0.75rem;
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info-card .card-link:hover {
+            color: var(--accent-purple);
         }
         
         /* Section Headers */
@@ -505,6 +584,11 @@ def generate_index(artifacts):
                 <h3>Technical details</h3>
                 <p>All samples are rendered at 44.1kHz, 16-bit. The synth engine runs headless without any UI or DAW dependencies.</p>
             </div>
+            <div class="info-card">
+                <h3>UI Component Gallery</h3>
+                <p>Browse interactive UI controls and visual regression stories published from Storybook.</p>
+                <a class="card-link" href="component-gallery/index.html">Open Component Gallery →</a>
+            </div>
         </div>
 """)
         
@@ -595,6 +679,7 @@ def generate_index(artifacts):
 
 if __name__ == "__main__":
     os.makedirs(AUDIO_DIR, exist_ok=True)
+    ensure_gallery_entrypoint()
     run_demos()
     artifacts = collect_artifacts()
     generate_index(artifacts)
