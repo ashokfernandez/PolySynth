@@ -2,9 +2,12 @@
 #include <sea_dsp/sea_biquad_filter.h>
 #include <sea_dsp/sea_ladder_filter.h>
 #include <sea_dsp/sea_cascade_filter.h>
+#include <sea_dsp/sea_classical_filter.h>
 #include <sea_dsp/sea_sk_filter.h>
 #include <sea_dsp/sea_svf.h>
 #include <sea_dsp/sea_tpt_integrator.h>
+#include <cmath>
+#include <vector>
 
 TEST_CASE("TPT Integrator Basic", "[VAFilter][TPT]") {
   sea::TPTIntegrator<double> integrator;
@@ -83,4 +86,21 @@ TEST_CASE("Biquad Filter Detailed Checks", "[Filter][Biquad]") {
       out = filter.Process(1.0);
     REQUIRE(out == Approx(1.0).margin(0.01));
   }
+}
+
+TEST_CASE("ClassicalFilter Include Dependencies", "[Filter][Classical]") {
+  // This test verifies that sea_classical_filter.h properly includes sea_math.h
+  // If the include is missing, this will fail to compile
+  sea::ClassicalFilter<double> filter;
+  filter.Init(48000.0);
+  filter.SetConfig(sea::ClassicalFilter<double>::Type::Butterworth, 4, 1.0);
+  filter.SetCutoff(1000.0);
+
+  filter.Reset();
+  double out = 0.0;
+  for (int i = 0; i < 100; ++i)
+    out = filter.Process(1.0);
+
+  REQUIRE(out > 0.0);
+  REQUIRE(out < 2.0);
 }
