@@ -4,7 +4,7 @@
 #include <cmath>
 #include <sea_dsp/sea_biquad_filter.h>
 #include <sea_dsp/sea_ladder_filter.h>
-#include <sea_dsp/sea_prophet_filter.h>
+#include <sea_dsp/sea_cascade_filter.h>
 #include <sea_dsp/sea_sk_filter.h>
 #include <sea_dsp/sea_svf.h>
 #include <sea_dsp/sea_tpt_integrator.h>
@@ -154,75 +154,75 @@ TEST_CASE("Sallen-Key Filter Check", "[VAFilter][SKF]") {
   // REQUIRE(out == Approx(1.0).margin(0.01));
 }
 
-TEST_CASE("Prophet Filter Slopes", "[VAFilter][Prophet]") {
-  sea::ProphetFilter<PolySynthCore::sample_t> prophet;
-  prophet.Init(44100.0);
-  prophet.SetParams(1200.0, 0.2,
-                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB12);
+TEST_CASE("Cascade Filter Slopes", "[VAFilter][Cascade]") {
+  sea::CascadeFilter<PolySynthCore::sample_t> cascade;
+  cascade.Init(44100.0);
+  cascade.SetParams(1200.0, 0.2,
+                    sea::CascadeFilter<PolySynthCore::sample_t>::Slope::dB12);
 
   double out12 = 0.0;
   for (int i = 0; i < 400; ++i)
-    out12 = prophet.Process(0.1);
+    out12 = cascade.Process(0.1);
 
-  prophet.Reset();
-  prophet.SetParams(1200.0, 0.2,
-                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24);
+  cascade.Reset();
+  cascade.SetParams(1200.0, 0.2,
+                    sea::CascadeFilter<PolySynthCore::sample_t>::Slope::dB24);
 
   double out24 = 0.0;
   for (int i = 0; i < 400; ++i)
-    out24 = prophet.Process(0.1);
+    out24 = cascade.Process(0.1);
 
-  // FIXME: Prophet Filter test failing with 4.5 output in test env, despite
+  // FIXME: Cascade Filter test failing with 4.5 output in test env, despite
   // logic suggesting < 1.0. Disabling to proceed with merge. REQUIRE(out12 ==
   // Approx(0.076).margin(0.005)); REQUIRE(out24 ==
   // Approx(0.076).margin(0.005));
 
-  prophet.Reset();
-  prophet.SetParams(1200.0, 0.2,
-                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB12);
+  cascade.Reset();
+  cascade.SetParams(1200.0, 0.2,
+                    sea::CascadeFilter<PolySynthCore::sample_t>::Slope::dB12);
   double energy12 = 0.0;
   for (int i = 0; i < 400; ++i) {
     double in = (i % 2 == 0) ? 1.0 : -1.0;
-    energy12 += std::abs(prophet.Process(in));
+    energy12 += std::abs(cascade.Process(in));
   }
 
-  prophet.Reset();
-  prophet.SetParams(1200.0, 0.2,
-                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24);
+  cascade.Reset();
+  cascade.SetParams(1200.0, 0.2,
+                    sea::CascadeFilter<PolySynthCore::sample_t>::Slope::dB24);
   double energy24 = 0.0;
   for (int i = 0; i < 400; ++i) {
     double in = (i % 2 == 0) ? 1.0 : -1.0;
-    energy24 += std::abs(prophet.Process(in));
+    energy24 += std::abs(cascade.Process(in));
   }
 
   // FIXME: Energy comparison failing (10.88 vs 1.17). Disabling to proceed with
   // merge. REQUIRE(energy24 < energy12);
 }
 
-TEST_CASE("Prophet Filter Resonance Response", "[VAFilter][Prophet]") {
-  sea::ProphetFilter<PolySynthCore::sample_t> prophet;
-  prophet.Init(44100.0);
+TEST_CASE("Cascade Filter Resonance Response", "[VAFilter][Cascade]") {
+  sea::CascadeFilter<PolySynthCore::sample_t> cascade;
+  cascade.Init(44100.0);
 
-  prophet.SetParams(1000.0, 0.1,
-                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24);
+  cascade.SetParams(1000.0, 0.1,
+                    sea::CascadeFilter<PolySynthCore::sample_t>::Slope::dB24);
   double maxLow = 0.0;
   double phase = 0.0;
   double phaseInc = 6.283185307179586 * 1000.0 / 44100.0;
   for (int i = 0; i < 2000; ++i) {
     double in = std::sin(phase) * 0.1;
     phase += phaseInc;
-    maxLow = std::max(maxLow, std::abs(prophet.Process(in)));
+    maxLow = std::max(maxLow, std::abs(cascade.Process(in)));
   }
 
-  prophet.Reset();
-  prophet.SetParams(1000.0, 0.9,
-                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24);
+  cascade.Reset();
+  cascade.SetParams(1000.0, 0.9,
+                    sea::CascadeFilter<PolySynthCore::sample_t>::Slope::dB24);
   double maxHigh = 0.0;
   phase = 0.0;
   for (int i = 0; i < 2000; ++i) {
     double in = std::sin(phase) * 0.1;
     phase += phaseInc;
-    maxHigh = std::max(maxHigh, std::abs(prophet.Process(in)));
+    maxHigh = std::max(maxHigh, std::abs(cascade.Process(in)));
   }
 
   REQUIRE(maxHigh > maxLow);
@@ -237,7 +237,7 @@ TEST_CASE("Voice Filter Models Remain Stable", "[VAFilter][Voice]") {
 
   const Voice::FilterModel models[] = {
       Voice::FilterModel::Classic, Voice::FilterModel::Ladder,
-      Voice::FilterModel::Prophet12, Voice::FilterModel::Prophet24};
+      Voice::FilterModel::Cascade12, Voice::FilterModel::Cascade24};
 
   for (const auto model : models) {
     voice.SetFilterModel(model);
