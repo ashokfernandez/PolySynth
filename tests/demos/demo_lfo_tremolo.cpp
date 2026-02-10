@@ -18,7 +18,7 @@ int main() {
 
   PolySynthCore::Engine engine;
   engine.Init(sampleRate);
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Saw);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Saw);
   engine.SetADSR(0.5, 0.2, 1.0, 0.5);
 
   engine.SetLFO(0, 2.0, 0.6);          // Start at 2Hz

@@ -18,7 +18,7 @@ int main() {
 
   PolySynthCore::Engine engine;
   engine.Init(sampleRate);
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Square);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Square);
   engine.SetADSR(0.1, 0.2, 0.8, 0.5);
 
   engine.OnNoteOn(45, 100); // Low A

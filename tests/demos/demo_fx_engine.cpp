@@ -19,7 +19,7 @@ void RenderDemo(const std::string &filename,
                 double sampleRate) {
   PolySynthCore::Engine engine;
   engine.Init(sampleRate);
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Saw);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Saw);
   engine.SetADSR(0.01, 0.15, 0.8, 0.2);
   engine.SetFilter(9000.0, 0.4, 0.0);
   configureFx(engine);

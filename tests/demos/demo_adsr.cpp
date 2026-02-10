@@ -1,12 +1,13 @@
-#include "../../src/core/modulation/ADSREnvelope.h"
+#include "../../src/core/types.h"
 #include <fstream>
 #include <iostream>
+#include <sea_dsp/sea_adsr.h>
 #include <vector>
 
 int main() {
   std::cout << "Generating ADSR Demo CSV..." << std::endl;
 
-  PolySynthCore::ADSREnvelope adsr;
+  sea::ADSREnvelope adsr;
   double sr = 48000.0;
   adsr.Init(sr);
 

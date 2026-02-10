@@ -18,7 +18,7 @@ int main() {
 
   PolySynthCore::Engine engine;
   engine.Init(sampleRate);
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Saw);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Saw);
   engine.SetADSR(0.01, 0.1, 1.0, 0.2);
 
   // Set base filter low for maximum wobble effect

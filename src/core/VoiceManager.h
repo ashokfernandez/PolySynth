@@ -1,15 +1,15 @@
 #pragma once
 
-#include "dsp/BiquadFilter.h"
-#include "dsp/va/VALadderFilter.h"
-#include "dsp/va/VAProphetFilter.h"
-#include "modulation/ADSREnvelope.h"
-#include "modulation/LFO.h"
-#include "oscillator/Oscillator.h"
 #include "types.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <sea_dsp/sea_adsr.h>
+#include <sea_dsp/sea_biquad_filter.h>
+#include <sea_dsp/sea_ladder_filter.h>
+#include <sea_dsp/sea_lfo.h>
+#include <sea_dsp/sea_oscillator.h>
+#include <sea_dsp/sea_prophet_filter.h>
 
 namespace PolySynthCore {
 
@@ -30,7 +30,7 @@ public:
     mOscB.SetPulseWidth(mBasePulseWidthB);
 
     mFilter.Init(sampleRate);
-    mFilter.SetParams(FilterType::LowPass, 2000.0, 0.707);
+    mFilter.SetParams(sea::FilterType::LowPass, 2000.0, 0.707);
     mLadderFilter.Init(sampleRate);
     mProphetFilter.Init(sampleRate);
 
@@ -134,21 +134,23 @@ public:
     sample_t flt = 0.0;
     switch (mFilterModel) {
     case FilterModel::Ladder:
-      mLadderFilter.SetParams(VALadderFilter::Model::Transistor, cutoff,
-                              mBaseRes);
+      mLadderFilter.SetParams(sea::LadderFilter<sample_t>::Model::Transistor,
+                              cutoff, mBaseRes);
       flt = mLadderFilter.Process(mixed);
       break;
     case FilterModel::Prophet12:
-      mProphetFilter.SetParams(cutoff, mBaseRes, VAProphetFilter::Slope::dB12);
+      mProphetFilter.SetParams(cutoff, mBaseRes,
+                               sea::ProphetFilter<sample_t>::Slope::dB12);
       flt = mProphetFilter.Process(mixed);
       break;
     case FilterModel::Prophet24:
-      mProphetFilter.SetParams(cutoff, mBaseRes, VAProphetFilter::Slope::dB24);
+      mProphetFilter.SetParams(cutoff, mBaseRes,
+                               sea::ProphetFilter<sample_t>::Slope::dB24);
       flt = mProphetFilter.Process(mixed);
       break;
     case FilterModel::Classic:
     default:
-      mFilter.SetParams(FilterType::LowPass, cutoff, mBaseRes);
+      mFilter.SetParams(sea::FilterType::LowPass, cutoff, mBaseRes);
       flt = mFilter.Process(mixed);
       break;
     }
@@ -193,9 +195,13 @@ public:
 
   void SetFilterModel(FilterModel model) { mFilterModel = model; }
 
-  void SetWaveform(Oscillator::WaveformType type) { SetWaveformA(type); }
-  void SetWaveformA(Oscillator::WaveformType type) { mOscA.SetWaveform(type); }
-  void SetWaveformB(Oscillator::WaveformType type) { mOscB.SetWaveform(type); }
+  void SetWaveform(sea::Oscillator::WaveformType type) { SetWaveformA(type); }
+  void SetWaveformA(sea::Oscillator::WaveformType type) {
+    mOscA.SetWaveform(type);
+  }
+  void SetWaveformB(sea::Oscillator::WaveformType type) {
+    mOscB.SetWaveform(type);
+  }
 
   void SetPulseWidth(double pw) { SetPulseWidthA(pw); }
   void SetPulseWidthA(double pw) {
@@ -239,14 +245,14 @@ public:
   }
 
 private:
-  Oscillator mOscA;
-  Oscillator mOscB;
-  BiquadFilter mFilter;
-  VALadderFilter mLadderFilter;
-  VAProphetFilter mProphetFilter;
-  ADSREnvelope mAmpEnv;
-  ADSREnvelope mFilterEnv;
-  LFO mLfo;
+  sea::Oscillator mOscA;
+  sea::Oscillator mOscB;
+  sea::BiquadFilter<sample_t> mFilter;
+  sea::LadderFilter<sample_t> mLadderFilter;
+  sea::ProphetFilter<sample_t> mProphetFilter;
+  sea::ADSREnvelope mAmpEnv;
+  sea::ADSREnvelope mFilterEnv;
+  sea::LFO mLfo;
 
   bool mActive = false;
   double mVelocity = 0.0;
@@ -353,19 +359,19 @@ public:
     }
   }
 
-  void SetWaveform(Oscillator::WaveformType type) {
+  void SetWaveform(sea::Oscillator::WaveformType type) {
     for (auto &voice : mVoices) {
       voice.SetWaveform(type);
     }
   }
 
-  void SetWaveformA(Oscillator::WaveformType type) {
+  void SetWaveformA(sea::Oscillator::WaveformType type) {
     for (auto &voice : mVoices) {
       voice.SetWaveformA(type);
     }
   }
 
-  void SetWaveformB(Oscillator::WaveformType type) {
+  void SetWaveformB(sea::Oscillator::WaveformType type) {
     for (auto &voice : mVoices) {
       voice.SetWaveformB(type);
     }

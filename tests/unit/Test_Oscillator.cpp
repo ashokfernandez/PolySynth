@@ -1,8 +1,9 @@
-#include "../../src/core/oscillator/Oscillator.h"
+#include "../../src/core/types.h"
 #include "catch.hpp"
+#include <sea_dsp/sea_oscillator.h>
 
 TEST_CASE("Oscillator Frequency Check", "[Oscillator]") {
-  PolySynthCore::Oscillator osc;
+  sea::Oscillator osc;
   double sr = 48000.0;
   osc.Init(sr);
 

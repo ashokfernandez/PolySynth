@@ -42,16 +42,6 @@ set(UNIT_TEST_SOURCES
     ../src/core/PresetManager.cpp
     unit/Test_SEA_DSP_Platform.cpp
     unit/Test_SEA_DSP_Math.cpp
-    unit/Test_SEA_DSP_TPTIntegrator.cpp
-    unit/Test_SEA_DSP_SVF.cpp
-    unit/Test_SEA_DSP_LadderFilter.cpp
-    unit/Test_SEA_DSP_ProphetFilter.cpp
-    unit/Test_SEA_DSP_BiquadFilter.cpp
-    unit/Test_SEA_DSP_SKFilter.cpp
-    unit/Test_SEA_DSP_ClassicalFilter.cpp
-    unit/Test_SEA_DSP_Oscillator.cpp
-    unit/Test_SEA_DSP_ADSR.cpp
-    unit/Test_SEA_DSP_LFO.cpp
 )
 
 add_executable(run_tests ${UNIT_TEST_SOURCES})

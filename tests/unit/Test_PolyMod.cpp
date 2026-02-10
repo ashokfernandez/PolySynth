@@ -3,8 +3,8 @@
 #include <vector>
 
 namespace {
-std::vector<PolySynthCore::sample_t> RenderBlock(PolySynthCore::VoiceManager &vm,
-                                                 int frames) {
+std::vector<PolySynthCore::sample_t>
+RenderBlock(PolySynthCore::VoiceManager &vm, int frames) {
   std::vector<PolySynthCore::sample_t> buffer;
   buffer.reserve(frames);
   for (int i = 0; i < frames; ++i) {
@@ -27,8 +27,8 @@ double AverageAbsDiff(const std::vector<PolySynthCore::sample_t> &a,
 TEST_CASE("PolyMod OscB to FreqA adds audio-rate FM", "[PolyMod]") {
   PolySynthCore::VoiceManager base;
   base.Init(48000.0);
-  base.SetWaveformA(PolySynthCore::Oscillator::WaveformType::Saw);
-  base.SetWaveformB(PolySynthCore::Oscillator::WaveformType::Sine);
+  base.SetWaveformA(sea::Oscillator::WaveformType::Saw);
+  base.SetWaveformB(sea::Oscillator::WaveformType::Sine);
   base.SetMixer(1.0, 0.0, 0.0);
   base.SetFilter(20000.0, 0.0, 0.0);
   base.SetADSR(0.01, 0.1, 1.0, 0.1);
@@ -48,8 +48,8 @@ TEST_CASE("PolyMod OscB to FreqA adds audio-rate FM", "[PolyMod]") {
 TEST_CASE("PolyMod OscB to Filter modulates cutoff", "[PolyMod]") {
   PolySynthCore::VoiceManager base;
   base.Init(48000.0);
-  base.SetWaveformA(PolySynthCore::Oscillator::WaveformType::Saw);
-  base.SetWaveformB(PolySynthCore::Oscillator::WaveformType::Square);
+  base.SetWaveformA(sea::Oscillator::WaveformType::Saw);
+  base.SetWaveformB(sea::Oscillator::WaveformType::Square);
   base.SetMixer(1.0, 0.0, 0.0);
   base.SetFilter(1200.0, 0.7, 0.0);
   base.SetADSR(0.01, 0.1, 1.0, 0.1);
@@ -69,8 +69,8 @@ TEST_CASE("PolyMod OscB to Filter modulates cutoff", "[PolyMod]") {
 TEST_CASE("PolyMod Filter Env to PWM shapes OscA width", "[PolyMod]") {
   PolySynthCore::VoiceManager base;
   base.Init(48000.0);
-  base.SetWaveformA(PolySynthCore::Oscillator::WaveformType::Square);
-  base.SetWaveformB(PolySynthCore::Oscillator::WaveformType::Sine);
+  base.SetWaveformA(sea::Oscillator::WaveformType::Square);
+  base.SetWaveformB(sea::Oscillator::WaveformType::Sine);
   base.SetPulseWidthA(0.5);
   base.SetMixer(1.0, 0.0, 0.0);
   base.SetFilter(20000.0, 0.0, 0.0);

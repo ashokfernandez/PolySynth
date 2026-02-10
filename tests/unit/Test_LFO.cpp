@@ -1,8 +1,9 @@
-#include "../../src/core/modulation/LFO.h"
+#include "../../src/core/types.h"
 #include "catch.hpp"
+#include <sea_dsp/sea_lfo.h>
 
 TEST_CASE("LFO Output Range", "[LFO]") {
-  PolySynthCore::LFO lfo;
+  sea::LFO lfo;
   double sr = 1000.0;
   lfo.Init(sr);
   lfo.SetRate(5.0);
@@ -17,7 +18,7 @@ TEST_CASE("LFO Output Range", "[LFO]") {
 }
 
 TEST_CASE("LFO Depth Zero", "[LFO]") {
-  PolySynthCore::LFO lfo;
+  sea::LFO lfo;
   lfo.Init(48000.0);
   lfo.SetRate(2.0);
   lfo.SetDepth(0.0);
@@ -28,7 +29,7 @@ TEST_CASE("LFO Depth Zero", "[LFO]") {
 }
 
 TEST_CASE("LFO Rate Zero Crossing", "[LFO]") {
-  PolySynthCore::LFO lfo;
+  sea::LFO lfo;
   double sr = 100.0;
   lfo.Init(sr);
   lfo.SetDepth(1.0);
@@ -63,7 +64,7 @@ TEST_CASE("LFO Rate Zero Crossing", "[LFO]") {
 }
 
 TEST_CASE("LFO Waveforms", "[LFO]") {
-  PolySynthCore::LFO lfo;
+  sea::LFO lfo;
   lfo.Init(4.0);
   lfo.SetRate(1.0);
   lfo.SetDepth(1.0);

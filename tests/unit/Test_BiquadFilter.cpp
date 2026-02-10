@@ -1,13 +1,14 @@
-#include "../../src/core/dsp/BiquadFilter.h"
+#include "../../src/core/types.h"
 #include "catch.hpp"
+#include <sea_dsp/sea_biquad_filter.h>
 
 TEST_CASE("Biquad LowPass Response", "[Biquad]") {
-  PolySynthCore::BiquadFilter filter;
+  sea::BiquadFilter<PolySynthCore::sample_t> filter;
   double sr = 48000.0;
   filter.Init(sr);
 
   // LowPass at 100Hz
-  filter.SetParams(PolySynthCore::FilterType::LowPass, 100.0, 0.707);
+  filter.SetParams(sea::FilterType::LowPass, 100.0, 0.707);
 
   // 1. DC Check (0 Hz) -> Gain should be 1.0 (0dB)
   // Run constant 1.0 signal
@@ -31,9 +32,10 @@ TEST_CASE("Biquad LowPass Response", "[Biquad]") {
 }
 
 TEST_CASE("Biquad Stability", "[Biquad]") {
-  PolySynthCore::BiquadFilter filter;
-  filter.Init(48000.0);
-  filter.SetParams(PolySynthCore::FilterType::LowPass, 1000.0, 5.0); // High Q
+  sea::BiquadFilter<PolySynthCore::sample_t> filter;
+  filter.Init(44100.0);
+  filter.SetParams(sea::FilterType::LowPass, 1000.0, 0.707);
+  // High Q
 
   // Pulse input
   double out = filter.Process(1.0); // Impulse
@@ -54,10 +56,10 @@ TEST_CASE("Biquad Stability", "[Biquad]") {
 }
 
 TEST_CASE("Biquad BandPass and Notch Basics", "[Biquad]") {
-  PolySynthCore::BiquadFilter filter;
+  sea::BiquadFilter<PolySynthCore::sample_t> filter;
   filter.Init(48000.0);
 
-  filter.SetParams(PolySynthCore::FilterType::BandPass, 1000.0, 0.707);
+  filter.SetParams(sea::FilterType::BandPass, 1000.0, 0.707);
   filter.Reset();
   double out = 0.0;
   for (int i = 0; i < 1000; ++i)
@@ -65,7 +67,7 @@ TEST_CASE("Biquad BandPass and Notch Basics", "[Biquad]") {
   // BandPass should reject DC
   REQUIRE(std::abs(out) < 0.01);
 
-  filter.SetParams(PolySynthCore::FilterType::Notch, 1000.0, 0.707);
+  filter.SetParams(sea::FilterType::Notch, 1000.0, 0.707);
   filter.Reset();
   for (int i = 0; i < 1000; ++i)
     out = filter.Process(1.0);

@@ -1,20 +1,21 @@
-#include "../../src/core/dsp/BiquadFilter.h"
-#include "../../src/core/oscillator/Oscillator.h"
+#include "../../src/core/types.h"
 #include "../utils/WavWriter.h"
 #include <iostream>
+#include <sea_dsp/sea_biquad_filter.h>
+#include <sea_dsp/sea_oscillator.h>
 #include <vector>
 
 int main() {
   std::cout << "Rendering Filter Sweep Demo..." << std::endl;
   double sr = 48000.0;
 
-  PolySynthCore::Oscillator osc;
+  sea::Oscillator osc;
   osc.Init(sr);
   osc.SetFrequency(100.0); // Low Sawtooth
 
-  PolySynthCore::BiquadFilter filter;
+  sea::BiquadFilter<PolySynthCore::sample_t> filter;
   filter.Init(sr);
-  filter.SetParams(PolySynthCore::FilterType::LowPass, 5000.0,
+  filter.SetParams(sea::FilterType::LowPass, 5000.0,
                    2.0); // Start open, Resonant
 
   int duration = 2 * (int)sr;
@@ -29,7 +30,7 @@ int main() {
     // Update filter every sample? Expensive but smooth.
     // In reality we might smooth the parameter or update per block.
     // For demo, per sample is fine.
-    filter.SetParams(PolySynthCore::FilterType::LowPass, cutoff, 4.0);
+    filter.SetParams(sea::FilterType::LowPass, cutoff, 4.0);
 
     double raw = osc.Process();
     double filtered = filter.Process(raw);

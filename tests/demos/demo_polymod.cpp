@@ -20,8 +20,8 @@ int main() {
 
   PolySynthCore::Engine engine;
   engine.Init(sampleRate);
-  engine.SetWaveformA(PolySynthCore::Oscillator::WaveformType::Saw);
-  engine.SetWaveformB(PolySynthCore::Oscillator::WaveformType::Sine);
+  engine.SetWaveformA(sea::Oscillator::WaveformType::Saw);
+  engine.SetWaveformB(sea::Oscillator::WaveformType::Sine);
   engine.SetMixer(1.0, 0.0, 0.0);
   engine.SetADSR(0.01, 0.1, 0.9, 0.2);
   engine.SetFilterEnv(0.01, 0.2, 0.0, 0.2);

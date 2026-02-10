@@ -1,7 +1,9 @@
-#include "../../src/core/dsp/va/VAProphetFilter.h"
+#include "../../src/core/types.h"
 #include "../utils/WavWriter.h"
 #include <cmath>
 #include <iostream>
+#include <sea_dsp/sea_platform.h>
+#include <sea_dsp/sea_prophet_filter.h>
 #include <vector>
 
 int main() {
@@ -11,28 +13,29 @@ int main() {
 
   std::cout << "Rendering Prophet Filter Demo..." << std::endl;
 
-  PolySynthCore::VAProphetFilter filter;
+  sea::ProphetFilter<PolySynthCore::sample_t> filter;
   filter.Init(sampleRate);
 
   std::vector<float> output;
   output.reserve(totalSamples);
 
   double phase = 0.0;
-  double phaseInc = PolySynthCore::kTwoPi * 110.0 / sampleRate;
+  double phaseInc = sea::kTwoPi * 110.0 / sampleRate;
 
   for (int i = 0; i < totalSamples; ++i) {
     double t = static_cast<double>(i) / sampleRate;
     double cutoff = 400.0 + 4600.0 * (0.5 * (1.0 + std::sin(t * 0.5)));
     double resonance = 0.2 + 0.6 * (0.5 * (1.0 + std::sin(t * 0.25)));
-    auto slope = (t < duration * 0.5) ? PolySynthCore::VAProphetFilter::Slope::dB12
-                                      : PolySynthCore::VAProphetFilter::Slope::dB24;
+    auto slope = (t < duration * 0.5)
+                     ? sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB12
+                     : sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24;
 
     filter.SetParams(cutoff, resonance, slope);
 
     double input = std::sin(phase) * 0.4;
     phase += phaseInc;
-    if (phase > PolySynthCore::kTwoPi)
-      phase -= PolySynthCore::kTwoPi;
+    if (phase > sea::kTwoPi)
+      phase -= sea::kTwoPi;
 
     double filtered = filter.Process(input);
     output.push_back(static_cast<float>(filtered));

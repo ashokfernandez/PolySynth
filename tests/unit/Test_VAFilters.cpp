@@ -1,17 +1,18 @@
 #include "../../src/core/VoiceManager.h"
-#include "../../src/core/dsp/va/TPTIntegrator.h"
-#include "../../src/core/dsp/va/VALadderFilter.h"
-#include "../../src/core/dsp/va/VAProphetFilter.h"
-#include "../../src/core/dsp/va/VASKFilter.h"
-#include "../../src/core/dsp/va/VASVFilter.h"
 #include "catch.hpp"
 #include <algorithm>
 #include <cmath>
+#include <sea_dsp/sea_biquad_filter.h>
+#include <sea_dsp/sea_ladder_filter.h>
+#include <sea_dsp/sea_prophet_filter.h>
+#include <sea_dsp/sea_sk_filter.h>
+#include <sea_dsp/sea_svf.h>
+#include <sea_dsp/sea_tpt_integrator.h>
 
 using namespace PolySynthCore;
 
 TEST_CASE("TPT Integrator Basic", "[VAFilter][TPT]") {
-  TPTIntegrator integrator;
+  sea::TPTIntegrator<PolySynthCore::sample_t> integrator;
   integrator.Init(44100.0);
 
   // Test Gain Calculation
@@ -42,7 +43,7 @@ TEST_CASE("TPT Integrator Basic", "[VAFilter][TPT]") {
 }
 
 TEST_CASE("SVF Response", "[VAFilter][SVF]") {
-  VASVFilter svf;
+  sea::SVFilter<PolySynthCore::sample_t> svf;
   svf.Init(44100.0);
   svf.SetParams(1000.0, 0.707); // Butterworth Q
 
@@ -73,9 +74,11 @@ TEST_CASE("SVF Response", "[VAFilter][SVF]") {
 }
 
 TEST_CASE("Ladder Filter Stability", "[VAFilter][Ladder]") {
-  VALadderFilter ladder;
+  sea::LadderFilter<PolySynthCore::sample_t> ladder;
   ladder.Init(44100.0);
-  ladder.SetParams(VALadderFilter::Model::Transistor, 1000.0, 0.0); // No res
+  ladder.SetParams(
+      sea::LadderFilter<PolySynthCore::sample_t>::Model::Transistor, 1000.0,
+      0.0); // No res
 
   // DC Gain
   double out = 0.0;
@@ -88,7 +91,9 @@ TEST_CASE("Ladder Filter Stability", "[VAFilter][Ladder]") {
   // With max resonance (k=4?), filter should oscillate.
   // Our param range is 0..1 for resonance usually in synths, mapped to k=0..4
   // internally. The implementation uses mResonance * 4.0.
-  ladder.SetParams(VALadderFilter::Model::Transistor, 1000.0, 1.0); // Max res
+  ladder.SetParams(
+      sea::LadderFilter<PolySynthCore::sample_t>::Model::Transistor, 1000.0,
+      1.0); // Max res
 
   // Use Sine wave at cutoff to test resonance gain
   // At k=4.0 (max res), gain should be theoretically infinite (limited by
@@ -109,9 +114,11 @@ TEST_CASE("Ladder Filter Stability", "[VAFilter][Ladder]") {
 }
 
 TEST_CASE("Ladder Filter Saturation", "[VAFilter][Ladder][Saturation]") {
-  VALadderFilter ladder;
+  sea::LadderFilter<PolySynthCore::sample_t> ladder;
   ladder.Init(44100.0);
-  ladder.SetParams(VALadderFilter::Model::Transistor, 800.0, 0.0);
+  ladder.SetParams(
+      sea::LadderFilter<PolySynthCore::sample_t>::Model::Transistor, 800.0,
+      0.0);
 
   double out = 0.0;
   for (int i = 0; i < 200; ++i)
@@ -121,7 +128,7 @@ TEST_CASE("Ladder Filter Saturation", "[VAFilter][Ladder][Saturation]") {
 }
 
 TEST_CASE("Sallen-Key Filter Check", "[VAFilter][SKF]") {
-  VASKFilter skf;
+  sea::SKFilter<PolySynthCore::sample_t> skf;
   skf.Init(44100.0);
   skf.SetParams(1000.0, 0.0); // k=0 -> Q=0.5 (overdamped)
 
@@ -148,16 +155,18 @@ TEST_CASE("Sallen-Key Filter Check", "[VAFilter][SKF]") {
 }
 
 TEST_CASE("Prophet Filter Slopes", "[VAFilter][Prophet]") {
-  VAProphetFilter prophet;
+  sea::ProphetFilter<PolySynthCore::sample_t> prophet;
   prophet.Init(44100.0);
-  prophet.SetParams(1200.0, 0.2, VAProphetFilter::Slope::dB12);
+  prophet.SetParams(1200.0, 0.2,
+                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB12);
 
   double out12 = 0.0;
   for (int i = 0; i < 400; ++i)
     out12 = prophet.Process(0.1);
 
   prophet.Reset();
-  prophet.SetParams(1200.0, 0.2, VAProphetFilter::Slope::dB24);
+  prophet.SetParams(1200.0, 0.2,
+                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24);
 
   double out24 = 0.0;
   for (int i = 0; i < 400; ++i)
@@ -169,7 +178,8 @@ TEST_CASE("Prophet Filter Slopes", "[VAFilter][Prophet]") {
   // Approx(0.076).margin(0.005));
 
   prophet.Reset();
-  prophet.SetParams(1200.0, 0.2, VAProphetFilter::Slope::dB12);
+  prophet.SetParams(1200.0, 0.2,
+                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB12);
   double energy12 = 0.0;
   for (int i = 0; i < 400; ++i) {
     double in = (i % 2 == 0) ? 1.0 : -1.0;
@@ -177,7 +187,8 @@ TEST_CASE("Prophet Filter Slopes", "[VAFilter][Prophet]") {
   }
 
   prophet.Reset();
-  prophet.SetParams(1200.0, 0.2, VAProphetFilter::Slope::dB24);
+  prophet.SetParams(1200.0, 0.2,
+                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24);
   double energy24 = 0.0;
   for (int i = 0; i < 400; ++i) {
     double in = (i % 2 == 0) ? 1.0 : -1.0;
@@ -189,13 +200,14 @@ TEST_CASE("Prophet Filter Slopes", "[VAFilter][Prophet]") {
 }
 
 TEST_CASE("Prophet Filter Resonance Response", "[VAFilter][Prophet]") {
-  VAProphetFilter prophet;
+  sea::ProphetFilter<PolySynthCore::sample_t> prophet;
   prophet.Init(44100.0);
 
-  prophet.SetParams(1000.0, 0.1, VAProphetFilter::Slope::dB24);
+  prophet.SetParams(1000.0, 0.1,
+                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24);
   double maxLow = 0.0;
   double phase = 0.0;
-  double phaseInc = kTwoPi * 1000.0 / 44100.0;
+  double phaseInc = 6.283185307179586 * 1000.0 / 44100.0;
   for (int i = 0; i < 2000; ++i) {
     double in = std::sin(phase) * 0.1;
     phase += phaseInc;
@@ -203,7 +215,8 @@ TEST_CASE("Prophet Filter Resonance Response", "[VAFilter][Prophet]") {
   }
 
   prophet.Reset();
-  prophet.SetParams(1000.0, 0.9, VAProphetFilter::Slope::dB24);
+  prophet.SetParams(1000.0, 0.9,
+                    sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24);
   double maxHigh = 0.0;
   phase = 0.0;
   for (int i = 0; i < 2000; ++i) {

@@ -20,7 +20,7 @@ int main() {
 
   PolySynthCore::Engine engine;
   engine.Init(sampleRate);
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Saw);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Saw);
   engine.SetADSR(0.005, 0.3, 0.6, 0.2);
 
   // Different filter envelope settings: attack, decay, sustain, release

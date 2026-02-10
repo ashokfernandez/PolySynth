@@ -49,13 +49,13 @@ public:
   void SetFilter(double cutoff, double res, double envAmount) {
     mVoiceManager.SetFilter(cutoff, res, envAmount);
   }
-  void SetWaveform(Oscillator::WaveformType type) {
+  void SetWaveform(sea::Oscillator::WaveformType type) {
     mVoiceManager.SetWaveform(type);
   }
-  void SetWaveformA(Oscillator::WaveformType type) {
+  void SetWaveformA(sea::Oscillator::WaveformType type) {
     mVoiceManager.SetWaveformA(type);
   }
-  void SetWaveformB(Oscillator::WaveformType type) {
+  void SetWaveformB(sea::Oscillator::WaveformType type) {
     mVoiceManager.SetWaveformB(type);
   }
 

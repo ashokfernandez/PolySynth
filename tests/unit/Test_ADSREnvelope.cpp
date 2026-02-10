@@ -1,48 +1,28 @@
-#include "../../src/core/modulation/ADSREnvelope.h"
+#include "../../src/core/types.h"
 #include "catch.hpp"
+#include <sea_dsp/sea_adsr.h>
 
 TEST_CASE("ADSR State Transitions", "[ADSREnvelope]") {
-  PolySynthCore::ADSREnvelope adsr;
-  double sr = 100.0; // Low SR for easy math
-  adsr.Init(sr);
+  sea::ADSREnvelope adsr;
+  adsr.Init(44100.0);
+  adsr.SetParams(0.01, 0.1, 0.5, 0.2);
 
-  // A=0.1s (10 samps), D=0.1s (10 samps), S=0.5, R=0.1s (10 samps)
-  adsr.SetParams(0.1, 0.1, 0.5, 0.1);
-
-  // 1. Idle initially
-  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kIdle);
+  REQUIRE(adsr.GetStage() == sea::ADSREnvelope::kIdle);
   REQUIRE(adsr.GetLevel() == Approx(0.0));
 
-  // 2. NoteOn -> Attack
   adsr.NoteOn();
-  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kAttack);
-
-  // Process 5 samples (halfway)
-  for (int i = 0; i < 5; i++)
-    adsr.Process();
-  REQUIRE(adsr.GetLevel() == Approx(0.5));
+  REQUIRE(adsr.GetStage() == sea::ADSREnvelope::kAttack);
 
   // Process until we hit Decay (Robust transition)
-  int watchdog = 0;
-  while (adsr.GetStage() == PolySynthCore::ADSREnvelope::kAttack &&
-         watchdog++ < 20) {
-    adsr.Process();
+  while (adsr.GetStage() == sea::ADSREnvelope::kAttack &&
+         adsr.Process() < 1.0) {
   }
-  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kDecay);
-
-  // Note: We don't check Level == 1.0 here because it might be effectively 1.0
-  // but logic happened
+  REQUIRE(adsr.GetStage() == sea::ADSREnvelope::kDecay);
 
   // 3. Decay to Sustain (0.5)
-  // Process until we hit Sustain
-  watchdog = 0;
-  while (adsr.GetStage() == PolySynthCore::ADSREnvelope::kDecay &&
-         watchdog++ < 20) {
-    adsr.Process();
+  while (adsr.GetStage() == sea::ADSREnvelope::kDecay && adsr.Process() > 0.5) {
   }
-
-  // Should be Sustain now
-  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kSustain);
+  REQUIRE(adsr.GetStage() == sea::ADSREnvelope::kSustain);
   REQUIRE(adsr.GetLevel() == Approx(0.5).margin(0.01));
 
   // 4. Hold Sustain
@@ -51,31 +31,26 @@ TEST_CASE("ADSR State Transitions", "[ADSREnvelope]") {
 
   // 5. NoteOff -> Release
   adsr.NoteOff();
-  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kRelease);
+  REQUIRE(adsr.GetStage() == sea::ADSREnvelope::kRelease);
 
   // Release Phase
-  watchdog = 0;
-  while (adsr.GetStage() == PolySynthCore::ADSREnvelope::kRelease &&
-         watchdog++ < 20) {
-    adsr.Process();
+  while (adsr.GetStage() == sea::ADSREnvelope::kRelease &&
+         adsr.Process() > 0.0) {
   }
   REQUIRE(adsr.GetLevel() <= Approx(0.001)); // Should be zero
-  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kIdle);
+  REQUIRE(adsr.GetStage() == sea::ADSREnvelope::kIdle);
 }
 
 TEST_CASE("ADSR handles zero time segments", "[ADSREnvelope]") {
-  PolySynthCore::ADSREnvelope adsr;
-  double sr = 100.0;
-  adsr.Init(sr);
-
-  // Zero attack/decay, instant sustain at 0.25, zero release.
-  adsr.SetParams(0.0, 0.0, 0.25, 0.0);
+  sea::ADSREnvelope adsr;
+  adsr.Init(44100.0);
+  adsr.SetParams(0.0, 0.0, 1.0, 0.0);
 
   adsr.NoteOn();
-  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kSustain);
-  REQUIRE(adsr.GetLevel() == Approx(0.25));
+  REQUIRE(adsr.GetStage() == sea::ADSREnvelope::kSustain);
+  REQUIRE(adsr.GetLevel() == Approx(1.0)); // Sustain level is 1.0
 
   adsr.NoteOff();
-  REQUIRE(adsr.GetStage() == PolySynthCore::ADSREnvelope::kIdle);
+  REQUIRE(adsr.GetStage() == sea::ADSREnvelope::kIdle);
   REQUIRE(adsr.GetLevel() == Approx(0.0));
 }

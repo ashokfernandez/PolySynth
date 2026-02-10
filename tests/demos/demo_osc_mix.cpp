@@ -20,8 +20,8 @@ int main() {
   engine.Init(sampleRate);
 
   // Osc A: Saw, Osc B: Square
-  engine.SetWaveformA(PolySynthCore::Oscillator::WaveformType::Saw);
-  engine.SetWaveformB(PolySynthCore::Oscillator::WaveformType::Square);
+  engine.SetWaveformA(sea::Oscillator::WaveformType::Saw);
+  engine.SetWaveformB(sea::Oscillator::WaveformType::Square);
 
   // Set 50/50 mix and 10 cents detune on Osc B
   engine.SetMixer(0.5, 0.5, 10.0);

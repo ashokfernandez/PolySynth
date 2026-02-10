@@ -43,7 +43,7 @@ int main() {
   // Preset 1: Warm Pad
   std::cout << " - Preset 1: Warm Pad" << std::endl;
   engine.Reset();
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Saw);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Saw);
   engine.SetADSR(0.5, 0.3, 0.7, 1.0);
   engine.SetFilter(800.0, 0.1, 0.0);
   engine.SetLFO(0, 0.5, 0.3);
@@ -53,7 +53,7 @@ int main() {
   // Preset 2: Bright Lead
   std::cout << " - Preset 2: Bright Lead" << std::endl;
   engine.Reset();
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Square);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Square);
   engine.SetADSR(0.005, 0.1, 0.6, 0.2);
   engine.SetFilter(18000.0, 0.7, 0.5); // Resonant but open
   engine.SetLFO(2, 6.0, 0.0);          // Square LFO for trills?
@@ -62,7 +62,7 @@ int main() {
   // Preset 3: Dark Bass
   std::cout << " - Preset 3: Dark Bass" << std::endl;
   engine.Reset();
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Saw);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Saw);
   engine.SetADSR(0.02, 0.5, 0.4, 0.15);
   engine.SetFilter(300.0, 0.5, 0.6);
   engine.SetLFO(1, 2.0, 0.5);

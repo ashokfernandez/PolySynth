@@ -23,11 +23,11 @@ int main() {
   engine.SetADSR(0.01, 0.1, 0.8, 0.2);
 
   // Waveforms: Saw, Square, Triangle, Sine
-  PolySynthCore::Oscillator::WaveformType types[] = {
-      PolySynthCore::Oscillator::WaveformType::Saw,
-      PolySynthCore::Oscillator::WaveformType::Square,
-      PolySynthCore::Oscillator::WaveformType::Triangle,
-      PolySynthCore::Oscillator::WaveformType::Sine};
+  sea::Oscillator::WaveformType types[] = {
+      sea::Oscillator::WaveformType::Saw,
+      sea::Oscillator::WaveformType::Square,
+      sea::Oscillator::WaveformType::Triangle,
+      sea::Oscillator::WaveformType::Sine};
 
   for (int i = 0; i < 4; i++) {
     engine.SetWaveform(types[i]);

@@ -20,7 +20,7 @@ int main() {
 
   PolySynthCore::Engine engine;
   engine.Init(sampleRate);
-  engine.SetWaveform(PolySynthCore::Oscillator::WaveformType::Saw);
+  engine.SetWaveform(sea::Oscillator::WaveformType::Saw);
   engine.SetADSR(0.01, 0.1, 1.0, 0.3);
 
   // Shapes: 0=Sine, 1=Tri, 2=Square, 3=Saw

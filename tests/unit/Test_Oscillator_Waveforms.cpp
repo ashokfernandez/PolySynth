@@ -1,16 +1,16 @@
-#include "../../src/core/oscillator/Oscillator.h"
+#include "../../src/core/types.h"
 #include "catch.hpp"
+#include <sea_dsp/sea_oscillator.h>
 
 TEST_CASE("Oscillator Waveform Ranges", "[Oscillator]") {
-  PolySynthCore::Oscillator osc;
+  sea::Oscillator osc;
   osc.Init(100.0);
   osc.SetFrequency(1.0);
 
-  const PolySynthCore::Oscillator::WaveformType waveforms[] = {
-      PolySynthCore::Oscillator::WaveformType::Saw,
-      PolySynthCore::Oscillator::WaveformType::Square,
-      PolySynthCore::Oscillator::WaveformType::Triangle,
-      PolySynthCore::Oscillator::WaveformType::Sine};
+  const sea::Oscillator::WaveformType waveforms[] = {
+      sea::Oscillator::WaveformType::Saw, sea::Oscillator::WaveformType::Square,
+      sea::Oscillator::WaveformType::Triangle,
+      sea::Oscillator::WaveformType::Sine};
 
   for (auto waveform : waveforms) {
     osc.SetWaveform(waveform);
@@ -25,10 +25,10 @@ TEST_CASE("Oscillator Waveform Ranges", "[Oscillator]") {
 }
 
 TEST_CASE("Oscillator Saw Slope at Phase Zero", "[Oscillator]") {
-  PolySynthCore::Oscillator osc;
+  sea::Oscillator osc;
   osc.Init(100.0);
   osc.SetFrequency(1.0);
-  osc.SetWaveform(PolySynthCore::Oscillator::WaveformType::Saw);
+  osc.SetWaveform(sea::Oscillator::WaveformType::Saw);
   osc.Reset();
 
   const auto first = osc.Process();
@@ -37,10 +37,10 @@ TEST_CASE("Oscillator Saw Slope at Phase Zero", "[Oscillator]") {
 }
 
 TEST_CASE("Oscillator Square Outputs Only Extremes", "[Oscillator]") {
-  PolySynthCore::Oscillator osc;
+  sea::Oscillator osc;
   osc.Init(100.0);
   osc.SetFrequency(1.0);
-  osc.SetWaveform(PolySynthCore::Oscillator::WaveformType::Square);
+  osc.SetWaveform(sea::Oscillator::WaveformType::Square);
   osc.Reset();
 
   for (int i = 0; i < 100; ++i) {
@@ -50,10 +50,10 @@ TEST_CASE("Oscillator Square Outputs Only Extremes", "[Oscillator]") {
 }
 
 TEST_CASE("Oscillator Sine Starts at Zero", "[Oscillator]") {
-  PolySynthCore::Oscillator osc;
+  sea::Oscillator osc;
   osc.Init(100.0);
   osc.SetFrequency(1.0);
-  osc.SetWaveform(PolySynthCore::Oscillator::WaveformType::Sine);
+  osc.SetWaveform(sea::Oscillator::WaveformType::Sine);
   osc.Reset();
 
   REQUIRE(osc.Process() == Approx(0.0));
