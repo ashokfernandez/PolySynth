@@ -35,9 +35,7 @@ public:
             state.oscAWaveform));
 
     // LFO
-    mVoiceManager.SetLFOType(state.lfoShape);
-    mVoiceManager.SetLFORate(state.lfoRate);
-    mVoiceManager.SetLFODepth(state.lfoDepth);
+    mVoiceManager.SetLFO(state.lfoShape, state.lfoRate, state.lfoDepth);
   }
 
   void ProcessBlock(sample **inputs, sample **outputs, int nOutputs,
