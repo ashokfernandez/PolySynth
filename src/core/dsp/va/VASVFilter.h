@@ -5,6 +5,6 @@
 
 namespace PolySynthCore {
 
-using VASVFilter = sea::SVFilter<double>;
+using VASVFilter = sea::SVFilter<sample_t>;
 
 } // namespace PolySynthCore

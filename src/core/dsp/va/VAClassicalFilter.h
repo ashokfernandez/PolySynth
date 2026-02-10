@@ -5,6 +5,6 @@
 
 namespace PolySynthCore {
 
-using VAClassicalFilter = sea::ClassicalFilter<double>;
+using VAClassicalFilter = sea::ClassicalFilter<sample_t>;
 
 } // namespace PolySynthCore

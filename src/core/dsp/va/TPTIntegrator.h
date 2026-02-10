@@ -5,6 +5,6 @@
 
 namespace PolySynthCore {
 
-using TPTIntegrator = sea::TPTIntegrator<double>;
+using TPTIntegrator = sea::TPTIntegrator<sample_t>;
 
 } // namespace PolySynthCore

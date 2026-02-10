@@ -6,6 +6,6 @@
 namespace PolySynthCore {
 
 using FilterType = sea::FilterType;
-using BiquadFilter = sea::BiquadFilter<double>;
+using BiquadFilter = sea::BiquadFilter<sample_t>;
 
 } // namespace PolySynthCore

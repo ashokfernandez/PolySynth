@@ -5,6 +5,6 @@
 
 namespace PolySynthCore {
 
-using VALadderFilter = sea::LadderFilter<double>;
+using VALadderFilter = sea::LadderFilter<sample_t>;
 
 } // namespace PolySynthCore
