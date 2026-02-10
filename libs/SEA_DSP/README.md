@@ -56,7 +56,9 @@ Core library:
 
 Tests:
 
-- Catch2 single-header (`catch.hpp`), expected at `external/catch2/catch.hpp`
+- Catch2 single-header (`catch.hpp`)
+  - If not found at `external/catch2/catch.hpp`, SEA_DSP test CMake downloads
+    Catch2 v2.13.9 into the test build directory automatically
 
 ## Build and Test
 
