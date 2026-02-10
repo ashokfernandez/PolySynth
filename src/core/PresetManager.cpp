@@ -72,6 +72,7 @@ std::string PresetManager::Serialize(const SynthState &state) {
   SERIALIZE(j, state, polyModOscBToPWM);
   SERIALIZE(j, state, polyModOscBToFilter);
   SERIALIZE(j, state, polyModFilterEnvToFreqA);
+  SERIALIZE(j, state, polyModFilterEnvToPWM);
   SERIALIZE(j, state, polyModFilterEnvToFilter);
 
   return j.dump(2); // Pretty print with 2 space indent
@@ -136,6 +137,7 @@ bool PresetManager::Deserialize(const std::string &jsonStr,
     DESERIALIZE(j, outState, polyModOscBToPWM);
     DESERIALIZE(j, outState, polyModOscBToFilter);
     DESERIALIZE(j, outState, polyModFilterEnvToFreqA);
+    DESERIALIZE(j, outState, polyModFilterEnvToPWM);
     DESERIALIZE(j, outState, polyModFilterEnvToFilter);
 
     return true;

@@ -19,7 +19,17 @@ enum EParams {
   kParamFilterCutoff,
   kParamFilterResonance,
   kParamOscWave,
+  kParamOscBWave,
   kParamOscMix,
+  kParamOscPulseWidthA,
+  kParamOscPulseWidthB,
+  kParamFilterEnvAmount,
+  kParamPolyModOscBToFreqA,
+  kParamPolyModOscBToPWM,
+  kParamPolyModOscBToFilter,
+  kParamPolyModFilterEnvToFreqA,
+  kParamPolyModFilterEnvToPWM,
+  kParamPolyModFilterEnvToFilter,
   kParamFilterModel,
   kNumParams
 };

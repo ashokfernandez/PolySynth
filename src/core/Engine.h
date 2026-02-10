@@ -68,6 +68,25 @@ public:
     mVoiceManager.SetLFORouting(pitch, filter, amp);
   }
 
+  void SetPolyModOscBToFreqA(double amount) {
+    mVoiceManager.SetPolyModOscBToFreqA(amount);
+  }
+  void SetPolyModOscBToPWM(double amount) {
+    mVoiceManager.SetPolyModOscBToPWM(amount);
+  }
+  void SetPolyModOscBToFilter(double amount) {
+    mVoiceManager.SetPolyModOscBToFilter(amount);
+  }
+  void SetPolyModFilterEnvToFreqA(double amount) {
+    mVoiceManager.SetPolyModFilterEnvToFreqA(amount);
+  }
+  void SetPolyModFilterEnvToPWM(double amount) {
+    mVoiceManager.SetPolyModFilterEnvToPWM(amount);
+  }
+  void SetPolyModFilterEnvToFilter(double amount) {
+    mVoiceManager.SetPolyModFilterEnvToFilter(amount);
+  }
+
   // --- Audio Processing ---
   void Process(sample_t &left, sample_t &right) {
     sample_t out = mVoiceManager.Process();

@@ -126,8 +126,11 @@ function App() {
         <div className="module oscillators">
           <h2>Oscillators</h2>
           <div className="knob-group">
-            <Knob {...commonKnobProps(PARAMS.OSC_WAVE)} label="Waveform" />
+            <Knob {...commonKnobProps(PARAMS.OSC_WAVE)} label="Waveform A" />
+            <Knob {...commonKnobProps(PARAMS.OSC_B_WAVE)} label="Waveform B" />
             <Knob {...commonKnobProps(PARAMS.OSC_MIX)} label="Mix" />
+            <Knob {...commonKnobProps(PARAMS.OSC_PULSE_A)} label="Pulse A" />
+            <Knob {...commonKnobProps(PARAMS.OSC_PULSE_B)} label="Pulse B" />
           </div>
         </div>
 
@@ -137,6 +140,7 @@ function App() {
           <div className="knob-group">
             <Knob {...commonKnobProps(PARAMS.CUTOFF)} label="Cutoff" />
             <Knob {...commonKnobProps(PARAMS.RESONANCE)} label="Resonance" />
+            <Knob {...commonKnobProps(PARAMS.FILTER_ENV)} label="Env Amt" />
             <Knob {...commonKnobProps(PARAMS.FILTER_MODEL)} label="Model" />
           </div>
         </div>
@@ -153,6 +157,19 @@ function App() {
       </div>
 
       <div className="controls-row">
+        {/* Poly Mod */}
+        <div className="module polymod">
+          <h2>Poly-Mod</h2>
+          <div className="knob-group">
+            <Knob {...commonKnobProps(PARAMS.POLY_OSC_B_FREQ_A)} label="B→Freq A" />
+            <Knob {...commonKnobProps(PARAMS.POLY_OSC_B_PWM)} label="B→PWM A" />
+            <Knob {...commonKnobProps(PARAMS.POLY_OSC_B_FILTER)} label="B→Filter" />
+            <Knob {...commonKnobProps(PARAMS.POLY_ENV_FREQ_A)} label="Env→Freq A" />
+            <Knob {...commonKnobProps(PARAMS.POLY_ENV_PWM)} label="Env→PWM A" />
+            <Knob {...commonKnobProps(PARAMS.POLY_ENV_FILTER)} label="Env→Filter" />
+          </div>
+        </div>
+
         {/* Envelope */}
         <div className="module envelope">
           <h2>Amplitude Envelope</h2>

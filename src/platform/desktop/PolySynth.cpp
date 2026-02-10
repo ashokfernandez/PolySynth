@@ -38,6 +38,7 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
                    "Filter", IParam::ShapeExp());
   GetParam(kParamFilterResonance)
       ->InitDouble("Resonance", 0., 0., 100., 1., "%");
+  GetParam(kParamFilterEnvAmount)->InitPercentage("Filter Env");
   GetParam(kParamFilterModel)
       ->InitEnum("Filter Model", 0,
                  {"Classic", "Ladder", "Prophet 12", "Prophet 24"});
@@ -47,7 +48,21 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
       ->InitEnum("Osc Waveform",
                  (int)PolySynthCore::Oscillator::WaveformType::Saw,
                  {"Saw", "Square", "Triangle", "Sine"});
+  GetParam(kParamOscBWave)
+      ->InitEnum("Osc B Waveform",
+                 (int)PolySynthCore::Oscillator::WaveformType::Sine,
+                 {"Saw", "Square", "Triangle", "Sine"});
   GetParam(kParamOscMix)->InitDouble("Osc Mix", 0., 0., 100., 1., "%");
+  GetParam(kParamOscPulseWidthA)->InitPercentage("Pulse Width A");
+  GetParam(kParamOscPulseWidthB)->InitPercentage("Pulse Width B");
+
+  // Poly-Mod Params
+  GetParam(kParamPolyModOscBToFreqA)->InitPercentage("B -> Freq A");
+  GetParam(kParamPolyModOscBToPWM)->InitPercentage("B -> PWM A");
+  GetParam(kParamPolyModOscBToFilter)->InitPercentage("B -> Filter");
+  GetParam(kParamPolyModFilterEnvToFreqA)->InitPercentage("Env -> Freq A");
+  GetParam(kParamPolyModFilterEnvToPWM)->InitPercentage("Env -> PWM A");
+  GetParam(kParamPolyModFilterEnvToFilter)->InitPercentage("Env -> Filter");
 
 #if IPLUG_EDITOR
   mEditorInitFunc = [&]() {
@@ -196,16 +211,46 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
   case kParamFilterResonance:
     mState.filterResonance = value / 100.0;
     break;
+  case kParamFilterEnvAmount:
+    mState.filterEnvAmount = value / 100.0;
+    break;
   case kParamFilterModel:
     mState.filterModel = static_cast<int>(value);
     break;
   case kParamOscWave:
     mState.oscAWaveform = (int)value;
     break;
+  case kParamOscBWave:
+    mState.oscBWaveform = (int)value;
+    break;
   case kParamOscMix:
     mState.mixOscA = 1.0 - (value / 100.0);
     mState.mixOscB = value / 100.0;
     static_cast<void>(mState.mixOscB); // Suppress unused for now
+    break;
+  case kParamOscPulseWidthA:
+    mState.oscAPulseWidth = value / 100.0;
+    break;
+  case kParamOscPulseWidthB:
+    mState.oscBPulseWidth = value / 100.0;
+    break;
+  case kParamPolyModOscBToFreqA:
+    mState.polyModOscBToFreqA = value / 100.0;
+    break;
+  case kParamPolyModOscBToPWM:
+    mState.polyModOscBToPWM = value / 100.0;
+    break;
+  case kParamPolyModOscBToFilter:
+    mState.polyModOscBToFilter = value / 100.0;
+    break;
+  case kParamPolyModFilterEnvToFreqA:
+    mState.polyModFilterEnvToFreqA = value / 100.0;
+    break;
+  case kParamPolyModFilterEnvToPWM:
+    mState.polyModFilterEnvToPWM = value / 100.0;
+    break;
+  case kParamPolyModFilterEnvToFilter:
+    mState.polyModFilterEnvToFilter = value / 100.0;
     break;
   default:
     break;
@@ -271,11 +316,29 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
       GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
       GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+<<<<<<< HEAD
+      GetParam(kParamFilterEnvAmount)->Set(mState.filterEnvAmount * 100.0);
+=======
       GetParam(kParamFilterModel)->Set((double)mState.filterModel);
+>>>>>>> main
       GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
+      GetParam(kParamOscBWave)->Set((double)mState.oscBWaveform);
       GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
       GetParam(kParamLFORateHz)->Set(mState.lfoRate);
       GetParam(kParamLFODepth)->Set(mState.lfoDepth * 100.0);
+      GetParam(kParamOscPulseWidthA)->Set(mState.oscAPulseWidth * 100.0);
+      GetParam(kParamOscPulseWidthB)->Set(mState.oscBPulseWidth * 100.0);
+      GetParam(kParamPolyModOscBToFreqA)
+          ->Set(mState.polyModOscBToFreqA * 100.0);
+      GetParam(kParamPolyModOscBToPWM)->Set(mState.polyModOscBToPWM * 100.0);
+      GetParam(kParamPolyModOscBToFilter)
+          ->Set(mState.polyModOscBToFilter * 100.0);
+      GetParam(kParamPolyModFilterEnvToFreqA)
+          ->Set(mState.polyModFilterEnvToFreqA * 100.0);
+      GetParam(kParamPolyModFilterEnvToPWM)
+          ->Set(mState.polyModFilterEnvToPWM * 100.0);
+      GetParam(kParamPolyModFilterEnvToFilter)
+          ->Set(mState.polyModFilterEnvToFilter * 100.0);
 
       // Notify UI of all param changes
       for (int i = 0; i < kNumParams; ++i) {
@@ -301,9 +364,19 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.filterResonance = 0.1;
       mState.filterModel = 0;
       mState.oscAWaveform = 0; // Saw
-      mState.lfoShape = 0;     // Sine
+      mState.oscBWaveform = 3; // Sine
+      mState.oscAPulseWidth = 0.5;
+      mState.oscBPulseWidth = 0.5;
+      mState.filterEnvAmount = 0.0;
+      mState.lfoShape = 0; // Sine
       mState.lfoRate = 0.5;
       mState.lfoDepth = 0.3;
+      mState.polyModOscBToFreqA = 0.0;
+      mState.polyModOscBToPWM = 0.0;
+      mState.polyModOscBToFilter = 0.0;
+      mState.polyModFilterEnvToFreqA = 0.0;
+      mState.polyModFilterEnvToPWM = 0.0;
+      mState.polyModFilterEnvToFilter = 0.0;
       printf("PRESET: Warm Pad loaded\n");
     } else if (msgTag == kMsgTagPreset2) {
       // Bright Lead - Fast attack, high cutoff, high resonance
@@ -316,9 +389,19 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.filterResonance = 0.7;
       mState.filterModel = 2;
       mState.oscAWaveform = 1; // Square
-      mState.lfoShape = 2;     // Square LFO
+      mState.oscBWaveform = 1; // Square
+      mState.oscAPulseWidth = 0.5;
+      mState.oscBPulseWidth = 0.5;
+      mState.filterEnvAmount = 0.0;
+      mState.lfoShape = 2; // Square LFO
       mState.lfoRate = 6.0;
       mState.lfoDepth = 0.0; // No LFO
+      mState.polyModOscBToFreqA = 0.0;
+      mState.polyModOscBToPWM = 0.0;
+      mState.polyModOscBToFilter = 0.0;
+      mState.polyModFilterEnvToFreqA = 0.0;
+      mState.polyModFilterEnvToPWM = 0.0;
+      mState.polyModFilterEnvToFilter = 0.0;
       printf("PRESET: Bright Lead loaded\n");
     } else if (msgTag == kMsgTagPreset3) {
       // Dark Bass - Medium attack, very low cutoff, medium resonance
@@ -331,9 +414,19 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.filterResonance = 0.5;
       mState.filterModel = 1;
       mState.oscAWaveform = 0; // Saw
-      mState.lfoShape = 1;     // Triangle
+      mState.oscBWaveform = 2; // Triangle
+      mState.oscAPulseWidth = 0.5;
+      mState.oscBPulseWidth = 0.5;
+      mState.filterEnvAmount = 0.0;
+      mState.lfoShape = 1; // Triangle
       mState.lfoRate = 2.0;
       mState.lfoDepth = 0.5;
+      mState.polyModOscBToFreqA = 0.0;
+      mState.polyModOscBToPWM = 0.0;
+      mState.polyModOscBToFilter = 0.0;
+      mState.polyModFilterEnvToFreqA = 0.0;
+      mState.polyModFilterEnvToPWM = 0.0;
+      mState.polyModFilterEnvToFilter = 0.0;
       printf("PRESET: Dark Bass loaded\n");
     }
 
@@ -345,11 +438,25 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
     GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
     GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+    GetParam(kParamFilterEnvAmount)->Set(mState.filterEnvAmount * 100.0);
     GetParam(kParamFilterModel)->Set((double)mState.filterModel);
     GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
+    GetParam(kParamOscBWave)->Set((double)mState.oscBWaveform);
     GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
     GetParam(kParamLFORateHz)->Set(mState.lfoRate);
     GetParam(kParamLFODepth)->Set(mState.lfoDepth * 100.0);
+    GetParam(kParamOscPulseWidthA)->Set(mState.oscAPulseWidth * 100.0);
+    GetParam(kParamOscPulseWidthB)->Set(mState.oscBPulseWidth * 100.0);
+    GetParam(kParamPolyModOscBToFreqA)->Set(mState.polyModOscBToFreqA * 100.0);
+    GetParam(kParamPolyModOscBToPWM)->Set(mState.polyModOscBToPWM * 100.0);
+    GetParam(kParamPolyModOscBToFilter)
+        ->Set(mState.polyModOscBToFilter * 100.0);
+    GetParam(kParamPolyModFilterEnvToFreqA)
+        ->Set(mState.polyModFilterEnvToFreqA * 100.0);
+    GetParam(kParamPolyModFilterEnvToPWM)
+        ->Set(mState.polyModFilterEnvToPWM * 100.0);
+    GetParam(kParamPolyModFilterEnvToFilter)
+        ->Set(mState.polyModFilterEnvToFilter * 100.0);
 
     // Notify UI of all param changes
     for (int i = 0; i < kNumParams; ++i) {

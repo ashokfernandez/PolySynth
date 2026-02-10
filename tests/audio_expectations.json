@@ -2,5 +2,6 @@
   "demo_render_wav": {"expected_freq": 440, "min_rms": 0.01},
   "demo_adsr": {"min_rms": 0.001},
   "demo_filter_sweep": {"min_rms": 0.01},
-  "demo_poly_chords": {"min_rms": 0.01}
+  "demo_poly_chords": {"min_rms": 0.01},
+  "demo_polymod": {"min_rms": 0.01}
 }

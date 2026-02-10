@@ -23,6 +23,8 @@ public:
     // This is a temporary bridge until VoiceManager reads state directly
     mVoiceManager.SetADSR(state.ampAttack, state.ampDecay, state.ampSustain,
                           state.ampRelease);
+    mVoiceManager.SetFilterEnv(state.filterAttack, state.filterDecay,
+                               state.filterSustain, state.filterRelease);
     mVoiceManager.SetFilter(state.filterCutoff, state.filterResonance,
                             state.filterEnvAmount);
     mVoiceManager.SetFilterModel(state.filterModel);
@@ -30,12 +32,27 @@ public:
     // Map Oscillator types
     // SynthState uses: 0=Saw, 1=Square (Osc A)
     // Oscillator.h uses: Saw=0, Square=1. Matches.
-    mVoiceManager.SetWaveform(
+    mVoiceManager.SetWaveformA(
         static_cast<PolySynthCore::Oscillator::WaveformType>(
             state.oscAWaveform));
+    mVoiceManager.SetWaveformB(
+        static_cast<PolySynthCore::Oscillator::WaveformType>(
+            state.oscBWaveform));
+    mVoiceManager.SetPulseWidthA(state.oscAPulseWidth);
+    mVoiceManager.SetPulseWidthB(state.oscBPulseWidth);
+    mVoiceManager.SetMixer(state.mixOscA, state.mixOscB,
+                           state.oscBFineTune * 100.0);
 
     // LFO
     mVoiceManager.SetLFO(state.lfoShape, state.lfoRate, state.lfoDepth);
+
+    // Poly-Mod
+    mVoiceManager.SetPolyModOscBToFreqA(state.polyModOscBToFreqA);
+    mVoiceManager.SetPolyModOscBToPWM(state.polyModOscBToPWM);
+    mVoiceManager.SetPolyModOscBToFilter(state.polyModOscBToFilter);
+    mVoiceManager.SetPolyModFilterEnvToFreqA(state.polyModFilterEnvToFreqA);
+    mVoiceManager.SetPolyModFilterEnvToPWM(state.polyModFilterEnvToPWM);
+    mVoiceManager.SetPolyModFilterEnvToFilter(state.polyModFilterEnvToFilter);
   }
 
   void ProcessBlock(sample **inputs, sample **outputs, int nOutputs,
