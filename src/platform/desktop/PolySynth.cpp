@@ -64,6 +64,18 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamPolyModFilterEnvToPWM)->InitPercentage("Env -> PWM A");
   GetParam(kParamPolyModFilterEnvToFilter)->InitPercentage("Env -> Filter");
 
+  // FX Params
+  GetParam(kParamChorusRate)->InitFrequency("Chorus Rate", 0.25, 0.05, 2.0);
+  GetParam(kParamChorusDepth)
+      ->InitDouble("Chorus Depth", 50., 0., 100., 1., "%");
+  GetParam(kParamChorusMix)->InitDouble("Chorus Mix", 0., 0., 100., 1., "%");
+  GetParam(kParamDelayTime)->InitMilliseconds("Delay Time", 350., 50., 1200.);
+  GetParam(kParamDelayFeedback)
+      ->InitDouble("Delay Feedback", 35., 0., 95., 1., "%");
+  GetParam(kParamDelayMix)->InitDouble("Delay Mix", 0., 0., 100., 1., "%");
+  GetParam(kParamLimiterThreshold)
+      ->InitDouble("Limiter Threshold", 95., 50., 100., 1., "%");
+
 #if IPLUG_EDITOR
   mEditorInitFunc = [&]() {
 #if defined _DEBUG
@@ -126,7 +138,7 @@ void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
         }
         msg.MakeNoteOnMsg(currNote, 100, 0);
         mDSP.ProcessMidiMsg(msg);
-      } else if (mDemoMode == 2) { // Poly
+      } else if (mDemoMode == 2 || mDemoMode == 3) { // Poly / FX
         int chords[4][3] = {
             {60, 64, 67}, // C
             {60, 65, 69}, // F
@@ -252,6 +264,27 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
   case kParamPolyModFilterEnvToFilter:
     mState.polyModFilterEnvToFilter = value / 100.0;
     break;
+  case kParamChorusRate:
+    mState.fxChorusRate = value;
+    break;
+  case kParamChorusDepth:
+    mState.fxChorusDepth = value / 100.0;
+    break;
+  case kParamChorusMix:
+    mState.fxChorusMix = value / 100.0;
+    break;
+  case kParamDelayTime:
+    mState.fxDelayTime = value / 1000.0;
+    break;
+  case kParamDelayFeedback:
+    mState.fxDelayFeedback = value / 100.0;
+    break;
+  case kParamDelayMix:
+    mState.fxDelayMix = value / 100.0;
+    break;
+  case kParamLimiterThreshold:
+    mState.fxLimiterThreshold = value / 100.0;
+    break;
   default:
     break;
   }
@@ -289,6 +322,38 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mDemoNoteIndex = -1;
     }
     return true;
+  } else if (msgTag == kMsgTagDemoFX) {
+    if (mDemoMode == 3) {
+      mDemoMode = 0;
+      mState.fxChorusMix = 0.0;
+      mState.fxDelayMix = 0.0;
+      mState.fxLimiterThreshold = 0.95;
+      mDSP.Reset(GetSampleRate(), GetBlockSize());
+    } else {
+      mDSP.Reset(GetSampleRate(), GetBlockSize());
+      mDemoMode = 3;
+      mDemoSampleCounter = (int)(GetSampleRate() * 0.25);
+      mDemoNoteIndex = -1;
+      mState.fxChorusRate = 0.35;
+      mState.fxChorusDepth = 0.65;
+      mState.fxChorusMix = 0.35;
+      mState.fxDelayTime = 0.45;
+      mState.fxDelayFeedback = 0.45;
+      mState.fxDelayMix = 0.35;
+      mState.fxLimiterThreshold = 0.7;
+    }
+    GetParam(kParamChorusRate)->Set(mState.fxChorusRate);
+    GetParam(kParamChorusDepth)->Set(mState.fxChorusDepth * 100.0);
+    GetParam(kParamChorusMix)->Set(mState.fxChorusMix * 100.0);
+    GetParam(kParamDelayTime)->Set(mState.fxDelayTime * 1000.0);
+    GetParam(kParamDelayFeedback)->Set(mState.fxDelayFeedback * 100.0);
+    GetParam(kParamDelayMix)->Set(mState.fxDelayMix * 100.0);
+    GetParam(kParamLimiterThreshold)->Set(mState.fxLimiterThreshold * 100.0);
+
+    for (int i = 0; i < kNumParams; ++i) {
+      SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
+    }
+    return true;
   } else if (msgTag == kMsgTagSavePreset) {
     // Save current state to demo preset file
     WDL_String presetPath;
@@ -316,11 +381,8 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
       GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
       GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
-<<<<<<< HEAD
       GetParam(kParamFilterEnvAmount)->Set(mState.filterEnvAmount * 100.0);
-=======
       GetParam(kParamFilterModel)->Set((double)mState.filterModel);
->>>>>>> main
       GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
       GetParam(kParamOscBWave)->Set((double)mState.oscBWaveform);
       GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
@@ -339,6 +401,13 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
           ->Set(mState.polyModFilterEnvToPWM * 100.0);
       GetParam(kParamPolyModFilterEnvToFilter)
           ->Set(mState.polyModFilterEnvToFilter * 100.0);
+      GetParam(kParamChorusRate)->Set(mState.fxChorusRate);
+      GetParam(kParamChorusDepth)->Set(mState.fxChorusDepth * 100.0);
+      GetParam(kParamChorusMix)->Set(mState.fxChorusMix * 100.0);
+      GetParam(kParamDelayTime)->Set(mState.fxDelayTime * 1000.0);
+      GetParam(kParamDelayFeedback)->Set(mState.fxDelayFeedback * 100.0);
+      GetParam(kParamDelayMix)->Set(mState.fxDelayMix * 100.0);
+      GetParam(kParamLimiterThreshold)->Set(mState.fxLimiterThreshold * 100.0);
 
       // Notify UI of all param changes
       for (int i = 0; i < kNumParams; ++i) {
@@ -430,6 +499,14 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       printf("PRESET: Dark Bass loaded\n");
     }
 
+    mState.fxChorusRate = 0.25;
+    mState.fxChorusDepth = 0.5;
+    mState.fxChorusMix = 0.0;
+    mState.fxDelayTime = 0.35;
+    mState.fxDelayFeedback = 0.35;
+    mState.fxDelayMix = 0.0;
+    mState.fxLimiterThreshold = 0.95;
+
     // Sync UI with loaded state by updating all parameters
     GetParam(kParamGain)->Set(mState.masterGain * 100.0);
     GetParam(kParamAttack)->Set(mState.ampAttack * 1000.0);
@@ -457,6 +534,13 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
         ->Set(mState.polyModFilterEnvToPWM * 100.0);
     GetParam(kParamPolyModFilterEnvToFilter)
         ->Set(mState.polyModFilterEnvToFilter * 100.0);
+    GetParam(kParamChorusRate)->Set(mState.fxChorusRate);
+    GetParam(kParamChorusDepth)->Set(mState.fxChorusDepth * 100.0);
+    GetParam(kParamChorusMix)->Set(mState.fxChorusMix * 100.0);
+    GetParam(kParamDelayTime)->Set(mState.fxDelayTime * 1000.0);
+    GetParam(kParamDelayFeedback)->Set(mState.fxDelayFeedback * 100.0);
+    GetParam(kParamDelayMix)->Set(mState.fxDelayMix * 100.0);
+    GetParam(kParamLimiterThreshold)->Set(mState.fxLimiterThreshold * 100.0);
 
     // Notify UI of all param changes
     for (int i = 0; i < kNumParams; ++i) {

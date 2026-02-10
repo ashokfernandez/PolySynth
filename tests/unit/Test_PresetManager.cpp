@@ -56,6 +56,14 @@ CATCH_TEST_CASE("PresetManager serialization round-trip", "[preset]") {
   original.polyModFilterEnvToPWM = 0.45;
   original.polyModFilterEnvToFilter = 0.5;
 
+  original.fxChorusRate = 0.4;
+  original.fxChorusDepth = 0.7;
+  original.fxChorusMix = 0.3;
+  original.fxDelayTime = 0.5;
+  original.fxDelayFeedback = 0.45;
+  original.fxDelayMix = 0.4;
+  original.fxLimiterThreshold = 0.6;
+
   // Serialize
   std::string jsonStr = PresetManager::Serialize(original);
   CATCH_REQUIRE(!jsonStr.empty());
@@ -116,6 +124,14 @@ CATCH_TEST_CASE("PresetManager serialization round-trip", "[preset]") {
               original.polyModFilterEnvToPWM);
   CATCH_CHECK(loaded.polyModFilterEnvToFilter ==
               original.polyModFilterEnvToFilter);
+
+  CATCH_CHECK(loaded.fxChorusRate == original.fxChorusRate);
+  CATCH_CHECK(loaded.fxChorusDepth == original.fxChorusDepth);
+  CATCH_CHECK(loaded.fxChorusMix == original.fxChorusMix);
+  CATCH_CHECK(loaded.fxDelayTime == original.fxDelayTime);
+  CATCH_CHECK(loaded.fxDelayFeedback == original.fxDelayFeedback);
+  CATCH_CHECK(loaded.fxDelayMix == original.fxDelayMix);
+  CATCH_CHECK(loaded.fxLimiterThreshold == original.fxLimiterThreshold);
 }
 
 CATCH_TEST_CASE("PresetManager handles invalid JSON gracefully", "[preset]") {

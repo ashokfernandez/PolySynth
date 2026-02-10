@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VoiceManager.h"
+#include "dsp/fx/FXEngine.h"
 #include "types.h"
 #include <cstdint>
 #include <cstring>
@@ -16,10 +17,15 @@ public:
   // --- Lifecycle ---
   void Init(double sampleRate) {
     mSampleRate = sampleRate;
+    mVoiceManager.Init(sampleRate);
+    mFxEngine.Init(sampleRate);
     Reset();
   }
 
-  void Reset() { mVoiceManager.Reset(); }
+  void Reset() {
+    mVoiceManager.Reset();
+    mFxEngine.Reset();
+  }
 
   // --- Events ---
   void OnNoteOn(int note, int velocity) {
@@ -87,19 +93,40 @@ public:
     mVoiceManager.SetPolyModFilterEnvToFilter(amount);
   }
 
+  // --- FX Setters ---
+  void SetChorus(double rateHz, double depth, double mix) {
+    mFxEngine.SetChorus(rateHz, depth, mix);
+  }
+  void SetDelay(double timeSec, double feedback, double mix) {
+    mFxEngine.SetDelay(timeSec, feedback, mix);
+  }
+  void SetDelayTempo(double bpm, double division) {
+    mFxEngine.SetDelayTempo(bpm, division);
+  }
+  void SetLimiter(double threshold, double lookaheadMs, double releaseMs) {
+    mFxEngine.SetLimiter(threshold, lookaheadMs, releaseMs);
+  }
+
   // --- Audio Processing ---
   void Process(sample_t &left, sample_t &right) {
     sample_t out = mVoiceManager.Process();
     left = out;
     right = out;
+    mFxEngine.Process(left, right);
   }
 
   void Process(sample_t **inputs, sample_t **outputs, int nFrames, int nChans) {
     // Basic stereo copy for now
     for (int i = 0; i < nFrames; ++i) {
       sample_t out = mVoiceManager.Process();
-      for (int c = 0; c < nChans; ++c) {
-        outputs[c][i] = out;
+      sample_t left = out;
+      sample_t right = out;
+      mFxEngine.Process(left, right);
+      if (nChans > 0) {
+        outputs[0][i] = left;
+      }
+      if (nChans > 1) {
+        outputs[1][i] = right;
       }
     }
   }
@@ -107,6 +134,7 @@ public:
 private:
   double mSampleRate;
   VoiceManager mVoiceManager;
+  FXEngine mFxEngine;
 };
 
 } // namespace PolySynthCore

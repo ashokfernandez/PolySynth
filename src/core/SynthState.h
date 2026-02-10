@@ -69,6 +69,15 @@ struct SynthState {
   double polyModFilterEnvToPWM = 0.0;
   double polyModFilterEnvToFilter = 0.0; // This is usually "Filter Env Amount"
 
+  // --- FX (Epic 4.1) ------------------------
+  double fxChorusRate = 0.25;   // Hz
+  double fxChorusDepth = 0.5;   // 0.0 to 1.0
+  double fxChorusMix = 0.0;     // 0.0 to 1.0
+  double fxDelayTime = 0.35;    // Seconds
+  double fxDelayFeedback = 0.35; // 0.0 to 0.95
+  double fxDelayMix = 0.0;      // 0.0 to 1.0
+  double fxLimiterThreshold = 0.95; // 0.0 to 1.0
+
   // --- Helper Methods -----------------------
   void Reset() {
     masterGain = 1.0;
@@ -79,6 +88,13 @@ struct SynthState {
     filterResonance = 0.0;
     filterModel = 0;
     polyphony = 8;
+    fxChorusRate = 0.25;
+    fxChorusDepth = 0.5;
+    fxChorusMix = 0.0;
+    fxDelayTime = 0.35;
+    fxDelayFeedback = 0.35;
+    fxDelayMix = 0.0;
+    fxLimiterThreshold = 0.95;
   }
 };
 

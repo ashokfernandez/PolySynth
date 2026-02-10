@@ -31,6 +31,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_LFO.cpp
     unit/Test_VoiceManager_Poly.cpp
     unit/Test_VAFilters.cpp
+    unit/Test_FXEngine.cpp
     unit/Test_PresetManager.cpp
     unit/Test_FactoryPresets.cpp
     unit/Test_PresetFileIO.cpp
@@ -65,3 +66,6 @@ add_executable(demo_lfo_filter_wobble demos/demo_lfo_filter_wobble.cpp)
 
 # Preset demo
 add_executable(demo_factory_presets demos/demo_factory_presets.cpp)
+
+# FX demo
+add_executable(demo_fx_engine demos/demo_fx_engine.cpp)

@@ -2,16 +2,22 @@
 
 #include "../../core/SynthState.h"
 #include "../../core/VoiceManager.h"
+#include "../../core/dsp/fx/FXEngine.h"
 #include "IPlugConstants.h"
 
 using namespace iplug;
 
 class PolySynthDSP {
 public:
-  PolySynthDSP(int nVoices) { mVoiceManager.Init(44100.0); }
+  PolySynthDSP(int nVoices) {
+    mVoiceManager.Init(44100.0);
+    mFxEngine.Init(44100.0);
+  }
 
   void Reset(double sampleRate, int blockSize) {
     mVoiceManager.Init(sampleRate);
+    mFxEngine.Init(sampleRate);
+    mFxEngine.Reset();
   }
 
   // Called from ProcessBlock in the plugin, before audio processing
@@ -53,6 +59,13 @@ public:
     mVoiceManager.SetPolyModFilterEnvToFreqA(state.polyModFilterEnvToFreqA);
     mVoiceManager.SetPolyModFilterEnvToPWM(state.polyModFilterEnvToPWM);
     mVoiceManager.SetPolyModFilterEnvToFilter(state.polyModFilterEnvToFilter);
+
+    // FX
+    mFxEngine.SetChorus(state.fxChorusRate, state.fxChorusDepth,
+                        state.fxChorusMix);
+    mFxEngine.SetDelay(state.fxDelayTime, state.fxDelayFeedback,
+                       state.fxDelayMix);
+    mFxEngine.SetLimiter(state.fxLimiterThreshold, 5.0, 50.0);
   }
 
   void ProcessBlock(sample **inputs, sample **outputs, int nOutputs,
@@ -70,11 +83,15 @@ public:
       // Apply Gain
       out *= mGain; // mGain is now 0.0-1.0 from state
 
+      PolySynthCore::sample_t left = out;
+      PolySynthCore::sample_t right = out;
+      mFxEngine.Process(left, right);
+
       // Mono to Stereo copy
       if (nOutputs > 0)
-        outputs[0][s] = (sample)out;
+        outputs[0][s] = (sample)left;
       if (nOutputs > 1)
-        outputs[1][s] = (sample)out;
+        outputs[1][s] = (sample)right;
     }
   }
 
@@ -96,6 +113,7 @@ public:
   }
 
   PolySynthCore::VoiceManager mVoiceManager;
+  PolySynthCore::FXEngine mFxEngine;
 
 private:
   double mGain = 1.0;
