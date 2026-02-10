@@ -1,3 +1,4 @@
+#define CATCH_CONFIG_PREFIX_ALL
 #include "../../src/core/Engine.h"
 #include "catch.hpp"
 
