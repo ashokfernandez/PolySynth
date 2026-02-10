@@ -9,13 +9,13 @@
 #include <sea_dsp/sea_ladder_filter.h>
 #include <sea_dsp/sea_lfo.h>
 #include <sea_dsp/sea_oscillator.h>
-#include <sea_dsp/sea_prophet_filter.h>
+#include <sea_dsp/sea_cascade_filter.h>
 
 namespace PolySynthCore {
 
 class Voice {
 public:
-  enum class FilterModel { Classic, Ladder, Prophet12, Prophet24 };
+  enum class FilterModel { Classic, Ladder, Cascade12, Cascade24 };
 
   Voice() = default;
 
@@ -32,7 +32,7 @@ public:
     mFilter.Init(sampleRate);
     mFilter.SetParams(sea::FilterType::LowPass, 2000.0, 0.707);
     mLadderFilter.Init(sampleRate);
-    mProphetFilter.Init(sampleRate);
+    mCascadeFilter.Init(sampleRate);
 
     mAmpEnv.Init(sampleRate);
     mAmpEnv.SetParams(0.01, 0.1, 1.0, 0.2);
@@ -138,15 +138,15 @@ public:
                               cutoff, mBaseRes);
       flt = mLadderFilter.Process(mixed);
       break;
-    case FilterModel::Prophet12:
-      mProphetFilter.SetParams(cutoff, mBaseRes,
-                               sea::ProphetFilter<sample_t>::Slope::dB12);
-      flt = mProphetFilter.Process(mixed);
+    case FilterModel::Cascade12:
+      mCascadeFilter.SetParams(cutoff, mBaseRes,
+                               sea::CascadeFilter<sample_t>::Slope::dB12);
+      flt = mCascadeFilter.Process(mixed);
       break;
-    case FilterModel::Prophet24:
-      mProphetFilter.SetParams(cutoff, mBaseRes,
-                               sea::ProphetFilter<sample_t>::Slope::dB24);
-      flt = mProphetFilter.Process(mixed);
+    case FilterModel::Cascade24:
+      mCascadeFilter.SetParams(cutoff, mBaseRes,
+                               sea::CascadeFilter<sample_t>::Slope::dB24);
+      flt = mCascadeFilter.Process(mixed);
       break;
     case FilterModel::Classic:
     default:
@@ -249,7 +249,7 @@ private:
   sea::Oscillator mOscB;
   sea::BiquadFilter<sample_t> mFilter;
   sea::LadderFilter<sample_t> mLadderFilter;
-  sea::ProphetFilter<sample_t> mProphetFilter;
+  sea::CascadeFilter<sample_t> mCascadeFilter;
   sea::ADSREnvelope mAmpEnv;
   sea::ADSREnvelope mFilterEnv;
   sea::LFO mLfo;

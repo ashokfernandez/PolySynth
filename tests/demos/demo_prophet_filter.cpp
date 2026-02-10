@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include <sea_dsp/sea_platform.h>
-#include <sea_dsp/sea_prophet_filter.h>
+#include <sea_dsp/sea_cascade_filter.h>
 #include <vector>
 
 int main() {
@@ -11,9 +11,9 @@ int main() {
   const double duration = 4.0;
   const int totalSamples = static_cast<int>(duration * sampleRate);
 
-  std::cout << "Rendering Prophet Filter Demo..." << std::endl;
+  std::cout << "Rendering Cascade Filter Demo..." << std::endl;
 
-  sea::ProphetFilter<PolySynthCore::sample_t> filter;
+  sea::CascadeFilter<PolySynthCore::sample_t> filter;
   filter.Init(sampleRate);
 
   std::vector<float> output;
@@ -27,8 +27,8 @@ int main() {
     double cutoff = 400.0 + 4600.0 * (0.5 * (1.0 + std::sin(t * 0.5)));
     double resonance = 0.2 + 0.6 * (0.5 * (1.0 + std::sin(t * 0.25)));
     auto slope = (t < duration * 0.5)
-                     ? sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB12
-                     : sea::ProphetFilter<PolySynthCore::sample_t>::Slope::dB24;
+                     ? sea::CascadeFilter<PolySynthCore::sample_t>::Slope::dB12
+                     : sea::CascadeFilter<PolySynthCore::sample_t>::Slope::dB24;
 
     filter.SetParams(cutoff, resonance, slope);
 

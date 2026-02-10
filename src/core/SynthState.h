@@ -38,7 +38,7 @@ struct SynthState {
   double filterCutoff = 2000.0; // Hz
   double filterResonance = 0.0; // 0.0 to 1.0
   double filterEnvAmount = 0.0; // 0.0 to 1.0
-  int filterModel = 0;          // 0=Classic, 1=Ladder, 2=Prophet12, 3=Prophet24
+  int filterModel = 0;          // 0=Classic, 1=Ladder, 2=Cascade12, 3=Cascade24
   bool filterKeyboardTrack =
       false; // Full/Half/Off in hardware, uses float 0-1 for amount maybe?
 

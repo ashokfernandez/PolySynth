@@ -12,3 +12,9 @@ option(SEA_PLATFORM_EMBEDDED "Build for embedded platform (float)" OFF)
 if(SEA_PLATFORM_EMBEDDED)
     target_compile_definitions(SEA_DSP INTERFACE SEA_PLATFORM_EMBEDDED)
 endif()
+
+# Tests
+option(SEA_BUILD_TESTS "Build SEA_DSP unit tests" OFF)
+if(SEA_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()

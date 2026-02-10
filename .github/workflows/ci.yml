@@ -36,6 +36,12 @@ jobs:
           cd tests/build
           ./run_tests
 
+      - name: Build and Run SEA_DSP Unit Tests
+        run: |
+          cmake -S libs/SEA_DSP -B build/sea_dsp_tests -DSEA_BUILD_TESTS=ON
+          cmake --build build/sea_dsp_tests
+          ./build/sea_dsp_tests/tests/sea_tests
+
       - name: Audio Golden Master Verification
         run: |
           python3 scripts/golden_master.py --verify

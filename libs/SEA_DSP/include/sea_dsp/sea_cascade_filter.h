@@ -4,11 +4,11 @@
 
 namespace sea {
 
-template <typename T> class ProphetFilter {
+template <typename T> class CascadeFilter {
 public:
   enum class Slope { dB12, dB24 };
 
-  ProphetFilter() = default;
+  CascadeFilter() = default;
 
   void Init(T sampleRate) {
     mSampleRate = sampleRate;
