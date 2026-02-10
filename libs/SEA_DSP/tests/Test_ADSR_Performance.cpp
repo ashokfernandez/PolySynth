@@ -83,9 +83,10 @@ TEST_CASE("ADSR NoteOff Correctness", "[ADSR][Correctness]") {
   }
 }
 
-TEST_CASE("ADSR NoteOff No Division", "[ADSR][Performance]") {
-  // This test verifies that the optimization works by checking
-  // that different release levels use the same coefficient
+TEST_CASE("ADSR NoteOff Release Proportionality", "[ADSR][Correctness]") {
+  // This test verifies that release decrements are proportional to starting level.
+  // This is the correct behavior regardless of whether the implementation
+  // uses multiplication or division internally.
   sea::ADSREnvelope adsr1, adsr2;
   adsr1.Init(44100.0);
   adsr2.Init(44100.0);
