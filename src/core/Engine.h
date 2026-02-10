@@ -17,6 +17,7 @@ public:
   // --- Lifecycle ---
   void Init(double sampleRate) {
     mSampleRate = sampleRate;
+    mVoiceManager.Init(sampleRate);
     mFxEngine.Init(sampleRate);
     Reset();
   }

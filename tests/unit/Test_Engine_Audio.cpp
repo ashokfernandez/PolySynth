@@ -18,8 +18,11 @@ TEST_CASE("Engine Produces Audio On Note", "[Engine]") {
   // 2. Note On
   engine.OnNoteOn(69, 127); // A4
 
-  // 3. Process
-  engine.Process(nullptr, outputs, 100, 2);
+  // 3. Process - need to process enough samples to account for limiter
+  // lookahead (5ms = ~240 samples at 48kHz) Process 300 samples to be safe
+  for (int block = 0; block < 3; block++) {
+    engine.Process(nullptr, outputs, 100, 2);
+  }
 
   // Should have signal now.
   double energy = 0.0;
