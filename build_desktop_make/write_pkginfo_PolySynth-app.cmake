@@ -1,1 +1,0 @@
-file(WRITE "${PKGINFO_PATH}" "APPL????")

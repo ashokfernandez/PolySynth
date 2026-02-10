@@ -5,8 +5,8 @@
 *.swo
 
 # Build Artifacts
-build/
-build_desktop/
+build*/
+build_desktop*/
 build-web/
 ComponentGallery/build-web/
 bin/
@@ -15,6 +15,17 @@ obj/
 *.a
 *.dylib
 *.dll
+*.framework/
+*.vst3/
+*.app/
+*.component/
+*.clap/
+*.bak
+
+# Logs
+debug_logs/
+*.log
+full_ci_log.txt
 
 # Dependencies (Managed by scripts)
 external/
@@ -38,5 +49,4 @@ src/platform/desktop/build-*/
 src/platform/desktop/*.xcworkspace
 src/platform/desktop/*.xcodeproj
 src/platform/desktop/*.sln
-# *.txt (Removed broad ignore)
 plans/*.pdf

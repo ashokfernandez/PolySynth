@@ -1,3 +1,0 @@
-# Hashes of file build rules.
-25f3acb152856d814e38e4be1c818b67 IPlugAUViewController_vPolySynth.nib
-d9d4d6c52d9e303528ffb1bb2b374932 PolySynth-macOS-MainMenu.nib

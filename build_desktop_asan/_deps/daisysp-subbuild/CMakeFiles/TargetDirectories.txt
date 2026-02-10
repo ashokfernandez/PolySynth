@@ -1,3 +1,0 @@
-/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/CMakeFiles/daisysp-populate.dir
-/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/CMakeFiles/ALL_BUILD.dir
-/Users/ashokfernandez/Software/PolySynth/build_desktop_asan/_deps/daisysp-subbuild/CMakeFiles/ZERO_CHECK.dir
