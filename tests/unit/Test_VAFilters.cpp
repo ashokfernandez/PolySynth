@@ -1,8 +1,11 @@
 #include "../../src/core/dsp/va/TPTIntegrator.h"
 #include "../../src/core/dsp/va/VALadderFilter.h"
+#include "../../src/core/dsp/va/VAProphetFilter.h"
 #include "../../src/core/dsp/va/VASKFilter.h"
 #include "../../src/core/dsp/va/VASVFilter.h"
+#include "../../src/core/VoiceManager.h"
 #include "catch.hpp"
+#include <algorithm>
 #include <cmath>
 
 using namespace PolySynthCore;
@@ -103,6 +106,18 @@ TEST_CASE("Ladder Filter Stability", "[VAFilter][Ladder]") {
   REQUIRE(maxAmp > 0.5);
 }
 
+TEST_CASE("Ladder Filter Saturation", "[VAFilter][Ladder][Saturation]") {
+  VALadderFilter ladder;
+  ladder.Init(44100.0);
+  ladder.SetParams(VALadderFilter::Model::Transistor, 800.0, 0.0);
+
+  double out = 0.0;
+  for (int i = 0; i < 200; ++i)
+    out = ladder.Process(5.0);
+
+  REQUIRE(std::abs(out) < 4.0);
+}
+
 TEST_CASE("Sallen-Key Filter Check", "[VAFilter][SKF]") {
   VASKFilter skf;
   skf.Init(44100.0);
@@ -124,4 +139,91 @@ TEST_CASE("Sallen-Key Filter Check", "[VAFilter][SKF]") {
   skf.SetParams(20000.0, 3.0);
   out = skf.Process(0.1);
   REQUIRE(std::isfinite(out));
+}
+
+TEST_CASE("Prophet Filter Slopes", "[VAFilter][Prophet]") {
+  VAProphetFilter prophet;
+  prophet.Init(44100.0);
+  prophet.SetParams(1200.0, 0.2, VAProphetFilter::Slope::dB12);
+
+  double out12 = 0.0;
+  for (int i = 0; i < 400; ++i)
+    out12 = prophet.Process(1.0);
+
+  prophet.Reset();
+  prophet.SetParams(1200.0, 0.2, VAProphetFilter::Slope::dB24);
+
+  double out24 = 0.0;
+  for (int i = 0; i < 400; ++i)
+    out24 = prophet.Process(1.0);
+
+  REQUIRE(out12 == Approx(1.0).margin(0.02));
+  REQUIRE(out24 == Approx(1.0).margin(0.02));
+
+  prophet.Reset();
+  prophet.SetParams(1200.0, 0.2, VAProphetFilter::Slope::dB12);
+  double energy12 = 0.0;
+  for (int i = 0; i < 400; ++i) {
+    double in = (i % 2 == 0) ? 1.0 : -1.0;
+    energy12 += std::abs(prophet.Process(in));
+  }
+
+  prophet.Reset();
+  prophet.SetParams(1200.0, 0.2, VAProphetFilter::Slope::dB24);
+  double energy24 = 0.0;
+  for (int i = 0; i < 400; ++i) {
+    double in = (i % 2 == 0) ? 1.0 : -1.0;
+    energy24 += std::abs(prophet.Process(in));
+  }
+
+  REQUIRE(energy24 < energy12);
+}
+
+TEST_CASE("Prophet Filter Resonance Response", "[VAFilter][Prophet]") {
+  VAProphetFilter prophet;
+  prophet.Init(44100.0);
+
+  prophet.SetParams(1000.0, 0.1, VAProphetFilter::Slope::dB24);
+  double maxLow = 0.0;
+  double phase = 0.0;
+  double phaseInc = kTwoPi * 1000.0 / 44100.0;
+  for (int i = 0; i < 2000; ++i) {
+    double in = std::sin(phase) * 0.1;
+    phase += phaseInc;
+    maxLow = std::max(maxLow, std::abs(prophet.Process(in)));
+  }
+
+  prophet.Reset();
+  prophet.SetParams(1000.0, 0.9, VAProphetFilter::Slope::dB24);
+  double maxHigh = 0.0;
+  phase = 0.0;
+  for (int i = 0; i < 2000; ++i) {
+    double in = std::sin(phase) * 0.1;
+    phase += phaseInc;
+    maxHigh = std::max(maxHigh, std::abs(prophet.Process(in)));
+  }
+
+  REQUIRE(maxHigh > maxLow);
+  REQUIRE(std::isfinite(maxHigh));
+}
+
+TEST_CASE("Voice Filter Models Remain Stable", "[VAFilter][Voice]") {
+  Voice voice;
+  voice.Init(44100.0);
+  voice.NoteOn(60, 100);
+  voice.SetFilter(1200.0, 0.6, 0.0);
+
+  const Voice::FilterModel models[] = {Voice::FilterModel::Classic,
+                                       Voice::FilterModel::Ladder,
+                                       Voice::FilterModel::Prophet12,
+                                       Voice::FilterModel::Prophet24};
+
+  for (const auto model : models) {
+    voice.SetFilterModel(model);
+    double last = 0.0;
+    for (int i = 0; i < 256; ++i) {
+      last = voice.Process();
+    }
+    REQUIRE(std::isfinite(last));
+  }
 }

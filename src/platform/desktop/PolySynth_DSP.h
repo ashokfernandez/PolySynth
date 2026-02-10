@@ -23,7 +23,9 @@ public:
     // This is a temporary bridge until VoiceManager reads state directly
     mVoiceManager.SetADSR(state.ampAttack, state.ampDecay, state.ampSustain,
                           state.ampRelease);
-    mVoiceManager.SetFilter(state.filterCutoff, state.filterResonance);
+    mVoiceManager.SetFilter(state.filterCutoff, state.filterResonance,
+                            state.filterEnvAmount);
+    mVoiceManager.SetFilterModel(state.filterModel);
 
     // Map Oscillator types
     // SynthState uses: 0=Saw, 1=Square (Osc A)
@@ -33,9 +35,7 @@ public:
             state.oscAWaveform));
 
     // LFO
-    mVoiceManager.SetLFOType(state.lfoShape);
-    mVoiceManager.SetLFORate(state.lfoRate);
-    mVoiceManager.SetLFODepth(state.lfoDepth);
+    mVoiceManager.SetLFO(state.lfoShape, state.lfoRate, state.lfoDepth);
   }
 
   void ProcessBlock(sample **inputs, sample **outputs, int nOutputs,

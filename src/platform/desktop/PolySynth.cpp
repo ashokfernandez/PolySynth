@@ -38,6 +38,9 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
                    "Filter", IParam::ShapeExp());
   GetParam(kParamFilterResonance)
       ->InitDouble("Resonance", 0., 0., 100., 1., "%");
+  GetParam(kParamFilterModel)
+      ->InitEnum("Filter Model", 0,
+                 {"Classic", "Ladder", "Prophet 12", "Prophet 24"});
 
   // Oscillator Params
   GetParam(kParamOscWave)
@@ -193,6 +196,9 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
   case kParamFilterResonance:
     mState.filterResonance = value / 100.0;
     break;
+  case kParamFilterModel:
+    mState.filterModel = static_cast<int>(value);
+    break;
   case kParamOscWave:
     mState.oscAWaveform = (int)value;
     break;
@@ -265,6 +271,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
       GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
       GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+      GetParam(kParamFilterModel)->Set((double)mState.filterModel);
       GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
       GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
       GetParam(kParamLFORateHz)->Set(mState.lfoRate);
@@ -292,6 +299,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.ampRelease = 1.0; // 1 second
       mState.filterCutoff = 800.0;
       mState.filterResonance = 0.1;
+      mState.filterModel = 0;
       mState.oscAWaveform = 0; // Saw
       mState.lfoShape = 0;     // Sine
       mState.lfoRate = 0.5;
@@ -306,6 +314,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.ampRelease = 0.2;
       mState.filterCutoff = 18000.0;
       mState.filterResonance = 0.7;
+      mState.filterModel = 2;
       mState.oscAWaveform = 1; // Square
       mState.lfoShape = 2;     // Square LFO
       mState.lfoRate = 6.0;
@@ -320,6 +329,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.ampRelease = 0.15;
       mState.filterCutoff = 300.0;
       mState.filterResonance = 0.5;
+      mState.filterModel = 1;
       mState.oscAWaveform = 0; // Saw
       mState.lfoShape = 1;     // Triangle
       mState.lfoRate = 2.0;
@@ -335,6 +345,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
     GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
     GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+    GetParam(kParamFilterModel)->Set((double)mState.filterModel);
     GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
     GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
     GetParam(kParamLFORateHz)->Set(mState.lfoRate);

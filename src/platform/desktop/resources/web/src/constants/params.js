@@ -10,7 +10,8 @@ export const PARAMS = {
     CUTOFF: 11,
     RESONANCE: 12,
     OSC_WAVE: 13,
-    OSC_MIX: 14
+    OSC_MIX: 14,
+    FILTER_MODEL: 15
 };
 
 export const PARAM_META = {
@@ -24,6 +25,10 @@ export const PARAM_META = {
     [PARAMS.LFO_DEPTH]: { name: 'LFO Depth', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.CUTOFF]: { name: 'Cutoff', min: 20, max: 20000, unit: 'Hz', decimals: 0 },
     [PARAMS.RESONANCE]: { name: 'Resonance', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.FILTER_MODEL]: {
+        name: 'Filter Model',
+        items: ['Classic', 'Ladder', 'Prophet 12', 'Prophet 24']
+    },
     [PARAMS.OSC_WAVE]: { name: 'Osc Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
     [PARAMS.OSC_MIX]: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 }
 };
