@@ -3,6 +3,7 @@ import { useIPlug } from './hooks/useIPlug';
 import Knob from './components/Knob';
 import Fader from './components/Fader';
 import Envelope from './components/Envelope';
+import Keyboard from './components/Keyboard';
 import { PARAMS, PARAM_META, mapParamValue } from './constants/params';
 import './index.css';
 

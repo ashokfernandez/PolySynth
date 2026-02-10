@@ -26,5 +26,5 @@ src/platform/desktop/build-*/
 src/platform/desktop/*.xcworkspace
 src/platform/desktop/*.xcodeproj
 src/platform/desktop/*.sln
-*.txt
+# *.txt (Removed broad ignore)
 plans/*.pdf
