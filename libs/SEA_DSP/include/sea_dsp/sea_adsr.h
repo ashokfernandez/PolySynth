@@ -3,6 +3,14 @@
 #include "sea_platform.h"
 #include <algorithm>
 
+#if !defined(SEA_DSP_ADSR_BACKEND_SEA_CORE) && !defined(SEA_DSP_ADSR_BACKEND_DAISYSP)
+#define SEA_DSP_ADSR_BACKEND_SEA_CORE
+#endif
+
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+#include "daisysp.h"
+#endif
+
 namespace sea {
 
 class ADSREnvelope {
@@ -13,13 +21,31 @@ public:
 
   void Init(Real sampleRate) {
     mSampleRate = sampleRate;
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+    mAdsr.Init(static_cast<float>(sampleRate));
+    mGate = false;
+    SetParams(mA, mD, mS, mR);
+    Reset();
+#else
     CalculateCoefficients();
     Reset();
+#endif
   }
 
   void Reset() {
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+    mGate = false;
     mStage = kIdle;
     mLevel = static_cast<Real>(0.0);
+    mAdsr.Init(static_cast<float>(mSampleRate));
+    mAdsr.SetAttackTime(static_cast<float>(mA));
+    mAdsr.SetDecayTime(static_cast<float>(mD));
+    mAdsr.SetSustainLevel(static_cast<float>(mS));
+    mAdsr.SetReleaseTime(static_cast<float>(mR));
+#else
+    mStage = kIdle;
+    mLevel = static_cast<Real>(0.0);
+#endif
   }
 
   void SetParams(Real a, Real d, Real s, Real r) {
@@ -27,10 +53,21 @@ public:
     mD = (d < static_cast<Real>(0.0)) ? static_cast<Real>(0.0) : d;
     mS = Math::Clamp(s, static_cast<Real>(0.0), static_cast<Real>(1.0));
     mR = (r < static_cast<Real>(0.0)) ? static_cast<Real>(0.0) : r;
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+    mAdsr.SetAttackTime(static_cast<float>(mA));
+    mAdsr.SetDecayTime(static_cast<float>(mD));
+    mAdsr.SetSustainLevel(static_cast<float>(mS));
+    mAdsr.SetReleaseTime(static_cast<float>(mR));
+#else
     CalculateCoefficients();
+#endif
   }
 
   void NoteOn() {
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+    mGate = true;
+    mStage = kAttack;
+#else
     if (mA == static_cast<Real>(0.0)) {
       mLevel = static_cast<Real>(1.0);
       mStage = (mD == static_cast<Real>(0.0)) ? kSustain : kDecay;
@@ -40,9 +77,16 @@ public:
     } else {
       mStage = kAttack;
     }
+#endif
   }
 
   void NoteOff() {
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+    if (mStage != kIdle) {
+      mGate = false;
+      mStage = kRelease;
+    }
+#else
     if (mStage != kIdle) {
       if (mR == static_cast<Real>(0.0)) {
         mLevel = static_cast<Real>(0.0);
@@ -54,9 +98,16 @@ public:
         mStage = kRelease;
       }
     }
+#endif
   }
 
   SEA_INLINE Real Process() {
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+    Real out = static_cast<Real>(mAdsr.Process(mGate));
+    mLevel = Math::Clamp(out, static_cast<Real>(0.0), static_cast<Real>(1.0));
+    UpdateStageFromBackend(mLevel);
+    return mLevel;
+#else
     if (mStage == kIdle)
       return static_cast<Real>(0.0);
 
@@ -110,6 +161,7 @@ public:
       break;
     }
     return mLevel;
+#endif
   }
 
   bool IsActive() const { return mStage != kIdle; }
@@ -117,6 +169,27 @@ public:
   Stage GetStage() const { return mStage; }
 
 private:
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+  void UpdateStageFromBackend(Real out) {
+    uint8_t seg = mAdsr.GetCurrentSegment();
+    if(!mAdsr.IsRunning() && !mGate) {
+      mStage = kIdle;
+      return;
+    }
+    if (mGate) {
+      if (seg == daisysp::ADSR_SEG_ATTACK) {
+        mStage = kAttack;
+      } else if (seg == daisysp::ADSR_SEG_DECAY) {
+        Real eps = static_cast<Real>(0.005);
+        mStage = (Math::Abs(out - mS) <= eps) ? kSustain : kDecay;
+      } else {
+        mStage = kSustain;
+      }
+    } else {
+      mStage = mAdsr.IsRunning() ? kRelease : kIdle;
+    }
+  }
+#else
   void CalculateCoefficients() {
     if (mSampleRate > static_cast<Real>(0.0)) {
       mAttackInc = (mA > static_cast<Real>(0.0))
@@ -129,6 +202,7 @@ private:
                                                   : static_cast<Real>(0.0);
     }
   }
+#endif
 
   Real mSampleRate = static_cast<Real>(44100.0);
   Stage mStage = kIdle;
@@ -142,6 +216,10 @@ private:
   Real mAttackInc = static_cast<Real>(0.0);
   Real mDecayInc = static_cast<Real>(0.0);
   Real mReleaseInc = static_cast<Real>(0.0);
+#ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
+  bool mGate = false;
+  daisysp::Adsr mAdsr;
+#endif
 };
 
 } // namespace sea

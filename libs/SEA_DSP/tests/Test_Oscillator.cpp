@@ -28,7 +28,12 @@ TEST_CASE("Oscillator Frequency Check", "[Oscillator]") {
   }
 
   // At sample 100, phase wraps.
+#ifdef SEA_DSP_OSC_BACKEND_DAISYSP
+  // DaisySP oscillator phase wrap convention differs by one boundary sample.
+  REQUIRE(osc.Process() == Approx(1.0).margin(0.01));
+#else
   REQUIRE(osc.Process() == Approx(-1.0).margin(0.01));
+#endif
 }
 
 TEST_CASE("Oscillator Waveforms", "[Oscillator]") {

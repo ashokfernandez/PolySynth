@@ -14,6 +14,15 @@ if [ ! -d "$EXTERNAL_DIR/iPlug2" ]; then
     git clone https://github.com/iPlug2/iPlug2.git "$EXTERNAL_DIR/iPlug2"
 fi
 
+# DaisySP
+if [ ! -d "$EXTERNAL_DIR/daisysp" ]; then
+    echo "Cloning DaisySP..."
+    git clone https://github.com/electro-smith/DaisySP.git "$EXTERNAL_DIR/daisysp"
+fi
+
+echo "Initializing DaisySP submodules..."
+git -C "$EXTERNAL_DIR/daisysp" submodule update --init --recursive
+
 echo "Updating iPlug2 dependencies..."
 cd "$EXTERNAL_DIR/iPlug2/Dependencies/IPlug"
 chmod +x download-vst3-sdk.sh
