@@ -30,6 +30,7 @@ enum EParams {
   kParamPolyModFilterEnvToFreqA,
   kParamPolyModFilterEnvToPWM,
   kParamPolyModFilterEnvToFilter,
+  kParamFilterModel,
   kNumParams
 };
 

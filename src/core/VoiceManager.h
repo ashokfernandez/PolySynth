@@ -1,6 +1,8 @@
 #pragma once
 
 #include "dsp/BiquadFilter.h"
+#include "dsp/va/VALadderFilter.h"
+#include "dsp/va/VAProphetFilter.h"
 #include "modulation/ADSREnvelope.h"
 #include "modulation/LFO.h"
 #include "oscillator/Oscillator.h"
@@ -13,6 +15,8 @@ namespace PolySynthCore {
 
 class Voice {
 public:
+  enum class FilterModel { Classic, Ladder, Prophet12, Prophet24 };
+
   Voice() = default;
 
   void Init(double sampleRate) {
@@ -27,6 +31,8 @@ public:
 
     mFilter.Init(sampleRate);
     mFilter.SetParams(FilterType::LowPass, 2000.0, 0.707);
+    mLadderFilter.Init(sampleRate);
+    mProphetFilter.Init(sampleRate);
 
     mAmpEnv.Init(sampleRate);
     mAmpEnv.SetParams(0.01, 0.1, 1.0, 0.2);
@@ -50,6 +56,7 @@ public:
     mPolyModFilterEnvToFreqA = 0.0;
     mPolyModFilterEnvToPWM = 0.0;
     mPolyModFilterEnvToFilter = 0.0;
+    mFilterModel = FilterModel::Classic;
   }
 
   void NoteOn(int note, int velocity) {
@@ -94,9 +101,8 @@ public:
     sample_t oscB = mOscB.Process();
 
     if (mPolyModOscBToFreqA != 0.0 || mPolyModFilterEnvToFreqA != 0.0) {
-      double freqMod =
-          (oscB * mPolyModOscBToFreqA) +
-          (filterEnvVal * mPolyModFilterEnvToFreqA);
+      double freqMod = (oscB * mPolyModOscBToFreqA) +
+                       (filterEnvVal * mPolyModFilterEnvToFreqA);
       modFreqA *= (1.0 + freqMod);
       modFreqA = std::max(1.0, modFreqA);
     }
@@ -104,8 +110,8 @@ public:
     mOscA.SetFrequency(modFreqA);
 
     if (mPolyModOscBToPWM != 0.0 || mPolyModFilterEnvToPWM != 0.0) {
-      double pwmMod = (oscB * mPolyModOscBToPWM) +
-                      (filterEnvVal * mPolyModFilterEnvToPWM);
+      double pwmMod =
+          (oscB * mPolyModOscBToPWM) + (filterEnvVal * mPolyModFilterEnvToPWM);
       double pwmA = mBasePulseWidthA + (pwmMod * 0.5);
       mOscA.SetPulseWidth(std::clamp(pwmA, 0.01, 0.99));
     } else {
@@ -117,16 +123,35 @@ public:
 
     // Filter Modulation: Base + Keyboard + Env + LFO
     double cutoff = mBaseCutoff;
-    cutoff += filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) *
-              10000.0;
+    cutoff +=
+        filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) * 10000.0;
     if (mPolyModOscBToFilter != 0.0) {
       cutoff += oscB * mPolyModOscBToFilter * mBaseCutoff;
     }
     cutoff *= (1.0 + lfoVal * mLfoFilterDepth);
     cutoff = std::clamp(cutoff, 20.0, 20000.0);
 
-    mFilter.SetParams(FilterType::LowPass, cutoff, mBaseRes);
-    sample_t flt = mFilter.Process(mixed);
+    sample_t flt = 0.0;
+    switch (mFilterModel) {
+    case FilterModel::Ladder:
+      mLadderFilter.SetParams(VALadderFilter::Model::Transistor, cutoff,
+                              mBaseRes);
+      flt = mLadderFilter.Process(mixed);
+      break;
+    case FilterModel::Prophet12:
+      mProphetFilter.SetParams(cutoff, mBaseRes, VAProphetFilter::Slope::dB12);
+      flt = mProphetFilter.Process(mixed);
+      break;
+    case FilterModel::Prophet24:
+      mProphetFilter.SetParams(cutoff, mBaseRes, VAProphetFilter::Slope::dB24);
+      flt = mProphetFilter.Process(mixed);
+      break;
+    case FilterModel::Classic:
+    default:
+      mFilter.SetParams(FilterType::LowPass, cutoff, mBaseRes);
+      flt = mFilter.Process(mixed);
+      break;
+    }
 
     sample_t ampEnvVal = mAmpEnv.Process();
 
@@ -165,6 +190,8 @@ public:
     mBaseRes = res;
     mFilterEnvAmount = envAmount;
   }
+
+  void SetFilterModel(FilterModel model) { mFilterModel = model; }
 
   void SetWaveform(Oscillator::WaveformType type) { SetWaveformA(type); }
   void SetWaveformA(Oscillator::WaveformType type) { mOscA.SetWaveform(type); }
@@ -215,6 +242,8 @@ private:
   Oscillator mOscA;
   Oscillator mOscB;
   BiquadFilter mFilter;
+  VALadderFilter mLadderFilter;
+  VAProphetFilter mProphetFilter;
   ADSREnvelope mAmpEnv;
   ADSREnvelope mFilterEnv;
   LFO mLfo;
@@ -228,6 +257,7 @@ private:
   double mBaseCutoff = 2000.0;
   double mBaseRes = 0.707;
   double mFilterEnvAmount = 0.0;
+  FilterModel mFilterModel = FilterModel::Classic;
 
   double mMixA = 1.0;
   double mMixB = 0.0;
@@ -312,6 +342,14 @@ public:
   void SetFilter(double cutoff, double res, double envAmount) {
     for (auto &voice : mVoices) {
       voice.SetFilter(cutoff, res, envAmount);
+    }
+  }
+
+  void SetFilterModel(int model) {
+    int clamped = std::clamp(model, 0, 3);
+    auto filterModel = static_cast<Voice::FilterModel>(clamped);
+    for (auto &voice : mVoices) {
+      voice.SetFilterModel(filterModel);
     }
   }
 

@@ -11,9 +11,9 @@ const PresetBrowser = ({ sendMsg }) => {
   const [activeDemo, setActiveDemo] = useState(null);
 
   const factoryPresets = [
-    { id: 'warm', name: '🎹 Warm Pad', tag: 11, description: 'Slow attack, mellow' },
-    { id: 'lead', name: '⚡ Bright Lead', tag: 12, description: 'Punchy, resonant' },
-    { id: 'bass', name: '🎸 Dark Bass', tag: 13, description: 'Deep, growling' },
+    { id: 'warm', name: '🎹 Warm Pad', tag: 11, description: 'Slow attack, mellow (Classic filter)' },
+    { id: 'lead', name: '⚡ Bright Lead', tag: 12, description: 'Punchy, resonant (Prophet 12)' },
+    { id: 'bass', name: '🎸 Dark Bass', tag: 13, description: 'Deep, growling (Ladder)' },
   ];
 
   const handlePreset = (preset) => {
@@ -141,6 +141,7 @@ function App() {
             <Knob {...commonKnobProps(PARAMS.CUTOFF)} label="Cutoff" />
             <Knob {...commonKnobProps(PARAMS.RESONANCE)} label="Resonance" />
             <Knob {...commonKnobProps(PARAMS.FILTER_ENV)} label="Env Amt" />
+            <Knob {...commonKnobProps(PARAMS.FILTER_MODEL)} label="Model" />
           </div>
         </div>
 

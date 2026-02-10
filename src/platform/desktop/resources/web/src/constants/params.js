@@ -20,7 +20,8 @@ export const PARAMS = {
     POLY_OSC_B_FILTER: 21,
     POLY_ENV_FREQ_A: 22,
     POLY_ENV_PWM: 23,
-    POLY_ENV_FILTER: 24
+    POLY_ENV_FILTER: 24,
+    FILTER_MODEL: 25
 };
 
 export const PARAM_META = {
@@ -34,6 +35,10 @@ export const PARAM_META = {
     [PARAMS.LFO_DEPTH]: { name: 'LFO Depth', min: 0, max: 100, unit: '%', decimals: 0 },
     [PARAMS.CUTOFF]: { name: 'Cutoff', min: 20, max: 20000, unit: 'Hz', decimals: 0 },
     [PARAMS.RESONANCE]: { name: 'Resonance', min: 0, max: 100, unit: '%', decimals: 0 },
+    [PARAMS.FILTER_MODEL]: {
+        name: 'Filter Model',
+        items: ['Classic', 'Ladder', 'Prophet 12', 'Prophet 24']
+    },
     [PARAMS.OSC_WAVE]: { name: 'Osc Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
     [PARAMS.OSC_B_WAVE]: { name: 'Osc B Wave', items: ['Saw', 'Square', 'Triangle', 'Sine'] },
     [PARAMS.OSC_MIX]: { name: 'Osc Mix', min: 0, max: 100, unit: '%', decimals: 0 },

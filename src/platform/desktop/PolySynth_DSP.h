@@ -27,6 +27,7 @@ public:
                                state.filterSustain, state.filterRelease);
     mVoiceManager.SetFilter(state.filterCutoff, state.filterResonance,
                             state.filterEnvAmount);
+    mVoiceManager.SetFilterModel(state.filterModel);
 
     // Map Oscillator types
     // SynthState uses: 0=Saw, 1=Square (Osc A)

@@ -39,6 +39,9 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamFilterResonance)
       ->InitDouble("Resonance", 0., 0., 100., 1., "%");
   GetParam(kParamFilterEnvAmount)->InitPercentage("Filter Env");
+  GetParam(kParamFilterModel)
+      ->InitEnum("Filter Model", 0,
+                 {"Classic", "Ladder", "Prophet 12", "Prophet 24"});
 
   // Oscillator Params
   GetParam(kParamOscWave)
@@ -211,6 +214,9 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
   case kParamFilterEnvAmount:
     mState.filterEnvAmount = value / 100.0;
     break;
+  case kParamFilterModel:
+    mState.filterModel = static_cast<int>(value);
+    break;
   case kParamOscWave:
     mState.oscAWaveform = (int)value;
     break;
@@ -310,7 +316,11 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       GetParam(kParamRelease)->Set(mState.ampRelease * 1000.0);
       GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
       GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
+<<<<<<< HEAD
       GetParam(kParamFilterEnvAmount)->Set(mState.filterEnvAmount * 100.0);
+=======
+      GetParam(kParamFilterModel)->Set((double)mState.filterModel);
+>>>>>>> main
       GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
       GetParam(kParamOscBWave)->Set((double)mState.oscBWaveform);
       GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
@@ -320,8 +330,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       GetParam(kParamOscPulseWidthB)->Set(mState.oscBPulseWidth * 100.0);
       GetParam(kParamPolyModOscBToFreqA)
           ->Set(mState.polyModOscBToFreqA * 100.0);
-      GetParam(kParamPolyModOscBToPWM)
-          ->Set(mState.polyModOscBToPWM * 100.0);
+      GetParam(kParamPolyModOscBToPWM)->Set(mState.polyModOscBToPWM * 100.0);
       GetParam(kParamPolyModOscBToFilter)
           ->Set(mState.polyModOscBToFilter * 100.0);
       GetParam(kParamPolyModFilterEnvToFreqA)
@@ -353,12 +362,13 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.ampRelease = 1.0; // 1 second
       mState.filterCutoff = 800.0;
       mState.filterResonance = 0.1;
+      mState.filterModel = 0;
       mState.oscAWaveform = 0; // Saw
       mState.oscBWaveform = 3; // Sine
       mState.oscAPulseWidth = 0.5;
       mState.oscBPulseWidth = 0.5;
       mState.filterEnvAmount = 0.0;
-      mState.lfoShape = 0;     // Sine
+      mState.lfoShape = 0; // Sine
       mState.lfoRate = 0.5;
       mState.lfoDepth = 0.3;
       mState.polyModOscBToFreqA = 0.0;
@@ -377,12 +387,13 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.ampRelease = 0.2;
       mState.filterCutoff = 18000.0;
       mState.filterResonance = 0.7;
+      mState.filterModel = 2;
       mState.oscAWaveform = 1; // Square
       mState.oscBWaveform = 1; // Square
       mState.oscAPulseWidth = 0.5;
       mState.oscBPulseWidth = 0.5;
       mState.filterEnvAmount = 0.0;
-      mState.lfoShape = 2;     // Square LFO
+      mState.lfoShape = 2; // Square LFO
       mState.lfoRate = 6.0;
       mState.lfoDepth = 0.0; // No LFO
       mState.polyModOscBToFreqA = 0.0;
@@ -401,12 +412,13 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       mState.ampRelease = 0.15;
       mState.filterCutoff = 300.0;
       mState.filterResonance = 0.5;
+      mState.filterModel = 1;
       mState.oscAWaveform = 0; // Saw
       mState.oscBWaveform = 2; // Triangle
       mState.oscAPulseWidth = 0.5;
       mState.oscBPulseWidth = 0.5;
       mState.filterEnvAmount = 0.0;
-      mState.lfoShape = 1;     // Triangle
+      mState.lfoShape = 1; // Triangle
       mState.lfoRate = 2.0;
       mState.lfoDepth = 0.5;
       mState.polyModOscBToFreqA = 0.0;
@@ -427,6 +439,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
     GetParam(kParamFilterResonance)->Set(mState.filterResonance * 100.0);
     GetParam(kParamFilterEnvAmount)->Set(mState.filterEnvAmount * 100.0);
+    GetParam(kParamFilterModel)->Set((double)mState.filterModel);
     GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
     GetParam(kParamOscBWave)->Set((double)mState.oscBWaveform);
     GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
@@ -434,8 +447,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     GetParam(kParamLFODepth)->Set(mState.lfoDepth * 100.0);
     GetParam(kParamOscPulseWidthA)->Set(mState.oscAPulseWidth * 100.0);
     GetParam(kParamOscPulseWidthB)->Set(mState.oscBPulseWidth * 100.0);
-    GetParam(kParamPolyModOscBToFreqA)
-        ->Set(mState.polyModOscBToFreqA * 100.0);
+    GetParam(kParamPolyModOscBToFreqA)->Set(mState.polyModOscBToFreqA * 100.0);
     GetParam(kParamPolyModOscBToPWM)->Set(mState.polyModOscBToPWM * 100.0);
     GetParam(kParamPolyModOscBToFilter)
         ->Set(mState.polyModOscBToFilter * 100.0);
