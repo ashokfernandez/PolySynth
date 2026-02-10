@@ -131,6 +131,18 @@
             font-size: 1.1rem;
             color: var(--text-primary);
         }
+
+        .info-card .card-link {
+            display: inline-block;
+            margin-top: 0.75rem;
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info-card .card-link:hover {
+            color: var(--accent-purple);
+        }
         
         /* Section Headers */
         .section-header {
@@ -309,7 +321,7 @@
         <p class="tagline">DSP Verification & Audio Demos</p>
         <div class="meta">
             <span class="dot"></span>
-            <span>Generated February 10, 2026 at 20:30</span>
+            <span>Generated February 10, 2026 at 20:59</span>
         </div>
     </div>
     
@@ -330,6 +342,11 @@
             <div class="info-card">
                 <h3>Technical details</h3>
                 <p>All samples are rendered at 44.1kHz, 16-bit. The synth engine runs headless without any UI or DAW dependencies.</p>
+            </div>
+            <div class="info-card">
+                <h3>UI Component Gallery</h3>
+                <p>Browse interactive UI controls and visual regression stories published from Storybook.</p>
+                <a class="card-link" href="component-gallery/index.html">Open Component Gallery →</a>
             </div>
         </div>
         <div class="section-header">
