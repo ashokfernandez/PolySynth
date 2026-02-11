@@ -4,7 +4,7 @@
 set -e
 cd "$(dirname "$0")"
 
-./build_gallery.sh
+./scripts/build_all_galleries.sh
 
 if [ -s "$HOME/.nvm/nvm.sh" ]; then
   # shellcheck disable=SC1090

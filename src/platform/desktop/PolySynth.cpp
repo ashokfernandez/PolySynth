@@ -2,6 +2,10 @@
 #include "../../core/PresetManager.h"
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_src.h"
+#if IPLUG_EDITOR
+#include "Envelope.h"
+#include "IControls.h"
+#endif
 #include <cstdlib>
 
 namespace {
@@ -49,6 +53,14 @@ void PolySynthPlugin::SyncUIState() {
   GetParam(kParamLimiterThreshold)
       ->Set(mState.fxLimiterThreshold * kToPercentage);
 
+  // Phase 5: Sync demo mode buttons based on sequencer state
+  GetParam(kParamDemoMono)->Set(
+      mDemoSequencer.GetMode() == DemoSequencer::Mode::Mono ? 1.0 : 0.0);
+  GetParam(kParamDemoPoly)->Set(
+      mDemoSequencer.GetMode() == DemoSequencer::Mode::Poly ? 1.0 : 0.0);
+  GetParam(kParamDemoFX)->Set(
+      mDemoSequencer.GetMode() == DemoSequencer::Mode::FX ? 1.0 : 0.0);
+
   for (int i = 0; i < kNumParams; ++i) {
     SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
   }
@@ -94,12 +106,10 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 
   // Oscillator Params
   GetParam(kParamOscWave)
-      ->InitEnum("Osc Waveform",
-                 (int)sea::Oscillator::WaveformType::Saw,
+      ->InitEnum("Osc Waveform", (int)sea::Oscillator::WaveformType::Saw,
                  {"Saw", "Square", "Triangle", "Sine"});
   GetParam(kParamOscBWave)
-      ->InitEnum("Osc B Waveform",
-                 (int)sea::Oscillator::WaveformType::Sine,
+      ->InitEnum("Osc B Waveform", (int)sea::Oscillator::WaveformType::Sine,
                  {"Saw", "Square", "Triangle", "Sine"});
   GetParam(kParamOscMix)->InitDouble("Osc Mix", 0., 0., 100., 1., "%");
   GetParam(kParamOscPulseWidthA)->InitPercentage("Pulse Width A");
@@ -122,37 +132,185 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamDelayFeedback)
       ->InitDouble("Delay Feedback", 35., 0., 95., 1., "%");
   GetParam(kParamDelayMix)->InitDouble("Delay Mix", 0., 0., 100., 1., "%");
-  GetParam(kParamLimiterThreshold)
-      ->InitDouble("Limiter Threshold", 95., 50., 100., 1., "%");
+
+  // Phase 5: Demo mode buttons
+  GetParam(kParamDemoMono)->InitBool("Demo Mono", false);
+  GetParam(kParamDemoPoly)->InitBool("Demo Poly", false);
+  GetParam(kParamDemoFX)->InitBool("Demo FX", false);
 
 #if IPLUG_EDITOR
-  mEditorInitFunc = [&]() {
-#if defined _DEBUG
-    // In debug, load the built index.html from dist/ folder
-    std::string path = std::string(__FILE__);
-    path = path.substr(0, path.find_last_of("/\\"));
-    path += "/resources/web/dist/index.html";
-    LoadFile(path.c_str(), nullptr);
-#else
-    LoadIndexHtml(__FILE__, "com.PolySynth.app.PolySynth");
-#endif
-    EnableScroll(false);
+  mMakeGraphicsFunc = [&]() {
+    return MakeGraphics(*this, PLUG_WIDTH, PLUG_HEIGHT, PLUG_FPS,
+                        GetScaleForScreen(PLUG_WIDTH, PLUG_HEIGHT));
   };
+
+  mLayoutFunc = [this](IGraphics *pGraphics) { OnLayout(pGraphics); };
 #endif
 }
 
 #if IPLUG_EDITOR
 void PolySynthPlugin::OnUIOpen() {
-  for (int paramIdx = 0; paramIdx < kNumParams; ++paramIdx) {
-    SendParameterValueFromDelegate(paramIdx,
-                                   GetParam(paramIdx)->GetNormalized(), true);
-  }
+  // The base class already syncs parameter values to the UI on open.
+  // No need to manually re-send them here.
 }
 
 void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
-  (void)source;
-  SendParameterValueFromDelegate(paramIdx, GetParam(paramIdx)->GetNormalized(),
-                                 true);
+  // Update the envelope visualizer when ADSR params change from the UI
+  if (paramIdx == kParamAttack || paramIdx == kParamDecay ||
+      paramIdx == kParamSustain || paramIdx == kParamRelease) {
+    if (GetUI()) {
+      Envelope *pEnvelope = dynamic_cast<Envelope *>(
+          GetUI()->GetControlWithTag(kCtrlTagEnvelope));
+      if (pEnvelope) {
+        pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
+                           GetParam(kParamDecay)->Value() / 1000.f,
+                           GetParam(kParamSustain)->Value() / 100.f,
+                           GetParam(kParamRelease)->Value() / 1000.f);
+      }
+    }
+  }
+}
+
+void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
+  if (pGraphics->NControls())
+    return;
+
+  pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN);
+  pGraphics->AttachPanelBackground(COLOR_DARK_GRAY);
+
+  IRECT b = pGraphics->GetBounds();
+  const float footerH = 50.f;
+  const float polyModH = 120.f;  // Phase 4: Space for poly-mod section
+  const IRECT footerArea = b.ReduceFromBottom(footerH);
+  const IRECT polyModArea = b.ReduceFromBottom(polyModH);
+  const IRECT mainArea = b;
+
+  // 3-column layout
+  const int nCols = 3;
+  const IRECT oscCol = mainArea.GetGridCell(0, 0, 1, nCols);
+  const IRECT filterCol = mainArea.GetGridCell(0, 1, 1, nCols);
+  const IRECT envCol = mainArea.GetGridCell(0, 2, 1, nCols);
+
+  // Phase 1: Oscillators Section - Groups horizontal, controls within groups horizontal
+  const IRECT oscKnobs = oscCol.GetPadded(-10.f);
+  const float knobSize = 75.f;
+
+  // Top row: Waveform group (Osc A Wave | Osc B Wave)
+  const IRECT waveRow = oscKnobs.FracRectVertical(0.4f, true).GetPadded(-5.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      waveRow.GetGridCell(0, 0, 1, 2).GetCentredInside(knobSize),
+      kParamOscWave, "Osc A"), kCtrlTagOscWave);
+  pGraphics->AttachControl(new IVKnobControl(
+      waveRow.GetGridCell(0, 1, 1, 2).GetCentredInside(knobSize),
+      kParamOscBWave, "Osc B"), kCtrlTagOscBWave);
+
+  // Middle row: Pulse Width group (PW A | PW B)
+  const IRECT pwRow = oscKnobs.FracRectVertical(0.4f, false).FracRectVertical(0.6f, true).GetPadded(-5.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      pwRow.GetGridCell(0, 0, 1, 2).GetCentredInside(knobSize),
+      kParamOscPulseWidthA, "PW A"), kCtrlTagPulseWidthA);
+  pGraphics->AttachControl(new IVKnobControl(
+      pwRow.GetGridCell(0, 1, 1, 2).GetCentredInside(knobSize),
+      kParamOscPulseWidthB, "PW B"), kCtrlTagPulseWidthB);
+
+  // Bottom row: Mix (centered)
+  const IRECT mixRow = oscKnobs.FracRectVertical(0.4f, false).FracRectVertical(0.6f, false).GetPadded(-5.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      mixRow.GetCentredInside(knobSize),
+      kParamOscMix, "Mix"), kCtrlTagOscMix);
+
+  // Phase 2: LFO Section (in former filter column, top portion)
+  const IRECT lfoArea = filterCol.FracRectVertical(0.5f, true).GetPadded(-10.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      lfoArea.GetGridCell(0, 0, 2, 2).GetCentredInside(knobSize),
+      kParamLFOShape, "LFO Shape"), kCtrlTagLFOShape);
+  pGraphics->AttachControl(new IVKnobControl(
+      lfoArea.GetGridCell(0, 1, 2, 2).GetCentredInside(knobSize),
+      kParamLFORateHz, "LFO Rate"), kCtrlTagLFORate);
+  pGraphics->AttachControl(new IVKnobControl(
+      lfoArea.GetGridCell(1, 0, 2, 2).GetCentredInside(knobSize),
+      kParamLFODepth, "LFO Depth"), kCtrlTagLFODepth);
+
+  // Phase 2: Master Gain (in LFO area, bottom right)
+  pGraphics->AttachControl(new IVKnobControl(
+      lfoArea.GetGridCell(1, 1, 2, 2).GetCentredInside(knobSize),
+      kParamGain, "Gain"), kCtrlTagGain);
+
+  // Filter Section (moved to bottom half of filter column)
+  const IRECT filterArea = filterCol.FracRectVertical(0.5f, false).GetPadded(-10.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      filterArea.GetGridCell(0, 0, 2, 1).GetCentredInside(knobSize),
+      kParamFilterCutoff, "Cutoff"));
+  pGraphics->AttachControl(new IVKnobControl(
+      filterArea.GetGridCell(1, 0, 2, 1).GetCentredInside(knobSize),
+      kParamFilterResonance, "Resonance"));
+
+  // Envelope Section
+  const IRECT envVisualizerArea =
+      envCol.FracRectVertical(0.4f, true).GetPadded(-10.f);
+  const IRECT envFadersArea =
+      envCol.FracRectVertical(0.6f, false).GetPadded(-10.f);
+
+  Envelope *pEnvelope = new Envelope(envVisualizerArea);
+  pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
+                     GetParam(kParamDecay)->Value() / 1000.f,
+                     GetParam(kParamSustain)->Value() / 100.f,
+                     GetParam(kParamRelease)->Value() / 1000.f);
+  pGraphics->AttachControl(pEnvelope, kCtrlTagEnvelope);
+
+  const int nFaders = 4;
+  pGraphics->AttachControl(new IVSliderControl(
+      envFadersArea.GetGridCell(0, 0, 1, nFaders), kParamAttack, "A"));
+  pGraphics->AttachControl(new IVSliderControl(
+      envFadersArea.GetGridCell(0, 1, 1, nFaders), kParamDecay, "D"));
+  pGraphics->AttachControl(new IVSliderControl(
+      envFadersArea.GetGridCell(0, 2, 1, nFaders), kParamSustain, "S"));
+  pGraphics->AttachControl(new IVSliderControl(
+      envFadersArea.GetGridCell(0, 3, 1, nFaders), kParamRelease, "R"));
+
+  // Phase 4: Poly-Mod Matrix Section (6 knobs in 2 rows x 3 cols)
+  const IRECT polyModKnobs = polyModArea.GetPadded(-10.f);
+  const float polyModKnobSize = 65.f;
+
+  // Row 1: Osc B modulation sources (B→Freq A, B→PWM, B→Filter)
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(0, 0, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModOscBToFreqA, "B→Freq A"), kCtrlTagPolyModOscBToFreqA);
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(0, 1, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModOscBToPWM, "B→PWM"), kCtrlTagPolyModOscBToPWM);
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(0, 2, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModOscBToFilter, "B→Filter"), kCtrlTagPolyModOscBToFilter);
+
+  // Row 2: Envelope modulation sources (Env→Freq A, Env→PWM, Env→Filter)
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(1, 0, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModFilterEnvToFreqA, "Env→Freq A"), kCtrlTagPolyModEnvToFreqA);
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(1, 1, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModFilterEnvToPWM, "Env→PWM"), kCtrlTagPolyModEnvToPWM);
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(1, 2, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModFilterEnvToFilter, "Env→Filter"), kCtrlTagPolyModEnvToFilter);
+
+  // Phase 5: Footer - 3 demo toggle buttons
+  IVStyle pillStyle = DEFAULT_STYLE.WithRoundness(1.0f);
+  const float buttonW = 100.f, buttonH = 35.f, spacing = 10.f;
+  const IRECT demoArea = footerArea.GetCentredInside(3*buttonW + 2*spacing, buttonH);
+
+  pGraphics->AttachControl(
+      new IVSwitchControl(demoArea.GetGridCell(0, 0, 1, 3),
+                          kParamDemoMono, "Mono", pillStyle),
+      kCtrlTagDemoMono);
+  pGraphics->AttachControl(
+      new IVSwitchControl(demoArea.GetGridCell(0, 1, 1, 3),
+                          kParamDemoPoly, "Poly", pillStyle),
+      kCtrlTagDemoPoly);
+  pGraphics->AttachControl(
+      new IVSwitchControl(demoArea.GetGridCell(0, 2, 1, 3),
+                          kParamDemoFX, "FX", pillStyle),
+      kCtrlTagDemoFX);
 }
 #endif
 
@@ -276,12 +434,66 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
   case kParamLimiterThreshold:
     mState.fxLimiterThreshold = value / kToPercentage;
     break;
+  // Phase 5: Demo mode mutual exclusion
+  case kParamDemoMono:
+    if (value > 0.5) {
+      GetParam(kParamDemoPoly)->Set(0.0);
+      GetParam(kParamDemoFX)->Set(0.0);
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(), mDSP);
+    } else {
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+    }
+    break;
+  case kParamDemoPoly:
+    if (value > 0.5) {
+      GetParam(kParamDemoMono)->Set(0.0);
+      GetParam(kParamDemoFX)->Set(0.0);
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Poly, GetSampleRate(), mDSP);
+    } else {
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+    }
+    break;
+  case kParamDemoFX:
+    if (value > 0.5) {
+      GetParam(kParamDemoMono)->Set(0.0);
+      GetParam(kParamDemoPoly)->Set(0.0);
+      mDemoSequencer.SetMode(DemoSequencer::Mode::FX, GetSampleRate(), mDSP);
+      // Set FX parameters (matching OnMessage kMsgTagDemoFX behavior)
+      mState.fxChorusRate = 0.35;
+      mState.fxChorusDepth = 0.65;
+      mState.fxChorusMix = 0.35;
+      mState.fxDelayTime = 0.45;
+      mState.fxDelayFeedback = 0.45;
+      mState.fxDelayMix = 0.35;
+      mState.fxLimiterThreshold = 0.7;
+      SyncUIState();
+    } else {
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+      // Reset FX to defaults
+      mState.fxChorusMix = 0.0;
+      mState.fxDelayMix = 0.0;
+      mState.fxLimiterThreshold = 0.95;
+      SyncUIState();
+    }
+    break;
   default:
     break;
   }
 
-  // Legacy support for direct param setting is removed in favor of UpdateState
-  // loop mDSP.SetParam(paramIdx, GetParam(paramIdx)->Value());
+  // Feedback loop for Envelope visualizer
+  if (paramIdx == kParamAttack || paramIdx == kParamDecay ||
+      paramIdx == kParamSustain || paramIdx == kParamRelease) {
+    if (GetUI()) {
+      Envelope *pEnvelope = dynamic_cast<Envelope *>(
+          GetUI()->GetControlWithTag(kCtrlTagEnvelope));
+      if (pEnvelope) {
+        pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
+                           GetParam(kParamDecay)->Value() / 1000.f,
+                           GetParam(kParamSustain)->Value() / 100.f,
+                           GetParam(kParamRelease)->Value() / 1000.f);
+      }
+    }
+  }
 }
 
 bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
@@ -522,27 +734,4 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
   return false;
 }
 
-bool PolySynthPlugin::CanNavigateToURL(const char *url) { return true; }
-
-bool PolySynthPlugin::OnCanDownloadMIMEType(const char *mimeType) {
-  return std::string_view(mimeType) != "text/html";
-}
-
-void PolySynthPlugin::OnDownloadedFile(const char *path) {
-  WDL_String str;
-  str.SetFormatted(64, "Downloaded file to %s\n", path);
-  LoadHTML(str.Get());
-}
-
-void PolySynthPlugin::OnFailedToDownloadFile(const char *path) {
-  WDL_String str;
-  str.SetFormatted(64, "Failed to download file to %s\n", path);
-  LoadHTML(str.Get());
-}
-
-void PolySynthPlugin::OnGetLocalDownloadPathForFile(const char *fileName,
-                                                    WDL_String &localPath) {
-  DesktopPath(localPath);
-  localPath.AppendFormatted(MAX_WIN32_PATH_LEN, "/%s", fileName);
-}
 #endif

@@ -27,13 +27,16 @@ emmake make --makefile "${PROJECT_NAME}-wam-processor.mk"
 
 echo "Preparing WAM runtime scripts..."
 cd "${SCRIPTS_DIR}"
-{
-  echo "AudioWorkletGlobalScope.WAM = AudioWorkletGlobalScope.WAM || {};"
-  echo "AudioWorkletGlobalScope.WAM.${PROJECT_NAME} = { ENVIRONMENT: 'WEB' };"
-  echo "const ModuleFactory = AudioWorkletGlobalScope.WAM.${PROJECT_NAME};"
-  cat "${PROJECT_NAME}-wam.js"
-} > "${PROJECT_NAME}-wam.tmp.js"
-mv "${PROJECT_NAME}-wam.tmp.js" "${PROJECT_NAME}-wam.js"
+# Prepend the ModuleFactory declaration for WAM if not already present
+if ! grep -q "const ModuleFactory =" "${PROJECT_NAME}-wam.js"; then
+  {
+    echo "AudioWorkletGlobalScope.WAM = AudioWorkletGlobalScope.WAM || {};"
+    echo "AudioWorkletGlobalScope.WAM.${PROJECT_NAME} = { ENVIRONMENT: 'WEB' };"
+    echo "const ModuleFactory = AudioWorkletGlobalScope.WAM.${PROJECT_NAME};"
+    cat "${PROJECT_NAME}-wam.js"
+  } > "${PROJECT_NAME}-wam.tmp.js"
+  mv "${PROJECT_NAME}-wam.tmp.js" "${PROJECT_NAME}-wam.js"
+fi
 
 cp "${IPLUG2_ROOT}/Dependencies/IPlug/WAM_SDK/wamsdk/"*.js "${SCRIPTS_DIR}/"
 cp "${IPLUG2_ROOT}/Dependencies/IPlug/WAM_AWP/"*.js "${SCRIPTS_DIR}/"

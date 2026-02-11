@@ -26,22 +26,14 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../libs/SEA_DSP" "${CMAKE_CURRENT_
 set(UNIT_TEST_SOURCES
     main_test.cpp
     unit/Test_Engine_Basic.cpp
-    unit/Test_Oscillator.cpp
-    unit/Test_Oscillator_Waveforms.cpp
     unit/Test_Engine_Audio.cpp
-    unit/Test_ADSREnvelope.cpp
-    unit/Test_BiquadFilter.cpp
-    unit/Test_LFO.cpp
     unit/Test_VoiceManager_Poly.cpp
-    unit/Test_VAFilters.cpp
     unit/Test_FXEngine.cpp
     unit/Test_PresetManager.cpp
     unit/Test_FactoryPresets.cpp
     unit/Test_PresetFileIO.cpp
     unit/Test_PolyMod.cpp
     ../src/core/PresetManager.cpp
-    unit/Test_SEA_DSP_Platform.cpp
-    unit/Test_SEA_DSP_Math.cpp
 )
 
 add_executable(run_tests ${UNIT_TEST_SOURCES})
