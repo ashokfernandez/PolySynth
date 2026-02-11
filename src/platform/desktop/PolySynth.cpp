@@ -53,6 +53,14 @@ void PolySynthPlugin::SyncUIState() {
   GetParam(kParamLimiterThreshold)
       ->Set(mState.fxLimiterThreshold * kToPercentage);
 
+  // Phase 5: Sync demo mode buttons based on sequencer state
+  GetParam(kParamDemoMono)->Set(
+      mDemoSequencer.GetMode() == DemoSequencer::Mode::Mono ? 1.0 : 0.0);
+  GetParam(kParamDemoPoly)->Set(
+      mDemoSequencer.GetMode() == DemoSequencer::Mode::Poly ? 1.0 : 0.0);
+  GetParam(kParamDemoFX)->Set(
+      mDemoSequencer.GetMode() == DemoSequencer::Mode::FX ? 1.0 : 0.0);
+
   for (int i = 0; i < kNumParams; ++i) {
     SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
   }
@@ -124,7 +132,11 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamDelayFeedback)
       ->InitDouble("Delay Feedback", 35., 0., 95., 1., "%");
   GetParam(kParamDelayMix)->InitDouble("Delay Mix", 0., 0., 100., 1., "%");
-  GetParam(kParamDemoMode)->InitBool("Demo Mode", false);
+
+  // Phase 5: Demo mode buttons
+  GetParam(kParamDemoMono)->InitBool("Demo Mono", false);
+  GetParam(kParamDemoPoly)->InitBool("Demo Poly", false);
+  GetParam(kParamDemoFX)->InitBool("Demo FX", false);
 
 #if IPLUG_EDITOR
   mMakeGraphicsFunc = [&]() {
@@ -282,11 +294,23 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       polyModKnobs.GetGridCell(1, 2, 2, 3).GetCentredInside(polyModKnobSize),
       kParamPolyModFilterEnvToFilter, "Env→Filter"), kCtrlTagPolyModEnvToFilter);
 
-  // Footer
+  // Phase 5: Footer - 3 demo toggle buttons
   IVStyle pillStyle = DEFAULT_STYLE.WithRoundness(1.0f);
+  const float buttonW = 100.f, buttonH = 35.f, spacing = 10.f;
+  const IRECT demoArea = footerArea.GetCentredInside(3*buttonW + 2*spacing, buttonH);
+
   pGraphics->AttachControl(
-      new IVSwitchControl(footerArea.GetCentredInside(120.f, 35.f),
-                          kParamDemoMode, "Demo", pillStyle));
+      new IVSwitchControl(demoArea.GetGridCell(0, 0, 1, 3),
+                          kParamDemoMono, "Mono", pillStyle),
+      kCtrlTagDemoMono);
+  pGraphics->AttachControl(
+      new IVSwitchControl(demoArea.GetGridCell(0, 1, 1, 3),
+                          kParamDemoPoly, "Poly", pillStyle),
+      kCtrlTagDemoPoly);
+  pGraphics->AttachControl(
+      new IVSwitchControl(demoArea.GetGridCell(0, 2, 1, 3),
+                          kParamDemoFX, "FX", pillStyle),
+      kCtrlTagDemoFX);
 }
 #endif
 
@@ -410,11 +434,46 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
   case kParamLimiterThreshold:
     mState.fxLimiterThreshold = value / kToPercentage;
     break;
-  case kParamDemoMode:
+  // Phase 5: Demo mode mutual exclusion
+  case kParamDemoMono:
     if (value > 0.5) {
+      GetParam(kParamDemoPoly)->Set(0.0);
+      GetParam(kParamDemoFX)->Set(0.0);
       mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(), mDSP);
     } else {
       mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+    }
+    break;
+  case kParamDemoPoly:
+    if (value > 0.5) {
+      GetParam(kParamDemoMono)->Set(0.0);
+      GetParam(kParamDemoFX)->Set(0.0);
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Poly, GetSampleRate(), mDSP);
+    } else {
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+    }
+    break;
+  case kParamDemoFX:
+    if (value > 0.5) {
+      GetParam(kParamDemoMono)->Set(0.0);
+      GetParam(kParamDemoPoly)->Set(0.0);
+      mDemoSequencer.SetMode(DemoSequencer::Mode::FX, GetSampleRate(), mDSP);
+      // Set FX parameters (matching OnMessage kMsgTagDemoFX behavior)
+      mState.fxChorusRate = 0.35;
+      mState.fxChorusDepth = 0.65;
+      mState.fxChorusMix = 0.35;
+      mState.fxDelayTime = 0.45;
+      mState.fxDelayFeedback = 0.45;
+      mState.fxDelayMix = 0.35;
+      mState.fxLimiterThreshold = 0.7;
+      SyncUIState();
+    } else {
+      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+      // Reset FX to defaults
+      mState.fxChorusMix = 0.0;
+      mState.fxDelayMix = 0.0;
+      mState.fxLimiterThreshold = 0.95;
+      SyncUIState();
     }
     break;
   default:

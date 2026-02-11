@@ -43,7 +43,10 @@ enum EParams {
   kParamDelayFeedback,
   kParamDelayMix,
   kParamLimiterThreshold,
-  kParamDemoMode,
+  // Phase 5: Demo mode buttons (replaces kParamDemoMode)
+  kParamDemoMono,
+  kParamDemoPoly,
+  kParamDemoFX,
   kNumParams
 };
 
@@ -88,6 +91,10 @@ enum EControlTags {
   kCtrlTagPolyModEnvToFreqA,
   kCtrlTagPolyModEnvToPWM,
   kCtrlTagPolyModEnvToFilter,
+  // Phase 5: Demo button controls
+  kCtrlTagDemoMono,
+  kCtrlTagDemoPoly,
+  kCtrlTagDemoFX,
   kNumCtrlTags
 };
 
