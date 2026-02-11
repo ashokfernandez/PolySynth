@@ -81,6 +81,13 @@ enum EControlTags {
   kCtrlTagLFOShape,
   kCtrlTagLFORate,
   kCtrlTagLFODepth,
+  // Phase 4: Poly-Mod matrix controls
+  kCtrlTagPolyModOscBToFreqA,
+  kCtrlTagPolyModOscBToPWM,
+  kCtrlTagPolyModOscBToFilter,
+  kCtrlTagPolyModEnvToFreqA,
+  kCtrlTagPolyModEnvToPWM,
+  kCtrlTagPolyModEnvToFilter,
   kNumCtrlTags
 };
 

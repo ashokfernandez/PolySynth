@@ -168,7 +168,9 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
 
   IRECT b = pGraphics->GetBounds();
   const float footerH = 50.f;
+  const float polyModH = 120.f;  // Phase 4: Space for poly-mod section
   const IRECT footerArea = b.ReduceFromBottom(footerH);
+  const IRECT polyModArea = b.ReduceFromBottom(polyModH);
   const IRECT mainArea = b;
 
   // 3-column layout
@@ -253,6 +255,32 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       envFadersArea.GetGridCell(0, 2, 1, nFaders), kParamSustain, "S"));
   pGraphics->AttachControl(new IVSliderControl(
       envFadersArea.GetGridCell(0, 3, 1, nFaders), kParamRelease, "R"));
+
+  // Phase 4: Poly-Mod Matrix Section (6 knobs in 2 rows x 3 cols)
+  const IRECT polyModKnobs = polyModArea.GetPadded(-10.f);
+  const float polyModKnobSize = 65.f;
+
+  // Row 1: Osc B modulation sources (B→Freq A, B→PWM, B→Filter)
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(0, 0, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModOscBToFreqA, "B→Freq A"), kCtrlTagPolyModOscBToFreqA);
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(0, 1, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModOscBToPWM, "B→PWM"), kCtrlTagPolyModOscBToPWM);
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(0, 2, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModOscBToFilter, "B→Filter"), kCtrlTagPolyModOscBToFilter);
+
+  // Row 2: Envelope modulation sources (Env→Freq A, Env→PWM, Env→Filter)
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(1, 0, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModFilterEnvToFreqA, "Env→Freq A"), kCtrlTagPolyModEnvToFreqA);
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(1, 1, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModFilterEnvToPWM, "Env→PWM"), kCtrlTagPolyModEnvToPWM);
+  pGraphics->AttachControl(new IVKnobControl(
+      polyModKnobs.GetGridCell(1, 2, 2, 3).GetCentredInside(polyModKnobSize),
+      kParamPolyModFilterEnvToFilter, "Env→Filter"), kCtrlTagPolyModEnvToFilter);
 
   // Footer
   IVStyle pillStyle = DEFAULT_STYLE.WithRoundness(1.0f);
