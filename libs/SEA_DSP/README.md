@@ -8,7 +8,7 @@ SEA_DSP is a collection of high-quality DSP algorithms designed for synthesizers
 
 ### Key Features
 
-- **Header-Only Core**: All DSP algorithms are header-only — zero build dependencies when using default backends
+- **Lightweight Integration**: Core DSP algorithms with minimal dependencies — can be header-only when using default backends
 - **Dual-Precision**: Compile-time selection between `double` (desktop) and `float` (embedded) precision
 - **Template-Based Filters**: Type-safe filter implementations work with any floating-point type
 - **Real-Time Safe**: No allocations in audio processing paths (with noted exceptions)
@@ -113,12 +113,12 @@ SEA_DSP provides two implementation paths for basic waveform generators:
 
 ### SEA Core Backend (Default)
 
-**Header-only** native implementations optimized for simplicity and portability:
+Native implementations optimized for simplicity and portability:
 - Naive oscillators (aliasing waveforms)
 - Linear ADSR envelopes
 - Simple LFO shapes
 
-**No external dependencies. No linking required.**
+**Minimal dependencies. Can be header-only for filter-only usage.**
 
 ### DaisySP Backend (Optional)
 
@@ -127,7 +127,7 @@ High-quality implementations from the Electrosmith DaisySP library:
 - Optimized envelope generators
 - Enhanced modulation sources
 
-**Requires linking against DaisySP library.** When using DaisySP backends, SEA_DSP is no longer header-only.
+**Requires linking against DaisySP library.**
 
 Configure per-component:
 
@@ -143,9 +143,9 @@ cmake -DSEA_DSP_OSC_BACKEND=daisysp \
 
 ### Core Library (SEA Core Backend)
 
-**Header-only, zero dependencies** when using default backends:
+**Minimal dependencies** when using default backends:
 - **C++17 compiler** (tested with GCC 9+, Clang 10+, MSVC 2019+)
-- **CMake 3.15+** (for integration, not required if manually including headers)
+- **CMake 3.15+** (for integration)
 - **Standard Library** (`<cmath>`, `<algorithm>`, `<vector>`)
 
 ### Optional Dependencies
