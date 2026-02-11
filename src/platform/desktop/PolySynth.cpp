@@ -4,6 +4,7 @@
 #include "IPlug_include_in_plug_src.h"
 #if IPLUG_EDITOR
 #include "Envelope.h"
+#include "IControls.h"
 #endif
 #include <cstdlib>
 
@@ -137,29 +138,38 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 
 #if IPLUG_EDITOR
 void PolySynthPlugin::OnUIOpen() {
-  for (int paramIdx = 0; paramIdx < kNumParams; ++paramIdx) {
-    SendParameterValueFromDelegate(paramIdx,
-                                   GetParam(paramIdx)->GetNormalized(), true);
-  }
+  // The base class already syncs parameter values to the UI on open.
+  // No need to manually re-send them here.
 }
 
 void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
-  (void)source;
-  SendParameterValueFromDelegate(paramIdx, GetParam(paramIdx)->GetNormalized(),
-                                 true);
+  // Update the envelope visualizer when ADSR params change from the UI
+  if (paramIdx == kParamAttack || paramIdx == kParamDecay ||
+      paramIdx == kParamSustain || paramIdx == kParamRelease) {
+    if (GetUI()) {
+      Envelope *pEnvelope = dynamic_cast<Envelope *>(
+          GetUI()->GetControlWithTag(kCtrlTagEnvelope));
+      if (pEnvelope) {
+        pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
+                           GetParam(kParamDecay)->Value() / 1000.f,
+                           GetParam(kParamSustain)->Value() / 100.f,
+                           GetParam(kParamRelease)->Value() / 1000.f);
+      }
+    }
+  }
 }
 
 void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   if (pGraphics->NControls())
     return;
 
+  pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN);
   pGraphics->AttachPanelBackground(COLOR_DARK_GRAY);
 
-  const IRECT b = pGraphics->GetBounds();
+  IRECT b = pGraphics->GetBounds();
   const float footerH = 50.f;
-  const IRECT mainArea = b.ReduceFromBottom(footerH);
-  const IRECT footerArea = b.FracRectVertical(1.f, true).SubRectVertical(
-      footerH, false); // Bottom 50 pixels
+  const IRECT footerArea = b.ReduceFromBottom(footerH);
+  const IRECT mainArea = b;
 
   // 3-column layout
   const int nCols = 3;
@@ -167,9 +177,33 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   const IRECT filterCol = mainArea.GetGridCell(0, 1, 1, nCols);
   const IRECT envCol = mainArea.GetGridCell(0, 2, 1, nCols);
 
-  // Oscillators Section
-  pGraphics->AttachControl(new IVKnobControl(oscCol.GetCentredInside(100.f),
-                                             kParamOscWave, "Osc Wave"));
+  // Phase 1: Oscillators Section - Groups horizontal, controls within groups horizontal
+  const IRECT oscKnobs = oscCol.GetPadded(-10.f);
+  const float knobSize = 75.f;
+
+  // Top row: Waveform group (Osc A Wave | Osc B Wave)
+  const IRECT waveRow = oscKnobs.FracRectVertical(0.4f, true).GetPadded(-5.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      waveRow.GetGridCell(0, 0, 1, 2).GetCentredInside(knobSize),
+      kParamOscWave, "Osc A"), kCtrlTagOscWave);
+  pGraphics->AttachControl(new IVKnobControl(
+      waveRow.GetGridCell(0, 1, 1, 2).GetCentredInside(knobSize),
+      kParamOscBWave, "Osc B"), kCtrlTagOscBWave);
+
+  // Middle row: Pulse Width group (PW A | PW B)
+  const IRECT pwRow = oscKnobs.FracRectVertical(0.4f, false).FracRectVertical(0.6f, true).GetPadded(-5.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      pwRow.GetGridCell(0, 0, 1, 2).GetCentredInside(knobSize),
+      kParamOscPulseWidthA, "PW A"), kCtrlTagPulseWidthA);
+  pGraphics->AttachControl(new IVKnobControl(
+      pwRow.GetGridCell(0, 1, 1, 2).GetCentredInside(knobSize),
+      kParamOscPulseWidthB, "PW B"), kCtrlTagPulseWidthB);
+
+  // Bottom row: Mix (centered)
+  const IRECT mixRow = oscKnobs.FracRectVertical(0.4f, false).FracRectVertical(0.6f, false).GetPadded(-5.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      mixRow.GetCentredInside(knobSize),
+      kParamOscMix, "Mix"), kCtrlTagOscMix);
 
   // Filter Section
   const IRECT filterKnobs = filterCol.GetCentredInside(100.f, 220.f);
@@ -180,8 +214,9 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
 
   // Envelope Section
   const IRECT envVisualizerArea =
-      envCol.SubRectVertical(0.4f, true).Padding(10.f);
-  const IRECT envFadersArea = envCol.SubRectVertical(0.6f, false).Padding(10.f);
+      envCol.FracRectVertical(0.4f, true).GetPadded(-10.f);
+  const IRECT envFadersArea =
+      envCol.FracRectVertical(0.6f, false).GetPadded(-10.f);
 
   Envelope *pEnvelope = new Envelope(envVisualizerArea);
   pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
@@ -593,27 +628,4 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
   return false;
 }
 
-bool PolySynthPlugin::CanNavigateToURL(const char *url) { return true; }
-
-bool PolySynthPlugin::OnCanDownloadMIMEType(const char *mimeType) {
-  return std::string_view(mimeType) != "text/html";
-}
-
-void PolySynthPlugin::OnDownloadedFile(const char *path) {
-  WDL_String str;
-  str.SetFormatted(64, "Downloaded file to %s\n", path);
-  LoadHTML(str.Get());
-}
-
-void PolySynthPlugin::OnFailedToDownloadFile(const char *path) {
-  WDL_String str;
-  str.SetFormatted(64, "Failed to download file to %s\n", path);
-  LoadHTML(str.Get());
-}
-
-void PolySynthPlugin::OnGetLocalDownloadPathForFile(const char *fileName,
-                                                    WDL_String &localPath) {
-  DesktopPath(localPath);
-  localPath.AppendFormatted(MAX_WIN32_PATH_LEN, "/%s", fileName);
-}
 #endif

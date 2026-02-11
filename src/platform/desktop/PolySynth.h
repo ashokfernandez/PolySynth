@@ -3,6 +3,10 @@
 #include "DemoSequencer.h"
 #include "IPlug_include_in_plug_hdr.h"
 
+#if IPLUG_EDITOR
+#include "IGraphics.h"
+#endif
+
 const int kNumPresets = 1;
 
 enum EParams {
@@ -66,25 +70,26 @@ enum EControlTags {
   kMsgTagNoteOn = 20,
   kMsgTagNoteOff = 21,
   kCtrlTagEnvelope,
+  // Phase 1: Oscillator controls
+  kCtrlTagOscWave,
+  kCtrlTagOscBWave,
+  kCtrlTagOscMix,
+  kCtrlTagPulseWidthA,
+  kCtrlTagPulseWidthB,
   kNumCtrlTags
 };
 
 using namespace iplug;
+using namespace igraphics;
 
 class PolySynthPlugin final : public Plugin {
 public:
   PolySynthPlugin(const InstanceInfo &info);
 
-  bool CanNavigateToURL(const char *url);
-  bool OnCanDownloadMIMEType(const char *mimeType) override;
-  void OnFailedToDownloadFile(const char *path) override;
-  void OnDownloadedFile(const char *path) override;
-  void OnGetLocalDownloadPathForFile(const char *fileName,
-                                     WDL_String &localPath) override;
 #if IPLUG_EDITOR
   void OnUIOpen() override;
   void OnParamChangeUI(int paramIdx, EParamSource source) override;
-  void OnLayout(IGraphics *pGraphics) override;
+  void OnLayout(IGraphics *pGraphics);
 #endif
 
 #if IPLUG_DSP
