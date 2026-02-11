@@ -76,6 +76,11 @@ enum EControlTags {
   kCtrlTagOscMix,
   kCtrlTagPulseWidthA,
   kCtrlTagPulseWidthB,
+  // Phase 2: Gain + LFO controls
+  kCtrlTagGain,
+  kCtrlTagLFOShape,
+  kCtrlTagLFORate,
+  kCtrlTagLFODepth,
   kNumCtrlTags
 };
 

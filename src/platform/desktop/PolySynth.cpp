@@ -205,12 +205,31 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       mixRow.GetCentredInside(knobSize),
       kParamOscMix, "Mix"), kCtrlTagOscMix);
 
-  // Filter Section
-  const IRECT filterKnobs = filterCol.GetCentredInside(100.f, 220.f);
+  // Phase 2: LFO Section (in former filter column, top portion)
+  const IRECT lfoArea = filterCol.FracRectVertical(0.5f, true).GetPadded(-10.f);
   pGraphics->AttachControl(new IVKnobControl(
-      filterKnobs.GetGridCell(0, 0, 2, 1), kParamFilterCutoff, "Cutoff"));
+      lfoArea.GetGridCell(0, 0, 2, 2).GetCentredInside(knobSize),
+      kParamLFOShape, "LFO Shape"), kCtrlTagLFOShape);
   pGraphics->AttachControl(new IVKnobControl(
-      filterKnobs.GetGridCell(1, 0, 2, 1), kParamFilterResonance, "Resonance"));
+      lfoArea.GetGridCell(0, 1, 2, 2).GetCentredInside(knobSize),
+      kParamLFORateHz, "LFO Rate"), kCtrlTagLFORate);
+  pGraphics->AttachControl(new IVKnobControl(
+      lfoArea.GetGridCell(1, 0, 2, 2).GetCentredInside(knobSize),
+      kParamLFODepth, "LFO Depth"), kCtrlTagLFODepth);
+
+  // Phase 2: Master Gain (in LFO area, bottom right)
+  pGraphics->AttachControl(new IVKnobControl(
+      lfoArea.GetGridCell(1, 1, 2, 2).GetCentredInside(knobSize),
+      kParamGain, "Gain"), kCtrlTagGain);
+
+  // Filter Section (moved to bottom half of filter column)
+  const IRECT filterArea = filterCol.FracRectVertical(0.5f, false).GetPadded(-10.f);
+  pGraphics->AttachControl(new IVKnobControl(
+      filterArea.GetGridCell(0, 0, 2, 1).GetCentredInside(knobSize),
+      kParamFilterCutoff, "Cutoff"));
+  pGraphics->AttachControl(new IVKnobControl(
+      filterArea.GetGridCell(1, 0, 2, 1).GetCentredInside(knobSize),
+      kParamFilterResonance, "Resonance"));
 
   // Envelope Section
   const IRECT envVisualizerArea =
