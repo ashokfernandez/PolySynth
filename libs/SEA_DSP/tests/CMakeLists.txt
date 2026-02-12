@@ -55,6 +55,12 @@ set(TEST_SOURCES
     Test_CascadeFilter.cpp
     Test_SKFilter.cpp
     Test_MathConstants.cpp
+    # Vintage Effects Suite (TDD)
+    Test_DelayLine.cpp
+    Test_OnePoleFilter.cpp
+    Test_Sigmoid.cpp
+    Test_VintageChorus.cpp
+    Test_VintageDelay.cpp
 )
 
 add_executable(sea_tests ${TEST_SOURCES})
