@@ -239,6 +239,14 @@
             width: 100%;
             height: 40px;
         }
+
+        .demo-frame {
+            width: 100%;
+            min-height: 820px;
+            border: 0;
+            border-radius: 8px;
+            background: #0f1118;
+        }
         
         audio::-webkit-media-controls-panel {
             background: var(--bg-card);
@@ -317,8 +325,27 @@
         <a href="https://github.com/ashokfernandez/PolySynth" class="back-link">
             ← Back to Repository
         </a>
+
+        <div class="csv-list" style="margin-bottom:1.5rem;">
+            <a class="csv-link" href="#web-demo">🎛️ Web Demo</a>
+            <a class="csv-link" href="#audio-labs">🎧 Audio Labs</a>
+            <a class="csv-link" href="audio-labs.html">📄 Audio-only Page</a>
+            <a class="csv-link" href="component-gallery/index.html">🧩 Component Gallery</a>
+        </div>
+
+        <div id="web-demo" class="demo-card" style="margin-bottom:2rem;">
+            <div class="header">
+                <span class="icon">🎛️</span>
+                <div class="title-group">
+                    <h3>Latest PolySynth Web Demo</h3>
+                    <span class="filename">docs/web-demo/index.html</span>
+                </div>
+            </div>
+            <p class="description">This iframe hosts the latest web plugin build published by CI to GitHub Pages.</p>
+            <iframe class="demo-frame" src="web-demo/index.html" title="PolySynth Web Demo"></iframe>
+        </div>
         
-        <div class="info-grid">
+        <div id="audio-labs" class="info-grid">
             <div class="info-card">
                 <h3>What is this?</h3>
                 <p>Audio samples generated directly from the C++ DSP engine during CI builds. These verify that our oscillators, filters, and envelopes are working correctly.</p>

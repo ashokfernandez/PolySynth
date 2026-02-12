@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: pages-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -13,7 +17,7 @@ jobs:
       contents: write
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -46,16 +50,11 @@ jobs:
         
     - name: Build Tests
       run: |
-        cd tests
-        mkdir build
-        cd build
-        cmake ..
-        make
+        cmake -S tests -B tests/build
+        cmake --build tests/build --parallel
         
     - name: Run Tests
-      run: |
-        cd tests/build
-        ./run_tests
+      run: ./tests/build/run_tests
         
     - name: Generate Audio Docs
       run: |
@@ -74,9 +73,19 @@ jobs:
         chmod +x test_gallery_visual.sh
         ./test_gallery_visual.sh
 
+
+    - name: Build PolySynth Web demo (WAM)
+      working-directory: src/platform/desktop
+      run: |
+        chmod +x scripts/makedist-web.sh
+        ./scripts/makedist-web.sh off
+
     - name: Build Storybook Static Site
       working-directory: tests/Visual
       run: npm run build-storybook
+
+    - name: Verify web demo output exists
+      run: test -f src/platform/desktop/build-web/index.html
 
     - name: Upload Storybook static artifact
       uses: actions/upload-artifact@v4
@@ -85,10 +94,11 @@ jobs:
         path: tests/Visual/storybook-static
         if-no-files-found: error
 
-    - name: Publish Storybook Into docs/
+    - name: Publish web demo + Storybook Into docs/
       run: |
-        rm -rf docs/component-gallery
-        mkdir -p docs/component-gallery
+        rm -rf docs/web-demo docs/component-gallery
+        mkdir -p docs/web-demo docs/component-gallery
+        cp -R src/platform/desktop/build-web/. docs/web-demo/
         cp -R tests/Visual/storybook-static/. docs/component-gallery/
         touch docs/.nojekyll
 
