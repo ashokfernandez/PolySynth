@@ -29,4 +29,5 @@ iplug_add_plugin(${PROJECT_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/../../core/PresetManager.cpp
   RESOURCES
     resources/fonts/Roboto-Regular.ttf
+    resources/fonts/Roboto-Bold.ttf
 )

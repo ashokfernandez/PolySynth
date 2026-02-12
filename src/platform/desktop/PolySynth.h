@@ -43,6 +43,7 @@ enum EParams {
   kParamDelayFeedback,
   kParamDelayMix,
   kParamLimiterThreshold,
+  kParamPresetSelect,
   // Phase 5: Demo mode buttons (replaces kParamDemoMode)
   kParamDemoMono,
   kParamDemoPoly,
@@ -72,6 +73,7 @@ enum EControlTags {
   kMsgTagDemoFX = 14,
   kMsgTagNoteOn = 20,
   kMsgTagNoteOff = 21,
+  kMsgTagPresetSelect = 22,
   kCtrlTagEnvelope,
   // Phase 1: Oscillator controls
   kCtrlTagOscWave,
@@ -95,6 +97,8 @@ enum EControlTags {
   kCtrlTagDemoMono,
   kCtrlTagDemoPoly,
   kCtrlTagDemoFX,
+  kCtrlTagPresetSelect,
+  kCtrlTagSaveBtn,
   kNumCtrlTags
 };
 
@@ -127,5 +131,6 @@ private:
   PolySynthDSP mDSP{8};
   PolySynthCore::SynthState mState;
   DemoSequencer mDemoSequencer;
+  bool mIsDirty = false;
 #endif
 };
