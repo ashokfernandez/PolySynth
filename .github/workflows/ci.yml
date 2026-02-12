@@ -10,61 +10,185 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CCACHE_DIR: ~/.cache/ccache
+
 jobs:
-  build-and-test:
+  native-dsp-tests:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Dependencies
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-ccache-${{ github.workflow }}-${{ hashFiles('tests/CMakeLists.txt', 'libs/SEA_DSP/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-${{ github.workflow }}-
+
+      - name: Install native build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake
+          sudo apt-get install -y cmake ccache
 
-      - name: Download External Deps
+      - name: Reset ccache stats
+        run: ccache -z
+
+      - name: Download project external dependencies
         run: |
           chmod +x scripts/download_dependencies.sh
           ./scripts/download_dependencies.sh
 
-      - name: Build Tests and Demos
+      - name: Configure and build native test binaries
         run: |
           cd tests
           mkdir -p build
           cd build
-          cmake ..
+          cmake .. -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           make
 
-      - name: Run Unit Tests
+      - name: Run native unit tests
         run: |
           cd tests/build
           ./run_tests
 
-      - name: Build and Run SEA_DSP Unit Tests
+      - name: Build and run SEA_DSP unit tests
         run: |
-          cmake -S libs/SEA_DSP -B build/sea_dsp_tests -DSEA_BUILD_TESTS=ON
+          cmake -S libs/SEA_DSP -B build/sea_dsp_tests -DSEA_BUILD_TESTS=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build/sea_dsp_tests
           ./build/sea_dsp_tests/tests/sea_tests
 
-      - name: Audio Golden Master Verification
+      - name: Verify golden-master audio output
         run: |
           python3 scripts/golden_master.py --verify
 
-      - name: Audio Frequency Analysis
+      - name: Show ccache stats
+        run: ccache -s
+
+      - name: Validate demo output frequency
         run: |
           python3 scripts/analyze_audio.py tests/golden/demo_render_wav.wav --expected-freq 440
 
-  frontend-ci:
+  build-wam-demo:
+    name: Build PolySynth WAM Demo
     runs-on: ubuntu-latest
+    needs: native-dsp-tests
+
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
+
+      - name: Install WAM build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make python3
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Download project external dependencies
+        run: |
+          chmod +x scripts/download_dependencies.sh
+          ./scripts/download_dependencies.sh
+
+      - name: Ensure iPlug2 web build prerequisites
+        run: |
+          chmod +x scripts/download_iPlug2.sh
+          ./scripts/download_iPlug2.sh
+
+      - name: Build PolySynth WAM web demo
+        working-directory: src/platform/desktop
+        run: |
+          chmod +x scripts/makedist-web.sh
+          ./scripts/makedist-web.sh off
+
+      - name: Verify generated web demo bundle
+        run: test -f src/platform/desktop/build-web/index.html
+
+      - name: Upload web demo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polysynth-web-demo
+          path: src/platform/desktop/build-web
+          if-no-files-found: error
+
+  build-storybook-site:
+    name: Build Component Gallery Storybook
+    runs-on: ubuntu-latest
+    needs: native-dsp-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Install and Test
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/Visual/package-lock.json
+
+      - name: Install Storybook dependencies
+        working-directory: tests/Visual
+        run: npm ci
+
+      - name: Build Storybook static site
+        working-directory: tests/Visual
+        run: npm run build-storybook
+
+      - name: Upload Storybook static artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: component-gallery-storybook-static
+          path: tests/Visual/storybook-static
+          if-no-files-found: error
+
+  package-demo-site:
+    name: Package Pages Site
+    runs-on: ubuntu-latest
+    needs: [build-wam-demo, build-storybook-site]
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download web demo artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: polysynth-web-demo
+          path: docs/web-demo
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: component-gallery-storybook-static
+          path: docs/component-gallery
+
+      - name: Finalize docs for Pages
         run: |
-          cd src/platform/desktop/resources/web
-          npm ci
-          npm test
-          npm run build
+          touch docs/.nojekyll
+
+      - name: Upload Pages deployment artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  publish-pages:
+    name: Publish GitHub Pages
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: package-demo-site
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
