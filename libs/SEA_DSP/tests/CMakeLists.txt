@@ -55,6 +55,10 @@ set(TEST_SOURCES
     Test_CascadeFilter.cpp
     Test_SKFilter.cpp
     Test_MathConstants.cpp
+    Test_ADSRHeader.cpp
+    Test_OscillatorHeader.cpp
+    Test_LFOHeader.cpp
+    Test_SVFHeader.cpp
     # Vintage Effects Suite (TDD)
     Test_DelayLine.cpp
     Test_OnePoleFilter.cpp

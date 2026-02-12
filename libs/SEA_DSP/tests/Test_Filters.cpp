@@ -1,9 +1,5 @@
 #include "catch.hpp"
 #include <sea_dsp/sea_biquad_filter.h>
-#include <sea_dsp/sea_ladder_filter.h>
-#include <sea_dsp/sea_cascade_filter.h>
-#include <sea_dsp/sea_classical_filter.h>
-#include <sea_dsp/sea_sk_filter.h>
 #include <sea_dsp/sea_svf.h>
 #include <sea_dsp/sea_tpt_integrator.h>
 #include <cmath>
