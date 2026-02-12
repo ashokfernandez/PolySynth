@@ -6,10 +6,10 @@
 #include <cmath>
 #include <sea_dsp/sea_adsr.h>
 #include <sea_dsp/sea_biquad_filter.h>
+#include <sea_dsp/sea_cascade_filter.h>
 #include <sea_dsp/sea_ladder_filter.h>
 #include <sea_dsp/sea_lfo.h>
 #include <sea_dsp/sea_oscillator.h>
-#include <sea_dsp/sea_cascade_filter.h>
 
 namespace PolySynthCore {
 
@@ -56,7 +56,7 @@ public:
     mPolyModFilterEnvToFreqA = 0.0;
     mPolyModFilterEnvToPWM = 0.0;
     mPolyModFilterEnvToFilter = 0.0;
-    mFilterModel = FilterModel::Classic;
+    mFilterModel = FilterModel::Ladder;
   }
 
   void NoteOn(int note, int velocity) {
@@ -172,7 +172,8 @@ public:
       mAge = 0;
     }
 
-    return flt * ampEnvVal * mVelocity * ampMod;
+    sample_t out = flt * ampEnvVal * mVelocity * ampMod;
+    return out;
   }
 
   bool IsActive() const { return mActive; }
@@ -189,7 +190,8 @@ public:
 
   void SetFilter(double cutoff, double res, double envAmount) {
     mBaseCutoff = cutoff;
-    mBaseRes = res;
+    // Map 0-1 resonance to 0.5-20.5 Q for the biquad filter
+    mBaseRes = 0.5 + (res * res * 20.0);
     mFilterEnvAmount = envAmount;
   }
 

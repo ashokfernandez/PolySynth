@@ -44,7 +44,7 @@ enum EParams {
   kParamDelayMix,
   kParamLimiterThreshold,
   kParamPresetSelect,
-  // Phase 5: Demo mode buttons (replaces kParamDemoMode)
+  // 3 separate params for mutual exclusion via UI/DSP
   kParamDemoMono,
   kParamDemoPoly,
   kParamDemoFX,
@@ -131,6 +131,7 @@ private:
   PolySynthDSP mDSP{8};
   PolySynthCore::SynthState mState;
   DemoSequencer mDemoSequencer;
+  bool mIsUpdatingUI = false;
   bool mIsDirty = false;
 #endif
 };

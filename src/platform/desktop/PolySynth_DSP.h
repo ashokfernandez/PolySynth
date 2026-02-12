@@ -91,11 +91,8 @@ public:
     }
   }
 
-  // SetParam is legacy now, used only if direct param access is needed,
-  // but we prefer UpdateState. Leaving empty or routing to a "Pending Change"
-  // queue if strictly necessary, but for this Epic we switch to State.
   void SetParam(int paramIdx, double value) {
-    // No-op or TODO: remove once Plugin calls are removed
+    // Legacy
   }
 
   PolySynthCore::VoiceManager mVoiceManager;

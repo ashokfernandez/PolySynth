@@ -30,11 +30,11 @@ public:
       mCutoff = static_cast<T>(0.0);
     } else {
       T nyquist = static_cast<T>(0.5) * mSampleRate;
-      T maxCutoff = nyquist * static_cast<T>(0.49);
+      T maxCutoff = nyquist * static_cast<T>(0.95);
       mCutoff = Math::Clamp(cutoff, static_cast<T>(0.0), maxCutoff);
     }
 
-    mQ = (Q < static_cast<T>(0.01)) ? static_cast<T>(0.01) : Q;
+    mQ = (Q < static_cast<T>(0.5)) ? static_cast<T>(0.5) : Q;
     CalculateCoefficients();
   }
 
