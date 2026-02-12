@@ -90,7 +90,9 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
 #endif
 } // namespace
 
+#if IPLUG_DSP
 void PolySynthPlugin::SyncUIState() {
+  mIsUpdatingUI = true;
   GetParam(kParamGain)->Set(mState.masterGain * kToPercentage);
   GetParam(kParamNoteGlideTime)->Set(mState.glideTime * kToMs);
   GetParam(kParamAttack)->Set(mState.ampAttack * kToMs);
@@ -121,13 +123,25 @@ void PolySynthPlugin::SyncUIState() {
       ->Set(mState.polyModFilterEnvToPWM * kToPercentage);
   GetParam(kParamPolyModFilterEnvToFilter)
       ->Set(mState.polyModFilterEnvToFilter * kToPercentage);
+
+  // Sync demo buttons based on current sequencer mode
+  GetParam(kParamDemoMono)
+      ->Set(mDemoSequencer.GetMode() == DemoSequencer::Mode::Mono ? 1.0 : 0.0);
+  GetParam(kParamDemoPoly)
+      ->Set(mDemoSequencer.GetMode() == DemoSequencer::Mode::Poly ? 1.0 : 0.0);
+  GetParam(kParamDemoFX)
+      ->Set(mDemoSequencer.GetMode() == DemoSequencer::Mode::FX ? 1.0 : 0.0);
+
   for (int i = 0; i < kNumParams; ++i) {
     SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
   }
+  mIsUpdatingUI = false;
 }
 
 PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
+  mState.Reset(); // Ensure audible defaults (Gain 1.0, etc.)
+
   GetParam(kParamGain)->InitDouble("Gain", 100., 0., 100.0, 0.01, "%");
   GetParam(kParamNoteGlideTime)->InitMilliseconds("Glide", 0., 0.0, 30.);
   GetParam(kParamAttack)
@@ -176,10 +190,10 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamDelayTime)->InitMilliseconds("Time", 350., 50., 1200.);
   GetParam(kParamDelayFeedback)->InitDouble("Fbk", 35., 0., 95., 1., "%");
   GetParam(kParamDelayMix)->InitDouble("Mix", 0., 0., 100., 1., "%");
-  GetParam(kParamLimiterThreshold)->InitPercentage("Lmt");
+  GetParam(kParamLimiterThreshold)->InitPercentage("Lmt", 100.0);
 
   GetParam(kParamPresetSelect)->InitEnum("Patch", 0, 16);
-  GetParam(kParamDemoMono)->InitBool("MONO", false);
+  GetParam(kParamDemoMono)->InitBool("MONO", true);
   GetParam(kParamDemoPoly)->InitBool("POLY", false);
   GetParam(kParamDemoFX)->InitBool("FX", false);
 
@@ -190,13 +204,18 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   };
   mLayoutFunc = [this](IGraphics *pGraphics) { OnLayout(pGraphics); };
 #endif
+
+  // Default to Mono Demo ON for debugging
+  mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(), mDSP);
 }
+#endif
 
 #if IPLUG_EDITOR
 void PolySynthPlugin::OnUIOpen() {}
 
 void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
-  if (paramIdx != kParamPresetSelect && paramIdx < kParamDemoMono &&
+  if (paramIdx != kParamPresetSelect && paramIdx != kParamDemoMono &&
+      paramIdx != kParamDemoPoly && paramIdx != kParamDemoFX &&
       source != kPresetRecall) {
     mIsDirty = true;
     if (GetUI())
@@ -403,13 +422,16 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
 
   const IRECT demoInner = attachFrame(demoArea, "DEMO");
   IVStyle demoStyle = synthStyle.WithRoundness(0.08f);
-  auto createDemoBtn = [&](const IRECT &r, int paramIdx, const char *label) {
-    pGraphics->AttachControl(
-        new IVSwitchControl(r.GetPadded(-4.f), paramIdx, label, demoStyle));
-  };
-  createDemoBtn(demoInner.GetGridCell(0, 0, 3, 1), kParamDemoMono, "MONO SEQ");
-  createDemoBtn(demoInner.GetGridCell(1, 0, 3, 1), kParamDemoPoly, "POLY SEQ");
-  createDemoBtn(demoInner.GetGridCell(2, 0, 3, 1), kParamDemoFX, "FX SHOW");
+
+  pGraphics->AttachControl(
+      new IVSwitchControl(demoInner.GetGridCell(0, 0, 3, 1).GetPadded(-4.f),
+                          kParamDemoMono, "MONO SEQ", demoStyle));
+  pGraphics->AttachControl(
+      new IVSwitchControl(demoInner.GetGridCell(1, 0, 3, 1).GetPadded(-4.f),
+                          kParamDemoPoly, "POLY SEQ", demoStyle));
+  pGraphics->AttachControl(
+      new IVSwitchControl(demoInner.GetGridCell(2, 0, 3, 1).GetPadded(-4.f),
+                          kParamDemoFX, "FX SHOW", demoStyle));
 
   pGraphics->AttachControl(new SectionFrame(footerArea, "OUTPUT", groupBorder,
                                             textDark, IColor(255, 10, 10, 10)));
@@ -422,6 +444,13 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
 #if IPLUG_DSP
 void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
                                    int nFrames) {
+  static int blockCounter = 0;
+  if (blockCounter++ % 100 == 0) {
+    // Log every 100 blocks (~2 seconds)
+    printf("[DSP] ProcessBlock: Mode=%d, SampleRate=%.1f\n",
+           (int)mDemoSequencer.GetMode(), GetSampleRate());
+  }
+
   mDemoSequencer.Process(nFrames, GetSampleRate(), mDSP);
   mDSP.UpdateState(mState);
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
@@ -436,6 +465,8 @@ void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
 }
 
 void PolySynthPlugin::OnParamChange(int paramIdx) {
+  if (mIsUpdatingUI)
+    return;
   double value = GetParam(paramIdx)->Value();
   switch (paramIdx) {
   case kParamGain:
@@ -539,40 +570,65 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
 
   case kParamDemoMono:
     if (value > 0.5) {
-      GetParam(kParamDemoPoly)->Set(0.0);
-      GetParam(kParamDemoFX)->Set(0.0);
-      mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(), mDSP);
-    } else
-      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
-    SendParameterValueFromDelegate(kParamDemoPoly, 0.0, true);
-    SendParameterValueFromDelegate(kParamDemoFX, 0.0, true);
+      if (mDemoSequencer.GetMode() != DemoSequencer::Mode::Mono) {
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(),
+                               mDSP);
+        mIsUpdatingUI = true;
+        GetParam(kParamDemoPoly)->Set(0.0);
+        GetParam(kParamDemoFX)->Set(0.0);
+        SendParameterValueFromDelegate(kParamDemoPoly, 0.0, true);
+        SendParameterValueFromDelegate(kParamDemoFX, 0.0, true);
+        mIsUpdatingUI = false;
+      }
+    } else {
+      if (mDemoSequencer.GetMode() == DemoSequencer::Mode::Mono) {
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+      }
+    }
     break;
+
   case kParamDemoPoly:
     if (value > 0.5) {
-      GetParam(kParamDemoMono)->Set(0.0);
-      GetParam(kParamDemoFX)->Set(0.0);
-      mDemoSequencer.SetMode(DemoSequencer::Mode::Poly, GetSampleRate(), mDSP);
-    } else
-      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
-    SendParameterValueFromDelegate(kParamDemoMono, 0.0, true);
-    SendParameterValueFromDelegate(kParamDemoFX, 0.0, true);
+      if (mDemoSequencer.GetMode() != DemoSequencer::Mode::Poly) {
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Poly, GetSampleRate(),
+                               mDSP);
+        mIsUpdatingUI = true;
+        GetParam(kParamDemoMono)->Set(0.0);
+        GetParam(kParamDemoFX)->Set(0.0);
+        SendParameterValueFromDelegate(kParamDemoMono, 0.0, true);
+        SendParameterValueFromDelegate(kParamDemoFX, 0.0, true);
+        mIsUpdatingUI = false;
+      }
+    } else {
+      if (mDemoSequencer.GetMode() == DemoSequencer::Mode::Poly) {
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+      }
+    }
     break;
+
   case kParamDemoFX:
     if (value > 0.5) {
-      GetParam(kParamDemoMono)->Set(0.0);
-      GetParam(kParamDemoPoly)->Set(0.0);
-      mDemoSequencer.SetMode(DemoSequencer::Mode::FX, GetSampleRate(), mDSP);
-      mState.fxChorusMix = 0.35;
-      mState.fxDelayMix = 0.35;
-      SyncUIState();
+      if (mDemoSequencer.GetMode() != DemoSequencer::Mode::FX) {
+        mDemoSequencer.SetMode(DemoSequencer::Mode::FX, GetSampleRate(), mDSP);
+        mIsUpdatingUI = true;
+        GetParam(kParamDemoMono)->Set(0.0);
+        GetParam(kParamDemoPoly)->Set(0.0);
+        SendParameterValueFromDelegate(kParamDemoMono, 0.0, true);
+        SendParameterValueFromDelegate(kParamDemoPoly, 0.0, true);
+        mIsUpdatingUI = false;
+
+        mState.fxChorusMix = 0.35;
+        mState.fxDelayMix = 0.35;
+        SyncUIState();
+      }
     } else {
-      mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
-      mState.fxChorusMix = 0.0;
-      mState.fxDelayMix = 0.0;
-      SyncUIState();
+      if (mDemoSequencer.GetMode() == DemoSequencer::Mode::FX) {
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+        mState.fxChorusMix = 0.0;
+        mState.fxDelayMix = 0.0;
+        SyncUIState();
+      }
     }
-    SendParameterValueFromDelegate(kParamDemoMono, 0.0, true);
-    SendParameterValueFromDelegate(kParamDemoPoly, 0.0, true);
     break;
   default:
     break;

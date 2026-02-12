@@ -4,13 +4,11 @@
 namespace iplug {
 
 void DemoSequencer::SetMode(Mode mode, double sampleRate, PolySynthDSP &dsp) {
-  if (mMode == mode) {
-    mMode = Mode::Off;
+  mMode = mode;
+  if (mMode == Mode::Off) {
     dsp.Reset(sampleRate, 0);
     return;
   }
-
-  mMode = mode;
   mSampleCounter =
       static_cast<long long>(sampleRate * 0.25); // Trigger immediately
   mNoteIndex = -1;
@@ -18,10 +16,12 @@ void DemoSequencer::SetMode(Mode mode, double sampleRate, PolySynthDSP &dsp) {
 }
 
 void DemoSequencer::Process(int nFrames, double sampleRate, PolySynthDSP &dsp) {
-  if (mMode == Mode::Off)
+  if (mMode == Mode::Off || sampleRate <= 0.0)
     return;
 
-  int samplesPerStep = static_cast<int>(sampleRate * 0.25);
+  long long samplesPerStep = static_cast<long long>(sampleRate * 0.25);
+  if (samplesPerStep <= 0)
+    return;
   mSampleCounter += nFrames;
 
   if (mSampleCounter >= samplesPerStep) {
