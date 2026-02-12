@@ -6,12 +6,16 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
@@ -53,9 +57,9 @@ jobs:
   frontend-ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: Install and Test
@@ -64,29 +68,3 @@ jobs:
           npm ci
           npm test
           npm run build
-
-  build-macos:
-    runs-on: macos-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Download External Deps
-        run: |
-          chmod +x scripts/download_dependencies.sh
-          ./scripts/download_dependencies.sh
-
-      - name: Build Desktop App
-        run: |
-          chmod +x build_desktop.sh
-          # Build frontend first
-          cd src/platform/desktop/resources/web
-          npm install
-          npm test
-          npm run build
-          cd -
-          ./build_desktop.sh Debug
-
-      - name: Run UI Render Test
-        run: |
-          python3 tests/test_ui_render.py

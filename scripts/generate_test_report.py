@@ -21,6 +21,8 @@ AUDIO_DIR = os.path.join(DOCS_DIR, "audio")
 INDEX_FILE = os.path.join(DOCS_DIR, "index.html")
 GALLERY_DIR = os.path.join(DOCS_DIR, "component-gallery")
 GALLERY_INDEX_FILE = os.path.join(GALLERY_DIR, "index.html")
+WEB_DEMO_DIR = os.path.join(DOCS_DIR, "web-demo")
+WEB_DEMO_INDEX_FILE = os.path.join(WEB_DEMO_DIR, "index.html")
 
 # Demo descriptions for rich documentation
 # Keys should match the .wav filename (without extension)
@@ -227,6 +229,43 @@ def ensure_gallery_entrypoint():
         <p><code>./view_gallery_pages.sh</code></p>
         <p>Or use live interactive mode with:</p>
         <p><code>./view_gallery.sh</code></p>
+        <p><a href="../index.html">← Back to PolySynth Audio Labs</a></p>
+    </div>
+</body>
+</html>
+""")
+
+
+def ensure_web_demo_entrypoint():
+    """Ensure docs/web-demo/index.html exists for local browsing."""
+    os.makedirs(WEB_DEMO_DIR, exist_ok=True)
+
+    if os.path.exists(WEB_DEMO_INDEX_FILE):
+        return
+
+    with open(WEB_DEMO_INDEX_FILE, "w") as f:
+        f.write("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolySynth Web Demo (Local)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 2rem; background: #101114; color: #e5e7eb; line-height: 1.6; }
+        .card { max-width: 860px; margin: 2rem auto; background: #181b21; border: 1px solid #2b3340; border-radius: 12px; padding: 1.5rem; }
+        h1 { margin-top: 0; font-size: 1.5rem; }
+        code { background: #232936; padding: 0.15rem 0.4rem; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        a { color: #7cb6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>PolySynth Web Demo Not Built Locally Yet</h1>
+        <p>This path is populated by CI on GitHub Pages. For local viewing, run:</p>
+        <p><code>cd src/platform/desktop && ./scripts/makedist-web.sh off</code></p>
+        <p>Then copy build output into docs:</p>
+        <p><code>mkdir -p docs/web-demo && cp -R src/platform/desktop/build-web/. docs/web-demo/</code></p>
         <p><a href="../index.html">← Back to PolySynth Audio Labs</a></p>
     </div>
 </body>
@@ -570,8 +609,29 @@ def generate_index(artifacts):
         <a href="https://github.com/ashokfernandez/PolySynth" class="back-link">
             ← Back to Repository
         </a>
-        
-        <div class="info-grid">
+
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem;">
+            <a class="csv-link" href="#web-demo">🎛️ Web Demo</a>
+            <a class="csv-link" href="#audio-labs">🎧 Audio Labs</a>
+            <a class="csv-link" href="audio-labs.html">📄 Audio-only Page</a>
+            <a class="csv-link" href="component-gallery/index.html">🧩 Component Gallery</a>
+        </div>
+
+        <div id="web-demo" class="demo-card" style="margin-bottom:2.25rem;">
+            <div class="header">
+                <span class="icon">🎛️</span>
+                <div class="title-group">
+                    <h3>Latest PolySynth Web Demo</h3>
+                    <span class="filename">docs/web-demo/index.html</span>
+                </div>
+            </div>
+            <p class="description">Embedded live plugin build published by CI from the latest main branch commit.</p>
+            <div style="background:var(--bg-accent); border-radius:12px; padding:0.5rem;">
+                <iframe src="web-demo/index.html" title="PolySynth Web Demo" style="width:100%; min-height:820px; border:0; border-radius:8px; background:#111;"></iframe>
+            </div>
+        </div>
+
+        <div id="audio-labs" class="info-grid">
             <div class="info-card">
                 <h3>What is this?</h3>
                 <p>Audio samples generated directly from the C++ DSP engine during CI builds. These verify that our oscillators, filters, and envelopes are working correctly.</p>
@@ -680,6 +740,8 @@ def generate_index(artifacts):
 if __name__ == "__main__":
     os.makedirs(AUDIO_DIR, exist_ok=True)
     ensure_gallery_entrypoint()
+    ensure_web_demo_entrypoint()
     run_demos()
     artifacts = collect_artifacts()
     generate_index(artifacts)
+    shutil.copy2(INDEX_FILE, os.path.join(DOCS_DIR, "audio-labs.html"))
