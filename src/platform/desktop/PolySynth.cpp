@@ -294,10 +294,29 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       polyModKnobs.GetGridCell(1, 2, 2, 3).GetCentredInside(polyModKnobSize),
       kParamPolyModFilterEnvToFilter, "Env→Filter"), kCtrlTagPolyModEnvToFilter);
 
+  // Preset save/load buttons (restores missing React functionality)
+  const float presetButtonW = 90.f;
+  const float presetButtonH = 32.f;
+  const float presetButtonGap = 8.f;
+  const IRECT presetButtonsArea =
+      footerArea.GetFromLeft(2 * presetButtonW + presetButtonGap + 20.f)
+          .GetMidVPadded(presetButtonH);
+
+  pGraphics->AttachControl(new IVButtonControl(
+      presetButtonsArea.GetGridCell(0, 0, 1, 2),
+      [this](IControl *) { SendArbitraryMsgFromUI(kMsgTagSavePreset); },
+      "Save"));
+  pGraphics->AttachControl(new IVButtonControl(
+      presetButtonsArea.GetGridCell(0, 1, 1, 2),
+      [this](IControl *) { SendArbitraryMsgFromUI(kMsgTagLoadPreset); },
+      "Load"));
+
   // Phase 5: Footer - 3 demo toggle buttons
   IVStyle pillStyle = DEFAULT_STYLE.WithRoundness(1.0f);
   const float buttonW = 100.f, buttonH = 35.f, spacing = 10.f;
-  const IRECT demoArea = footerArea.GetCentredInside(3*buttonW + 2*spacing, buttonH);
+  const IRECT demoArea =
+      footerArea.GetFromRight(3 * buttonW + 2 * spacing + 10.f)
+          .GetMidVPadded(buttonH);
 
   pGraphics->AttachControl(
       new IVSwitchControl(demoArea.GetGridCell(0, 0, 1, 3),
