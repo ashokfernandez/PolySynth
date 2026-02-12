@@ -2,9 +2,11 @@
 
 #include "../../core/SynthState.h"
 #include "../../core/VoiceManager.h"
-#include "../../core/dsp/fx/FXEngine.h"
 #include "IPlugConstants.h"
 #include "IPlug_include_in_plug_hdr.h"
+#include <sea_dsp/effects/sea_vintage_chorus.h>
+#include <sea_dsp/effects/sea_vintage_delay.h>
+#include <sea_dsp/sea_limiter.h>
 
 using namespace iplug;
 
@@ -12,13 +14,17 @@ class PolySynthDSP {
 public:
   PolySynthDSP(int nVoices) {
     mVoiceManager.Init(44100.0);
-    mFxEngine.Init(44100.0);
+    mChorus.Init(44100.0);
+    mDelay.Init(44100.0, 2000.0);
+    mLimiter.Init(44100.0);
   }
 
   void Reset(double sampleRate, int blockSize) {
     mVoiceManager.Init(sampleRate);
-    mFxEngine.Init(sampleRate);
-    mFxEngine.Reset();
+    mChorus.Init(sampleRate);
+    mDelay.Init(sampleRate, 2000.0);
+    mDelay.Clear();
+    mLimiter.Init(sampleRate);
   }
 
   // Called from ProcessBlock in the plugin, before audio processing
@@ -51,11 +57,18 @@ public:
     mVoiceManager.SetPolyModFilterEnvToPWM(state.polyModFilterEnvToPWM);
     mVoiceManager.SetPolyModFilterEnvToFilter(state.polyModFilterEnvToFilter);
 
-    mFxEngine.SetChorus(state.fxChorusRate, state.fxChorusDepth,
-                        state.fxChorusMix);
-    mFxEngine.SetDelay(state.fxDelayTime, state.fxDelayFeedback,
-                       state.fxDelayMix);
-    mFxEngine.SetLimiter(state.fxLimiterThreshold, 5.0, 50.0);
+    // Chorus
+    mChorus.SetRate(state.fxChorusRate);
+    mChorus.SetDepth(state.fxChorusDepth * 5.0); // Map 0-1 to 0-5ms
+    mChorus.SetMix(state.fxChorusMix);
+
+    // Delay
+    mDelay.SetTime(state.fxDelayTime * 1000.0);        // Seconds to ms
+    mDelay.SetFeedback(state.fxDelayFeedback * 100.0); // 0-1 to percent
+    mDelay.SetMix(state.fxDelayMix * 100.0);           // 0-1 to percent
+
+    // Limiter
+    mLimiter.SetParams(state.fxLimiterThreshold, 5.0, 50.0);
   }
 
   void ProcessBlock(sample **inputs, sample **outputs, int nOutputs,
@@ -72,7 +85,20 @@ public:
 
       PolySynthCore::sample_t left = out;
       PolySynthCore::sample_t right = out;
-      mFxEngine.Process(left, right);
+
+      // Process Chorus
+      PolySynthCore::sample_t cOutL, cOutR;
+      mChorus.Process(left, right, &cOutL, &cOutR);
+      left = cOutL;
+      right = cOutR;
+
+      // Process Delay
+      mDelay.Process(left, right, &cOutL, &cOutR);
+      left = cOutL;
+      right = cOutR;
+
+      // Process Limiter
+      mLimiter.Process(left, right);
 
       if (nOutputs > 0)
         outputs[0][s] = static_cast<sample>(left);
@@ -96,7 +122,9 @@ public:
   }
 
   PolySynthCore::VoiceManager mVoiceManager;
-  PolySynthCore::FXEngine mFxEngine;
+  sea::VintageChorus<double> mChorus;
+  sea::VintageDelay<double> mDelay;
+  sea::LookaheadLimiter<double> mLimiter;
 
 private:
   double mGain = 1.0;

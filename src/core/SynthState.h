@@ -9,8 +9,8 @@ namespace PolySynthCore {
 // The Single Source of Truth for the Synth Engine
 struct SynthState {
   // --- Global -------------------------------
-  double masterGain = 1.0; // 0.0 to 1.0
-  int polyphony = 8;       // 1 to 16
+  double masterGain = 0.75; // 0.0 to 1.0
+  int polyphony = 8;        // 1 to 16
   bool unison = false;
   double unisonDetune = 0.0; // 0.0 to 1.0 (Hz spread)
   double glideTime = 0.0;    // Seconds
@@ -38,7 +38,7 @@ struct SynthState {
   double filterCutoff = 2000.0; // Hz
   double filterResonance = 0.0; // 0.0 to 1.0
   double filterEnvAmount = 0.0; // 0.0 to 1.0
-  int filterModel = 0;          // 0=Classic, 1=Ladder, 2=Cascade12, 3=Cascade24
+  int filterModel = 1;          // 0=Classic, 1=Ladder, 2=Cascade12, 3=Cascade24
   bool filterKeyboardTrack =
       false; // Full/Half/Off in hardware, uses float 0-1 for amount maybe?
 
@@ -80,7 +80,7 @@ struct SynthState {
 
   // --- Helper Methods -----------------------
   void Reset() {
-    masterGain = 1.0;
+    masterGain = 0.75;
     oscAWaveform = 0;
     oscAFreq = 440.0;
     oscAPulseWidth = 0.5;
@@ -91,10 +91,10 @@ struct SynthState {
     mixOscA = 1.0;
     mixOscB = 0.0;
     mixNoise = 0.0;
-    filterCutoff = 20000.0;
+    filterCutoff = 2000.0;
     filterResonance = 0.0;
     filterEnvAmount = 0.0;
-    filterModel = 0;
+    filterModel = 1;
     filterAttack = 0.01;
     filterDecay = 0.1;
     filterSustain = 0.5;
@@ -112,7 +112,7 @@ struct SynthState {
     fxDelayTime = 0.35;
     fxDelayFeedback = 0.35;
     fxDelayMix = 0.0;
-    fxLimiterThreshold = 0.95;
+    fxLimiterThreshold = 1.0;
     polyphony = 8;
   }
 };
