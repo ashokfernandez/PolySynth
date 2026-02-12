@@ -6,8 +6,13 @@
 </p>
 
 <p align="center">
+  <a href="https://ashokfernandez.github.io/PolySynth/web-demo/"><strong>🎛️ Live Web Demo</strong></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/ashokfernandez/PolySynth/actions"><img src="https://github.com/ashokfernandez/PolySynth/workflows/CI/badge.svg" alt="CI Status"></a>
-  <a href="https://ashokfernandez.github.io/PolySynth/"><img src="https://img.shields.io/badge/Audio%20Demos-Listen%20Now-blue" alt="Audio Demos"></a>
+  <a href="https://ashokfernandez.github.io/PolySynth/web-demo/"><img src="https://img.shields.io/badge/Web%20Demo-Play%20Now-blue" alt="Web Demo"></a>
+  <a href="https://ashokfernandez.github.io/PolySynth/component-gallery/"><img src="https://img.shields.io/badge/Component%20Gallery-Storybook-8A2BE2" alt="Component Gallery"></a>
 </p>
 
 ---
