@@ -111,6 +111,14 @@ void PolySynthPlugin::SyncUIState() {
   GetParam(kParamOscMix)->Set(mState.mixOscB * kToPercentage);
   GetParam(kParamOscPulseWidthA)->Set(mState.oscAPulseWidth * kToPercentage);
   GetParam(kParamOscPulseWidthB)->Set(mState.oscBPulseWidth * kToPercentage);
+  GetParam(kParamChorusRate)->Set(mState.fxChorusRate);
+  GetParam(kParamChorusDepth)->Set(mState.fxChorusDepth * kToPercentage);
+  GetParam(kParamChorusMix)->Set(mState.fxChorusMix * kToPercentage);
+  GetParam(kParamDelayTime)->Set(mState.fxDelayTime * kToMs);
+  GetParam(kParamDelayFeedback)->Set(mState.fxDelayFeedback * kToPercentage);
+  GetParam(kParamDelayMix)->Set(mState.fxDelayMix * kToPercentage);
+  GetParam(kParamLimiterThreshold)
+      ->Set((1.0 - mState.fxLimiterThreshold) * kToPercentage);
   GetParam(kParamPolyModOscBToFreqA)
       ->Set(mState.polyModOscBToFreqA * kToPercentage);
   GetParam(kParamPolyModOscBToPWM)
@@ -142,7 +150,7 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
   mState.Reset(); // Ensure audible defaults (Gain 1.0, etc.)
 
-  GetParam(kParamGain)->InitDouble("Gain", 100., 0., 100.0, 0.01, "%");
+  GetParam(kParamGain)->InitDouble("Gain", 75., 0., 100., 1.25, "%");
   GetParam(kParamNoteGlideTime)->InitMilliseconds("Glide", 0., 0.0, 30.);
   GetParam(kParamAttack)
       ->InitDouble("Att", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone, "ADSR",
@@ -161,7 +169,7 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamLFODepth)->InitPercentage("Dep");
 
   GetParam(kParamFilterCutoff)
-      ->InitDouble("Cutoff", 20000., 20., 20000., 1., "Hz", IParam::kFlagsNone,
+      ->InitDouble("Cutoff", 2000.0, 20., 20000., 1., "Hz", IParam::kFlagsNone,
                    "Filter", IParam::ShapeExp());
   GetParam(kParamFilterResonance)->InitDouble("Reso", 0., 0., 100., 1., "%");
   GetParam(kParamFilterEnvAmount)->InitPercentage("Env");
@@ -190,7 +198,7 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamDelayTime)->InitMilliseconds("Time", 350., 50., 1200.);
   GetParam(kParamDelayFeedback)->InitDouble("Fbk", 35., 0., 95., 1., "%");
   GetParam(kParamDelayMix)->InitDouble("Mix", 0., 0., 100., 1., "%");
-  GetParam(kParamLimiterThreshold)->InitPercentage("Lmt", 100.0);
+  GetParam(kParamLimiterThreshold)->InitPercentage("Lmt", 0.0);
 
   GetParam(kParamPresetSelect)->InitEnum("Patch", 0, 16);
   GetParam(kParamDemoMono)->InitBool("MONO", true);
@@ -561,7 +569,7 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
     mState.fxDelayMix = value / kToPercentage;
     break;
   case kParamLimiterThreshold:
-    mState.fxLimiterThreshold = value / kToPercentage;
+    mState.fxLimiterThreshold = 1.0 - (value / kToPercentage);
     break;
   case kParamPresetSelect:
     mIsDirty = false;
