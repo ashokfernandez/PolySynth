@@ -11,6 +11,34 @@
 namespace {
 static const double kToPercentage = 100.0;
 static const double kToMs = 1000.0;
+
+#if IPLUG_EDITOR
+class SectionFrame final : public IControl {
+public:
+  SectionFrame(const IRECT &bounds, const char *title, const IColor &borderColor,
+               const IColor &textColor, const IColor &bgColor = COLOR_TRANSPARENT)
+      : IControl(bounds), mTitle(title), mBorderColor(borderColor),
+        mTextColor(textColor), mBgColor(bgColor) {
+    mIgnoreMouse = true;
+  }
+
+  void Draw(IGraphics &g) override {
+    if (mBgColor.A > 0)
+      g.FillRect(mBgColor, mRECT);
+
+    g.DrawRect(mBorderColor, mRECT, nullptr, 1.5f);
+    g.DrawText(IText(18.f, &mTextColor, "Roboto-Regular", IText::kStyleNormal,
+                     IText::kAlignNear),
+               mTitle.Get(), mRECT.GetPadded(-10.f).GetFromTop(24.f));
+  }
+
+private:
+  WDL_String mTitle;
+  IColor mBorderColor;
+  IColor mTextColor;
+  IColor mBgColor;
+};
+#endif
 } // namespace
 
 void PolySynthPlugin::SyncUIState() {
@@ -176,141 +204,195 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
     return;
 
   pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN);
-  pGraphics->AttachPanelBackground(COLOR_DARK_GRAY);
+  const IColor panelBg = IColor(255, 239, 237, 230);
+  const IColor groupBorder = IColor(255, 70, 70, 70);
+  const IColor textDark = IColor(255, 22, 22, 22);
+  const IColor accentRed = IColor(255, 235, 74, 57);
+  const IColor accentCyan = IColor(255, 60, 218, 230);
 
-  IRECT b = pGraphics->GetBounds();
-  const float footerH = 50.f;
-  const float polyModH = 120.f;  // Phase 4: Space for poly-mod section
-  const IRECT footerArea = b.ReduceFromBottom(footerH);
-  const IRECT polyModArea = b.ReduceFromBottom(polyModH);
-  const IRECT mainArea = b;
+  pGraphics->AttachPanelBackground(panelBg);
 
-  // 3-column layout
-  const int nCols = 3;
-  const IRECT oscCol = mainArea.GetGridCell(0, 0, 1, nCols);
-  const IRECT filterCol = mainArea.GetGridCell(0, 1, 1, nCols);
-  const IRECT envCol = mainArea.GetGridCell(0, 2, 1, nCols);
+  const IVStyle synthStyle = DEFAULT_STYLE
+                                 .WithRoundness(0.12f)
+                                 .WithShadowOffset(0.0f)
+                                 .WithLabelText(IText(15.f, &textDark,
+                                                      "Roboto-Regular",
+                                                      IText::kStyleNormal,
+                                                      IText::kAlignCenter))
+                                 .WithValueText(IText(12.f, &textDark,
+                                                      "Roboto-Regular",
+                                                      IText::kStyleNormal,
+                                                      IText::kAlignCenter))
+                                 .WithColor(kBG, IColor(255, 247, 245, 240))
+                                 .WithColor(kFG, textDark)
+                                 .WithColor(kPR, accentRed)
+                                 .WithColor(kHL, accentCyan)
+                                 .WithColor(kFR, groupBorder);
 
-  // Phase 1: Oscillators Section - Groups horizontal, controls within groups horizontal
-  const IRECT oscKnobs = oscCol.GetPadded(-10.f);
-  const float knobSize = 75.f;
+  IRECT bounds = pGraphics->GetBounds().GetPadded(-14.f);
 
-  // Top row: Waveform group (Osc A Wave | Osc B Wave)
-  const IRECT waveRow = oscKnobs.FracRectVertical(0.4f, true).GetPadded(-5.f);
-  pGraphics->AttachControl(new IVKnobControl(
-      waveRow.GetGridCell(0, 0, 1, 2).GetCentredInside(knobSize),
-      kParamOscWave, "Osc A"), kCtrlTagOscWave);
-  pGraphics->AttachControl(new IVKnobControl(
-      waveRow.GetGridCell(0, 1, 1, 2).GetCentredInside(knobSize),
-      kParamOscBWave, "Osc B"), kCtrlTagOscBWave);
+  const IRECT topHeader = bounds.GetFromTop(58.f);
+  const IRECT controlsArea = bounds.GetFromTop(bounds.H() - 74.f);
+  const IRECT footerArea = bounds.GetFromBottom(64.f);
 
-  // Middle row: Pulse Width group (PW A | PW B)
-  const IRECT pwRow = oscKnobs.FracRectVertical(0.4f, false).FracRectVertical(0.6f, true).GetPadded(-5.f);
-  pGraphics->AttachControl(new IVKnobControl(
-      pwRow.GetGridCell(0, 0, 1, 2).GetCentredInside(knobSize),
-      kParamOscPulseWidthA, "PW A"), kCtrlTagPulseWidthA);
-  pGraphics->AttachControl(new IVKnobControl(
-      pwRow.GetGridCell(0, 1, 1, 2).GetCentredInside(knobSize),
-      kParamOscPulseWidthB, "PW B"), kCtrlTagPulseWidthB);
+  pGraphics->AttachControl(
+      new SectionFrame(topHeader, "OSAKA POLY-84", groupBorder, textDark,
+                       IColor(255, 246, 244, 238)));
 
-  // Bottom row: Mix (centered)
-  const IRECT mixRow = oscKnobs.FracRectVertical(0.4f, false).FracRectVertical(0.6f, false).GetPadded(-5.f);
-  pGraphics->AttachControl(new IVKnobControl(
-      mixRow.GetCentredInside(knobSize),
-      kParamOscMix, "Mix"), kCtrlTagOscMix);
+  const IRECT ledRect = topHeader.GetCentredInside(58.f, 36.f).GetTranslated(92.f, 0.f);
+  pGraphics->AttachControl(new SectionFrame(ledRect, "REC", accentRed, accentRed,
+                                            IColor(255, 34, 8, 8)));
 
-  // Phase 2: LFO Section (in former filter column, top portion)
-  const IRECT lfoArea = filterCol.FracRectVertical(0.5f, true).GetPadded(-10.f);
-  pGraphics->AttachControl(new IVKnobControl(
-      lfoArea.GetGridCell(0, 0, 2, 2).GetCentredInside(knobSize),
-      kParamLFOShape, "LFO Shape"), kCtrlTagLFOShape);
-  pGraphics->AttachControl(new IVKnobControl(
-      lfoArea.GetGridCell(0, 1, 2, 2).GetCentredInside(knobSize),
-      kParamLFORateHz, "LFO Rate"), kCtrlTagLFORate);
-  pGraphics->AttachControl(new IVKnobControl(
-      lfoArea.GetGridCell(1, 0, 2, 2).GetCentredInside(knobSize),
-      kParamLFODepth, "LFO Depth"), kCtrlTagLFODepth);
+  const float knobSize = 72.f;
+  const float smallKnob = 62.f;
 
-  // Phase 2: Master Gain (in LFO area, bottom right)
-  pGraphics->AttachControl(new IVKnobControl(
-      lfoArea.GetGridCell(1, 1, 2, 2).GetCentredInside(knobSize),
-      kParamGain, "Gain"), kCtrlTagGain);
+  auto attachFrame = [&](const IRECT &r, const char *label) {
+    pGraphics->AttachControl(new SectionFrame(r, label, groupBorder, textDark));
+    return r.GetPadded(-8.f).GetFromBottom(r.H() - 24.f);
+  };
 
-  // Filter Section (moved to bottom half of filter column)
-  const IRECT filterArea = filterCol.FracRectVertical(0.5f, false).GetPadded(-10.f);
-  pGraphics->AttachControl(new IVKnobControl(
-      filterArea.GetGridCell(0, 0, 2, 1).GetCentredInside(knobSize),
-      kParamFilterCutoff, "Cutoff"));
-  pGraphics->AttachControl(new IVKnobControl(
-      filterArea.GetGridCell(1, 0, 2, 1).GetCentredInside(knobSize),
-      kParamFilterResonance, "Resonance"));
+  // 2x4 matrix inspired grouping.
+  IRECT oscArea = controlsArea.GetGridCell(0, 0, 2, 4);
+  IRECT filterArea = controlsArea.GetGridCell(0, 1, 2, 4);
+  IRECT envArea = controlsArea.GetGridCell(0, 2, 2, 4);
+  IRECT lfoArea = controlsArea.GetGridCell(0, 3, 2, 4);
+  IRECT polyModArea = controlsArea.GetGridCell(1, 0, 2, 4);
+  IRECT fxArea = controlsArea.GetGridCell(1, 1, 2, 4);
+  IRECT masterArea = controlsArea.GetGridCell(1, 2, 2, 4);
+  IRECT demoArea = controlsArea.GetGridCell(1, 3, 2, 4);
 
-  // Envelope Section
-  const IRECT envVisualizerArea =
-      envCol.FracRectVertical(0.4f, true).GetPadded(-10.f);
-  const IRECT envFadersArea =
-      envCol.FracRectVertical(0.6f, false).GetPadded(-10.f);
+  const IRECT oscInner = attachFrame(oscArea, "OSCILLATORS");
+  pGraphics->AttachControl(new IVKnobControl(oscInner.GetGridCell(0, 0, 2, 2).GetCentredInside(knobSize),
+                                             kParamOscWave, "Wave A", synthStyle),
+                           kCtrlTagOscWave);
+  pGraphics->AttachControl(new IVKnobControl(oscInner.GetGridCell(0, 1, 2, 2).GetCentredInside(knobSize),
+                                             kParamOscBWave, "Wave B", synthStyle),
+                           kCtrlTagOscBWave);
+  pGraphics->AttachControl(new IVKnobControl(oscInner.GetGridCell(1, 0, 2, 2).GetCentredInside(knobSize),
+                                             kParamOscPulseWidthA, "Pulse A", synthStyle),
+                           kCtrlTagPulseWidthA);
+  pGraphics->AttachControl(new IVKnobControl(oscInner.GetGridCell(1, 1, 2, 2).GetCentredInside(knobSize),
+                                             kParamOscPulseWidthB, "Pulse B", synthStyle),
+                           kCtrlTagPulseWidthB);
 
-  Envelope *pEnvelope = new Envelope(envVisualizerArea);
+  const IRECT filterInner = attachFrame(filterArea, "FILTER");
+  pGraphics->AttachControl(new IVKnobControl(filterInner.GetGridCell(0, 0, 2, 2).GetCentredInside(knobSize),
+                                             kParamFilterCutoff, "Cutoff", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(filterInner.GetGridCell(0, 1, 2, 2).GetCentredInside(knobSize),
+                                             kParamFilterResonance, "Reso", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(filterInner.GetGridCell(1, 0, 2, 2).GetCentredInside(knobSize),
+                                             kParamFilterEnvAmount, "Env Amt", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(filterInner.GetGridCell(1, 1, 2, 2).GetCentredInside(knobSize),
+                                             kParamFilterModel, "Model", synthStyle));
+
+  const IRECT envInner = attachFrame(envArea, "AMP ENVELOPE");
+  const IRECT envVisualizerArea = envInner.GetFromTop(envInner.H() * 0.45f).GetPadded(-4.f);
+  const IRECT envFadersArea = envInner.GetFromBottom(envInner.H() * 0.52f).GetPadded(-4.f);
+
+  Envelope *pEnvelope = new Envelope(envVisualizerArea, synthStyle);
   pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
                      GetParam(kParamDecay)->Value() / 1000.f,
                      GetParam(kParamSustain)->Value() / 100.f,
                      GetParam(kParamRelease)->Value() / 1000.f);
+  pEnvelope->SetColors(accentCyan, accentCyan.WithOpacity(0.2f));
   pGraphics->AttachControl(pEnvelope, kCtrlTagEnvelope);
 
   const int nFaders = 4;
   pGraphics->AttachControl(new IVSliderControl(
-      envFadersArea.GetGridCell(0, 0, 1, nFaders), kParamAttack, "A"));
+      envFadersArea.GetGridCell(0, 0, 1, nFaders), kParamAttack, "A",
+      synthStyle));
   pGraphics->AttachControl(new IVSliderControl(
-      envFadersArea.GetGridCell(0, 1, 1, nFaders), kParamDecay, "D"));
+      envFadersArea.GetGridCell(0, 1, 1, nFaders), kParamDecay, "D",
+      synthStyle));
   pGraphics->AttachControl(new IVSliderControl(
-      envFadersArea.GetGridCell(0, 2, 1, nFaders), kParamSustain, "S"));
+      envFadersArea.GetGridCell(0, 2, 1, nFaders), kParamSustain, "S",
+      synthStyle));
   pGraphics->AttachControl(new IVSliderControl(
-      envFadersArea.GetGridCell(0, 3, 1, nFaders), kParamRelease, "R"));
+      envFadersArea.GetGridCell(0, 3, 1, nFaders), kParamRelease, "R",
+      synthStyle));
 
-  // Phase 4: Poly-Mod Matrix Section (6 knobs in 2 rows x 3 cols)
-  const IRECT polyModKnobs = polyModArea.GetPadded(-10.f);
-  const float polyModKnobSize = 65.f;
+  const IRECT lfoInner = attachFrame(lfoArea, "LFO");
+  pGraphics->AttachControl(new IVKnobControl(lfoInner.GetGridCell(0, 0, 2, 2).GetCentredInside(knobSize),
+                                             kParamLFOShape, "Shape", synthStyle),
+                           kCtrlTagLFOShape);
+  pGraphics->AttachControl(new IVKnobControl(lfoInner.GetGridCell(0, 1, 2, 2).GetCentredInside(knobSize),
+                                             kParamLFORateHz, "Rate", synthStyle),
+                           kCtrlTagLFORate);
+  pGraphics->AttachControl(new IVKnobControl(lfoInner.GetGridCell(1, 0, 2, 2).GetCentredInside(knobSize),
+                                             kParamLFODepth, "Depth", synthStyle),
+                           kCtrlTagLFODepth);
+  pGraphics->AttachControl(new IVKnobControl(lfoInner.GetGridCell(1, 1, 2, 2).GetCentredInside(knobSize),
+                                             kParamOscMix, "Osc Mix", synthStyle),
+                           kCtrlTagOscMix);
 
-  // Row 1: Osc B modulation sources (B→Freq A, B→PWM, B→Filter)
-  pGraphics->AttachControl(new IVKnobControl(
-      polyModKnobs.GetGridCell(0, 0, 2, 3).GetCentredInside(polyModKnobSize),
-      kParamPolyModOscBToFreqA, "B→Freq A"), kCtrlTagPolyModOscBToFreqA);
-  pGraphics->AttachControl(new IVKnobControl(
-      polyModKnobs.GetGridCell(0, 1, 2, 3).GetCentredInside(polyModKnobSize),
-      kParamPolyModOscBToPWM, "B→PWM"), kCtrlTagPolyModOscBToPWM);
-  pGraphics->AttachControl(new IVKnobControl(
-      polyModKnobs.GetGridCell(0, 2, 2, 3).GetCentredInside(polyModKnobSize),
-      kParamPolyModOscBToFilter, "B→Filter"), kCtrlTagPolyModOscBToFilter);
+  const IRECT polyInner = attachFrame(polyModArea, "POLY MOD");
+  pGraphics->AttachControl(new IVKnobControl(polyInner.GetGridCell(0, 0, 2, 3).GetCentredInside(smallKnob),
+                                             kParamPolyModOscBToFreqA, "B→Freq A", synthStyle),
+                           kCtrlTagPolyModOscBToFreqA);
+  pGraphics->AttachControl(new IVKnobControl(polyInner.GetGridCell(0, 1, 2, 3).GetCentredInside(smallKnob),
+                                             kParamPolyModOscBToPWM, "B→PWM", synthStyle),
+                           kCtrlTagPolyModOscBToPWM);
+  pGraphics->AttachControl(new IVKnobControl(polyInner.GetGridCell(0, 2, 2, 3).GetCentredInside(smallKnob),
+                                             kParamPolyModOscBToFilter, "B→Filter", synthStyle),
+                           kCtrlTagPolyModOscBToFilter);
+  pGraphics->AttachControl(new IVKnobControl(polyInner.GetGridCell(1, 0, 2, 3).GetCentredInside(smallKnob),
+                                             kParamPolyModFilterEnvToFreqA, "Env→Freq A", synthStyle),
+                           kCtrlTagPolyModEnvToFreqA);
+  pGraphics->AttachControl(new IVKnobControl(polyInner.GetGridCell(1, 1, 2, 3).GetCentredInside(smallKnob),
+                                             kParamPolyModFilterEnvToPWM, "Env→PWM", synthStyle),
+                           kCtrlTagPolyModEnvToPWM);
+  pGraphics->AttachControl(new IVKnobControl(polyInner.GetGridCell(1, 2, 2, 3).GetCentredInside(smallKnob),
+                                             kParamPolyModFilterEnvToFilter, "Env→Filter", synthStyle),
+                           kCtrlTagPolyModEnvToFilter);
 
-  // Row 2: Envelope modulation sources (Env→Freq A, Env→PWM, Env→Filter)
-  pGraphics->AttachControl(new IVKnobControl(
-      polyModKnobs.GetGridCell(1, 0, 2, 3).GetCentredInside(polyModKnobSize),
-      kParamPolyModFilterEnvToFreqA, "Env→Freq A"), kCtrlTagPolyModEnvToFreqA);
-  pGraphics->AttachControl(new IVKnobControl(
-      polyModKnobs.GetGridCell(1, 1, 2, 3).GetCentredInside(polyModKnobSize),
-      kParamPolyModFilterEnvToPWM, "Env→PWM"), kCtrlTagPolyModEnvToPWM);
-  pGraphics->AttachControl(new IVKnobControl(
-      polyModKnobs.GetGridCell(1, 2, 2, 3).GetCentredInside(polyModKnobSize),
-      kParamPolyModFilterEnvToFilter, "Env→Filter"), kCtrlTagPolyModEnvToFilter);
+  const IRECT fxInner = attachFrame(fxArea, "FX");
+  pGraphics->AttachControl(new IVKnobControl(fxInner.GetGridCell(0, 0, 2, 3).GetCentredInside(smallKnob),
+                                             kParamChorusRate, "Chorus Rt", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(fxInner.GetGridCell(0, 1, 2, 3).GetCentredInside(smallKnob),
+                                             kParamChorusDepth, "Chorus Dp", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(fxInner.GetGridCell(0, 2, 2, 3).GetCentredInside(smallKnob),
+                                             kParamChorusMix, "Chorus Mix", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(fxInner.GetGridCell(1, 0, 2, 3).GetCentredInside(smallKnob),
+                                             kParamDelayTime, "Delay T", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(fxInner.GetGridCell(1, 1, 2, 3).GetCentredInside(smallKnob),
+                                             kParamDelayFeedback, "Delay FB", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(fxInner.GetGridCell(1, 2, 2, 3).GetCentredInside(smallKnob),
+                                             kParamDelayMix, "Delay Mix", synthStyle));
 
-  // Phase 5: Footer - 3 demo toggle buttons
-  IVStyle pillStyle = DEFAULT_STYLE.WithRoundness(1.0f);
-  const float buttonW = 100.f, buttonH = 35.f, spacing = 10.f;
-  const IRECT demoArea = footerArea.GetCentredInside(3*buttonW + 2*spacing, buttonH);
+  const IRECT masterInner = attachFrame(masterArea, "MASTER");
+  pGraphics->AttachControl(new IVKnobControl(masterInner.GetGridCell(0, 0, 1, 2).GetCentredInside(knobSize),
+                                             kParamGain, "Gain", synthStyle),
+                           kCtrlTagGain);
+  pGraphics->AttachControl(new IVKnobControl(masterInner.GetGridCell(0, 1, 1, 2).GetCentredInside(knobSize),
+                                             kParamLimiterThreshold, "Limiter", synthStyle));
+  pGraphics->AttachControl(new IVKnobControl(masterInner.GetGridCell(1, 0, 1, 2).GetCentredInside(knobSize),
+                                             kParamNoteGlideTime, "Glide", synthStyle));
 
-  pGraphics->AttachControl(
-      new IVSwitchControl(demoArea.GetGridCell(0, 0, 1, 3),
-                          kParamDemoMono, "Mono", pillStyle),
-      kCtrlTagDemoMono);
-  pGraphics->AttachControl(
-      new IVSwitchControl(demoArea.GetGridCell(0, 1, 1, 3),
-                          kParamDemoPoly, "Poly", pillStyle),
-      kCtrlTagDemoPoly);
-  pGraphics->AttachControl(
-      new IVSwitchControl(demoArea.GetGridCell(0, 2, 1, 3),
-                          kParamDemoFX, "FX", pillStyle),
-      kCtrlTagDemoFX);
+  const IRECT demoInner = attachFrame(demoArea, "DEMO");
+  IVStyle pillStyle = synthStyle.WithRoundness(1.f);
+  pGraphics->AttachControl(new IVSwitchControl(
+                             demoInner.GetFromTop(demoInner.H() * 0.32f)
+                                 .GetCentredInside(demoInner.W() - 24.f, 30.f),
+                             kParamDemoMono, "Mono", pillStyle),
+                           kCtrlTagDemoMono);
+  pGraphics->AttachControl(new IVSwitchControl(
+                             demoInner.GetCentredInside(demoInner.W() - 24.f, 30.f),
+                             kParamDemoPoly, "Poly", pillStyle),
+                           kCtrlTagDemoPoly);
+  pGraphics->AttachControl(new IVSwitchControl(
+                             demoInner.GetFromBottom(demoInner.H() * 0.34f)
+                                 .GetCentredInside(demoInner.W() - 24.f, 30.f),
+                             kParamDemoFX, "FX", pillStyle),
+                           kCtrlTagDemoFX);
+
+  pGraphics->AttachControl(new SectionFrame(footerArea, "OUTPUT", groupBorder,
+                                            textDark, IColor(255, 8, 8, 8)));
+  const IRECT footerText = footerArea.GetPadded(-14.f);
+  pGraphics->AttachControl(new ITextControl(
+      footerText.GetFromBottom(22.f), "Signal Monitor", IText(14.f, &accentCyan,
+                                                                "Roboto-Regular",
+                                                                IText::kStyleNormal,
+                                                                IText::kAlignNear)));
 }
 #endif
 
