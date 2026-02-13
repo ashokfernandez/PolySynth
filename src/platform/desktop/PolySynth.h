@@ -132,6 +132,8 @@ private:
   PolySynthCore::SynthState mState;
   DemoSequencer mDemoSequencer;
   bool mIsUpdatingUI = false;
-  bool mIsDirty = false;
 #endif
+
+private:
+  bool mIsDirty = false;
 };
