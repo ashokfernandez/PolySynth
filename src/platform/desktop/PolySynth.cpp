@@ -1,11 +1,14 @@
 #include "PolySynth.h"
 #include "../../core/PresetManager.h"
+#include "../../../UI/Controls/PolyTheme.h"
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_src.h"
 #if IPLUG_EDITOR
 #include "Envelope.h"
 #include "IControls.h"
+#include "PolySection.h"
 #endif
+#include <algorithm>
 #include <cstdlib>
 #include <vector>
 
@@ -53,11 +56,10 @@ private:
   IColor mBgColor;
 };
 
-// Precisely Stacked Control (Label -> Knob -> Value)
+// Stacked control helper: label -> control -> value.
 void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
                           const char *label, const IVStyle &style,
                           bool isSlider = false) {
-  // Relative sizing based on cell constraints
   float knobSize = std::min(bounds.W(), bounds.H() * 0.7f) * 0.82f;
   if (isSlider)
     knobSize = std::min(bounds.W() * 0.75f, bounds.H() * 0.75f);
@@ -66,24 +68,20 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
   if (isSlider)
     controlRect = bounds.GetCentredInside(bounds.W() * 0.7f, bounds.H() * 0.7f);
 
-  // Tight label positioning relative to the control
   const float labelH = 18.f;
   const float valueH = 16.f;
 
-  // Label Above (Bold, closer to knob)
   IText labelTextBold =
       IText(15.f, style.labelText.mFGColor, "Roboto-Bold", EAlign::Center);
   IRECT labelRect = IRECT(bounds.L, controlRect.T - labelH - 1.f, bounds.R,
                           controlRect.T - 1.f);
 
-  // Value Below (Larger, closer to knob)
   IText valueTextBold =
       IText(14.f, style.valueText.mFGColor, "Roboto-Regular", EAlign::Center);
   IRECT valueRect = IRECT(bounds.L, controlRect.B + 1.f, bounds.R,
                           controlRect.B + valueH + 1.f);
 
   pGraphics->AttachControl(new ITextControl(labelRect, label, labelTextBold));
-
   if (isSlider) {
     pGraphics->AttachControl(
         new IVSliderControl(controlRect, paramIdx, "",
@@ -93,7 +91,6 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
         new IVKnobControl(controlRect, paramIdx, "",
                           style.WithShowLabel(false).WithShowValue(false)));
   }
-
   pGraphics->AttachControl(
       new ICaptionControl(valueRect, paramIdx, valueTextBold, false));
 }
@@ -166,15 +163,15 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamGain)->InitDouble("Gain", 75., 0., 100., 1.25, "%");
   GetParam(kParamNoteGlideTime)->InitMilliseconds("Glide", 0., 0.0, 30.);
   GetParam(kParamAttack)
-      ->InitDouble("Att", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone, "ADSR",
+      ->InitDouble("Attack", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone, "ADSR",
                    IParam::ShapePowCurve(3.));
   GetParam(kParamDecay)
-      ->InitDouble("Dec", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone, "ADSR",
+      ->InitDouble("Decay", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone, "ADSR",
                    IParam::ShapePowCurve(3.));
   GetParam(kParamSustain)
-      ->InitDouble("Sus", 50., 0., 100., 1, "%", IParam::kFlagsNone, "ADSR");
+      ->InitDouble("Sustain", 50., 0., 100., 1, "%", IParam::kFlagsNone, "ADSR");
   GetParam(kParamRelease)
-      ->InitDouble("Rel", 10., 2., 1000., 0.1, "ms", IParam::kFlagsNone,
+      ->InitDouble("Release", 10., 2., 1000., 0.1, "ms", IParam::kFlagsNone,
                    "ADSR");
 
   GetParam(kParamLFOShape)->InitEnum("LFO", 1, {"Sin", "Tri", "Sqr", "Saw"});
@@ -185,23 +182,23 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
       ->InitDouble("Cutoff", 2000.0, 20., 20000., 1., "Hz", IParam::kFlagsNone,
                    "Filter", IParam::ShapeExp());
   GetParam(kParamFilterResonance)->InitDouble("Reso", 0., 0., 100., 1., "%");
-  GetParam(kParamFilterEnvAmount)->InitPercentage("Env");
+  GetParam(kParamFilterEnvAmount)->InitPercentage("Contour");
   GetParam(kParamFilterModel)->InitEnum("Model", 0, {"CL", "LD", "P12", "P24"});
 
   GetParam(kParamOscWave)
       ->InitEnum("OscA", kDefaultOscAWave, {"SAW", "SQR", "TRI", "SIN"});
   GetParam(kParamOscBWave)
       ->InitEnum("OscB", kDefaultOscBWave, {"SAW", "SQR", "TRI", "SIN"});
-  GetParam(kParamOscMix)->InitDouble("Mix", 0., 0., 100., 1., "%");
+  GetParam(kParamOscMix)->InitDouble("Osc Bal", 0., 0., 100., 1., "%");
   GetParam(kParamOscPulseWidthA)->InitPercentage("PWA");
   GetParam(kParamOscPulseWidthB)->InitPercentage("PWB");
 
-  GetParam(kParamPolyModOscBToFreqA)->InitPercentage("B-F");
-  GetParam(kParamPolyModOscBToPWM)->InitPercentage("B-P");
+  GetParam(kParamPolyModOscBToFreqA)->InitPercentage("FM Depth");
+  GetParam(kParamPolyModOscBToPWM)->InitPercentage("PWM Mod");
   GetParam(kParamPolyModOscBToFilter)->InitPercentage("B-V");
-  GetParam(kParamPolyModFilterEnvToFreqA)->InitPercentage("E-F");
-  GetParam(kParamPolyModFilterEnvToPWM)->InitPercentage("E-P");
-  GetParam(kParamPolyModFilterEnvToFilter)->InitPercentage("E-V");
+  GetParam(kParamPolyModFilterEnvToFreqA)->InitPercentage("Env FM");
+  GetParam(kParamPolyModFilterEnvToPWM)->InitPercentage("Env PWM");
+  GetParam(kParamPolyModFilterEnvToFilter)->InitPercentage("Env VCF");
 
   GetParam(kParamChorusRate)->InitFrequency("Rate", 0.25, 0.05, 2.0);
   GetParam(kParamChorusDepth)->InitDouble("Dep", 50., 0., 100., 1., "%");
@@ -265,11 +262,11 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   pGraphics->LoadFont("Roboto-Bold", ROBOTO_BOLD_FN);
 
   // Clean Aesthetic Colors
-  const IColor panelBg = IColor(255, 239, 237, 230);
-  const IColor groupBorder = IColor(255, 120, 120, 120);
-  const IColor textDark = IColor(255, 22, 22, 22);
-  const IColor accentRed = IColor(255, 235, 74, 57);
-  const IColor accentCyan = IColor(255, 60, 218, 230);
+  const IColor panelBg = PolyTheme::PanelBG;
+  const IColor groupBorder = PolyTheme::SectionBorder;
+  const IColor textDark = PolyTheme::TextDark;
+  const IColor accentRed = PolyTheme::AccentRed;
+  const IColor accentCyan = PolyTheme::AccentCyan;
 
   pGraphics->AttachPanelBackground(panelBg);
 
@@ -296,7 +293,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   pGraphics->AttachControl(new SectionFrame(
       topHeader, "", groupBorder, textDark, IColor(255, 246, 244, 238)));
   pGraphics->AttachControl(new ITextControl(
-      topHeader.GetPadded(-18.f).GetFromTop(40.f), "OSAKA POLY-84",
+      topHeader.GetPadded(-18.f).GetFromTop(40.f), "PolySynth",
       IText(40.f, textDark, "Roboto-Bold", EAlign::Near)));
 
   // Preset Selection
@@ -325,7 +322,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       kCtrlTagSaveBtn);
 
   auto attachFrame = [&](const IRECT &r, const char *label) {
-    pGraphics->AttachControl(new SectionFrame(r, label, groupBorder, textDark));
+    pGraphics->AttachControl(new PolySection(r, label));
     return r.GetPadded(-8.f).GetFromBottom(
         r.H() - 36.f); // Significant space for bold header
   };
@@ -415,19 +412,19 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   AttachStackedControl(pGraphics, polyInner.GetGridCell(1, 2, 2, 3),
                        kParamPolyModFilterEnvToFilter, "E-FILT", synthStyle);
 
-  const IRECT fxInner = attachFrame(fxArea, "FX");
+  const IRECT fxInner = attachFrame(fxArea, "EFFECTS");
   AttachStackedControl(pGraphics, fxInner.GetGridCell(0, 0, 2, 3),
-                       kParamChorusRate, "RT", synthStyle);
+                       kParamChorusRate, "CH RATE", synthStyle);
   AttachStackedControl(pGraphics, fxInner.GetGridCell(0, 1, 2, 3),
-                       kParamChorusDepth, "DP", synthStyle);
+                       kParamChorusDepth, "CH DEPTH", synthStyle);
   AttachStackedControl(pGraphics, fxInner.GetGridCell(0, 2, 2, 3),
-                       kParamChorusMix, "MX", synthStyle);
+                       kParamChorusMix, "CH MIX", synthStyle);
   AttachStackedControl(pGraphics, fxInner.GetGridCell(1, 0, 2, 3),
-                       kParamDelayTime, "TM", synthStyle);
+                       kParamDelayTime, "DL TIME", synthStyle);
   AttachStackedControl(pGraphics, fxInner.GetGridCell(1, 1, 2, 3),
-                       kParamDelayFeedback, "FB", synthStyle);
+                       kParamDelayFeedback, "DL FEEDBACK", synthStyle);
   AttachStackedControl(pGraphics, fxInner.GetGridCell(1, 2, 2, 3),
-                       kParamDelayMix, "MX", synthStyle);
+                       kParamDelayMix, "DL MIX", synthStyle);
 
   // Master Section Fix: Divided into two sub-rows to prevent crowding
   const IRECT masterInner = attachFrame(masterArea, "MASTER");
