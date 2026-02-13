@@ -130,6 +130,29 @@ jobs:
           cache: npm
           cache-dependency-path: tests/Visual/package-lock.json
 
+      - name: Install ComponentGallery build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make python3
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Ensure iPlug2 dependency
+        run: |
+          chmod +x scripts/download_iPlug2.sh
+          ./scripts/download_iPlug2.sh
+
+      - name: Build ComponentGallery web bundle for Storybook staticDirs
+        run: |
+          chmod +x scripts/build_gallery_wam.sh
+          ./scripts/build_gallery_wam.sh
+
+      - name: Verify ComponentGallery static dir
+        run: test -f ComponentGallery/build-web/index.html
+
       - name: Install Storybook dependencies
         working-directory: tests/Visual
         run: npm ci
