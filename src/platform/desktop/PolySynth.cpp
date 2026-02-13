@@ -666,7 +666,9 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       printf("TEST_PASS: UI Loaded\n");
       exit(0);
     }
-  } else if (msgTag == kMsgTagSavePreset) {
+  }
+#if IPLUG_EDITOR
+  else if (msgTag == kMsgTagSavePreset) {
     WDL_String path;
     DesktopPath(path);
     path.AppendFormatted(512, "/PolySynth_Preset_%d.json", ctrlTag);
@@ -685,7 +687,9 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       return true;
     }
     return false;
-  } else if (msgTag == kMsgTagNoteOn) {
+  }
+#endif
+  else if (msgTag == kMsgTagNoteOn) {
     IMidiMsg msg;
     msg.MakeNoteOnMsg(ctrlTag, 100, 0);
     mDSP.ProcessMidiMsg(msg);
