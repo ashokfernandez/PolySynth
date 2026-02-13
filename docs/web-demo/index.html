@@ -1,25 +1,299 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-us">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PolySynth Web Demo (Local Placeholder)</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:#101114; color:#e5e7eb; margin:0; padding:2rem; }
-    .card { max-width:840px; margin:2rem auto; background:#181b21; border:1px solid #2b3340; border-radius:12px; padding:1.5rem; }
-    code { background:#232936; padding:0.15rem 0.4rem; border-radius:4px; }
-    a { color:#7cb6ff; }
-  </style>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>PolySynth WAM</title>
+  <link href="styles/style.css" rel="stylesheet" type="text/css" />
+  <script src="scripts/audioworklet.js"></script>
+  <!--<script src="scripts/websocket.js"></script>-->
+
+  <script>
+    var statusElement = null; // will be set later
+    var progressElement = null; // will be set later
+
+    var Module = {
+      printErr: function (text) { console.error('stderr: ' + text) },
+      preRun: [],
+      postRun: function () {
+        document.getElementById('startWebAudioButton').removeAttribute("disabled");
+      },
+      onRuntimeInitialized: function () {
+        let WEBSOCKET_MODE = false;
+        if (typeof WEBSOCKET_MODE !== 'undefined' && WEBSOCKET_MODE == true) {
+          setupWebSocket(function () {
+            document.getElementById('wam').hidden = false;
+          });
+        }
+      },
+      setStatus: function (text) {
+        if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+        if (text === Module.setStatus.text) return;
+        var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+        var now = Date.now();
+        if (m && now - Date.now() < 30) return; // if this is a progress update, skip it if too soon
+
+        if (progressElement && statusElement) {
+          if (m) {
+            text = m[1];
+            progressElement.value = parseInt(m[2]) * 100;
+            progressElement.max = parseInt(m[4]) * 100;
+            progressElement.hidden = false;
+          } else {
+            progressElement.value = null;
+            progressElement.max = null;
+            progressElement.hidden = true;
+          }
+          statusElement.innerHTML = text;
+        } else {
+          console.log("Status:", text);
+        }
+      },
+      totalDependencies: 0,
+      monitorRunDependencies: function (left) {
+        this.totalDependencies = Math.max(this.totalDependencies, left);
+        Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+      }
+    };
+    Module.setStatus('Downloading...');
+    window.onerror = function (event) {
+      Module.setStatus('Exception thrown, see JavaScript console');
+      Module.setStatus = function (text) {
+        if (text) Module.printErr('[post-exception status] ' + text);
+      };
+    };
+  </script>
+
+  <script src="fonts.js"></script>
+  <!--<script async src="svgs.js"></script>-->
+  <!--<script async src="imgs.js"></script>-->
+  <!--<script async src="imgs@2x.js"></script>-->
+
 </head>
+
 <body>
-  <div class="card">
-    <h1>PolySynth Web Demo placeholder</h1>
-    <p>CI publishes the latest browser plugin build into this folder on every main push.</p>
-    <p>Local build command:</p>
-    <p><code>cd src/platform/desktop && ./scripts/makedist-web.sh off</code></p>
-    <p>Then copy output:</p>
-    <p><code>mkdir -p docs/web-demo && cp -R src/platform/desktop/build-web/. docs/web-demo/</code></p>
-    <p><a href="../index.html">← Back to main demo page</a></p>
+  <div id="main"></div>
+  <div id="buttons">
+    <button type="button" id="startWebAudioButton" onclick="startWebAudio()" disabled>Start web audio!</button>
+    <button type="button" id="fullScreenButton" onclick="toggleFullScreen()">Fullscreen</button>
+    <select id="midiInSelect" disabled="true">
+      <option value="default">Midi input</option>
+    </select>
+    <select id="midiOutSelect" disabled="true">
+      <option value="default">Midi output</option>
+    </select>
+    <progress value="0" max="100" id="progress"></progress>
   </div>
+  <div id="greyout">
+    <div id="status">downloading...</div>
+  </div>
+  <div id="wam" hidden=true>
+    <!-- <div id="wamheader">PolySynth WAM</div> -->
+    <canvas class="pluginArea" id="canvas" width="1024" height="768" style="width:1024px; height:768px;"
+      oncontextmenu="event.preventDefault()"></canvas>
+  </div>
+  <script type='text/javascript'>
+    // Set status elements for Module
+    statusElement = document.getElementById('status');
+    progressElement = document.getElementById('progress');
+
+    // Set canvas for Module
+    Module.canvas = document.getElementById('canvas');
+    Module.canvas.addEventListener("webglcontextlost", function (e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+    var PolySynth_WAM; // the WAM controller
+    let WEBSOCKET_MODE = false; // this constant will be set by the makedist-web.sh script 
+
+    if (WEBSOCKET_MODE == true) {
+      document.getElementById('buttons').style.display = 'none';
+    }
+
+    document.addEventListener("keydown", function (e) { if (e.keyCode == 9) { e.preventDefault(); } });
+    document.addEventListener("touchmove", function (e) { e.preventDefault(); }, { passive: false });
+
+    // drag WAM element, from https://www.w3schools.com/howto/howto_js_draggable.asp
+    // dragElement(document.getElementById("wam"));
+
+    // function dragElement(elmnt) {
+    //   var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    //   if (document.getElementById(elmnt.id + "header")) {
+    //     document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
+    //   } else {
+    //     elmnt.onmousedown = dragMouseDown;
+    //   }
+
+    //   function dragMouseDown(e) {
+    //     e = e || window.event;
+    //     e.preventDefault();
+    //     pos3 = e.clientX;
+    //     pos4 = e.clientY;
+    //     document.onmouseup = closeDragElement;
+    //     document.onmousemove = elementDrag;
+    //   }
+
+    //   function elementDrag(e) {
+    //     e = e || window.event;
+    //     e.preventDefault();
+    //     pos1 = pos3 - e.clientX;
+    //     pos2 = pos4 - e.clientY;
+    //     pos3 = e.clientX;
+    //     pos4 = e.clientY;
+    //     elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+    //     elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+    //   }
+
+    //   function closeDragElement() {
+    //     document.onmouseup = null;
+    //     document.onmousemove = null;
+    //   }
+    // }
+
+    function toggleFullScreen() {
+      if ((document.fullScreenElement && document.fullScreenElement !== null) ||
+        (!document.mozFullScreen && !document.webkitIsFullScreen)) {
+        if (document.documentElement.requestFullScreen) {
+          document.documentElement.requestFullScreen();
+        } else if (document.documentElement.mozRequestFullScreen) {
+          document.documentElement.mozRequestFullScreen();
+        } else if (document.documentElement.webkitRequestFullScreen) {
+          document.documentElement.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);
+        }
+      } else {
+        if (document.cancelFullScreen) {
+          document.cancelFullScreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.webkitCancelFullScreen) {
+          document.webkitCancelFullScreen();
+        }
+      }
+    }
+
+    function initMidiComboBox(isOutput, element) {
+      let combo = document.querySelector(element);
+      combo.options.length = 0;
+
+      if (navigator.requestMIDIAccess) {
+        navigator.requestMIDIAccess().then((midiIF) => {
+          if (isOutput) {
+            for (let output of midiIF.outputs.values()) {
+              let option = new Option(output.name);
+              option.port = output;
+              combo.appendChild(option);
+            }
+
+            combo.onchange = e => {
+              PolySynth_WAM.midiOut = e.target.options[e.target.selectedIndex].port;
+            }
+          } else {
+            for (let input of midiIF.inputs.values()) {
+              let option = new Option(input.name);
+              option.port = input;
+              combo.appendChild(option);
+            }
+
+            combo.onchange = e => {
+              PolySynth_WAM.midiIn = e.target.options[e.target.selectedIndex].port;
+            }
+          }
+
+          if (combo.options.length > 0)
+            combo.onchange({ target: combo });
+        })
+        combo.removeAttribute("disabled");
+      }
+    }
+
+    //https://www.mattmontag.com/web/unlock-web-audio-in-safari-for-ios-and-macos
+    function safariUnlock(audioCtx) {
+      if (audioCtx.state !== 'suspended') return;
+      const b = document.body;
+      const events = ['touchstart', 'touchend', 'mousedown', 'keydown'];
+      events.forEach(e => b.addEventListener(e, unlock, false));
+      function unlock() { audioCtx.resume().then(clean); }
+      function clean() { events.forEach(e => b.removeEventListener(e, unlock)); }
+    }
+
+    function connectionsDone() {
+      var cvs = document.getElementById("canvas");
+      if (!cvs) {
+        var canvases = document.getElementsByTagName('canvas');
+        if (canvases.length > 0) {
+          cvs = canvases[0];
+          cvs.id = "canvas"; // Determine if we should forcefully set the ID back? safer to just use it.
+          console.log("Recovered canvas from tag name check");
+        }
+      }
+
+      if (!cvs) {
+        console.error("CRITICAL: Canvas element not found in DOM!");
+        document.getElementById('wam').hidden = false;
+        return;
+      }
+
+      document.getElementById("wam").style.left = ((window.innerWidth / 2) - (parseInt(cvs.style.width) / 2)) + "px";
+      document.getElementById("wam").style.top = ((window.innerHeight / 2) - (parseInt(cvs.style.height) / 2)) + "px";
+      document.getElementById('wam').hidden = false;
+      document.getElementById('startWebAudioButton').setAttribute("disabled", "true");
+      initMidiComboBox(false, "#midiInSelect");
+      initMidiComboBox(true, "#midiOutSelect");
+    }
+
+    function startWebAudio() {
+      var actx = new AudioContext();
+      safariUnlock(actx);
+
+      AWPF.polyfill(actx).then(function () {
+        var script1 = document.createElement("script");
+        script1.src = "scripts/wam-controller.js";
+        script1.onload = () => {
+          var script2 = document.createElement("script");
+          script2.src = "scripts/PolySynth-awn.js";
+          script2.onload = () => {
+
+            if (AWPF.isAudioWorkletPolyfilled)
+              console.log("AudioWorklet NOT Supported");
+            else
+              console.log("AudioWorklet Supported");
+
+            let inputBuses = [];
+            let outputBuses = [2];
+            let options = {
+              numberOfInputs: inputBuses.length, inputChannelCount: inputBuses,
+              numberOfOutputs: outputBuses.length, outputChannelCount: outputBuses,
+              processorOptions: { inputChannelCount: inputBuses }
+            };
+
+            PolySynthController.importScripts(actx).then(() => {
+              PolySynth_WAM = new PolySynthController(actx, options);
+
+              if (PolySynth_WAM !== undefined) {
+                {
+                  PolySynth_WAM.connect(actx.destination); // connect WAM output to speakers
+                  connectionsDone();
+                }
+              }
+              else {
+                console.log('PolySynth_WAM is undefined');
+              }
+            }).catch((e) => {
+              console.error("PolySynthController.importScripts failed:", e);
+            });
+          }
+          document.head.appendChild(script2);
+        }
+        document.head.appendChild(script1);
+      });
+    }
+
+    // helper method for sending an "arbitary" message to the processor, which can be handled in OnMessage()
+    function SendMessageToWAM(msgTag, ctrlTag = -1, data = 0) {
+      let propArg = String(msgTag + ":" + ctrlTag);
+      PolySynth_WAM.port.postMessage({ "type": "msg", "verb": "SAMFUI", "prop": propArg, "data": data });
+    }
+  </script>
+  <script src="scripts/PolySynth-web.js"></script>
 </body>
+
 </html>

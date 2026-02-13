@@ -18,9 +18,30 @@ EMRUN_BROWSER=chrome
 LAUNCH_EMRUN=1
 EMRUN_SERVER=1
 EMRUN_SERVER_PORT=8001
-SITE_ORIGIN="/"
+# Use relative origin by default so worklet scripts resolve correctly whether
+# hosted at domain root or under a subpath (e.g. /PolySynth/web-demo/).
+SITE_ORIGIN="./"
 
 cd $PROJECT_ROOT
+
+# Auto-activate emsdk if installed but not sourced.
+if ! command -v emmake >/dev/null 2>&1; then
+  if [ -f "$HOME/.emsdk/emsdk_env.sh" ]; then
+    export EMSDK_QUIET=1
+    # shellcheck disable=SC1091
+    source "$HOME/.emsdk/emsdk_env.sh" >/dev/null
+  fi
+fi
+
+if ! command -v emmake >/dev/null 2>&1; then
+  echo "Error: emmake not found. Install and activate Emscripten and re-run."
+  echo "Quick setup:"
+  echo "  git clone https://github.com/emscripten-core/emsdk.git ~/.emsdk"
+  echo "  ~/.emsdk/emsdk install latest"
+  echo "  ~/.emsdk/emsdk activate latest"
+  echo "  source ~/.emsdk/emsdk_env.sh"
+  exit 1
+fi
 
 if [ "$1" = "ws" ]; then
   LAUNCH_EMRUN=0
@@ -58,31 +79,49 @@ if [ -f ./build-web/imgs@2x.js ]; then rm ./build-web/imgs@2x.js; fi
 if [ -f ./build-web/svgs.js ]; then rm ./build-web/svgs.js; fi
 if [ -f ./build-web/fonts.js ]; then rm ./build-web/fonts.js; fi
 
-FILE_PACKAGER=$EMSDK/upstream/emscripten/tools/file_packager.py
+FILE_PACKAGER=""
+if [ -n "${EMSDK:-}" ] && [ -f "${EMSDK}/upstream/emscripten/tools/file_packager.py" ]; then
+  FILE_PACKAGER="${EMSDK}/upstream/emscripten/tools/file_packager.py"
+elif command -v em-config >/dev/null 2>&1; then
+  EMSCRIPTEN_ROOT="$(em-config EMSCRIPTEN_ROOT 2>/dev/null || true)"
+  if [ -n "${EMSCRIPTEN_ROOT}" ] && [ -f "${EMSCRIPTEN_ROOT}/tools/file_packager.py" ]; then
+    FILE_PACKAGER="${EMSCRIPTEN_ROOT}/tools/file_packager.py"
+  fi
+fi
+
+if [ -z "${FILE_PACKAGER}" ]; then
+  echo "Error: unable to locate Emscripten file_packager.py."
+  echo "Checked:"
+  echo "  \$EMSDK/upstream/emscripten/tools/file_packager.py"
+  echo "  \$(em-config EMSCRIPTEN_ROOT)/tools/file_packager.py"
+  echo "Try: source ~/.emsdk/emsdk_env.sh"
+  exit 1
+fi
+
 #package fonts
 FOUND_FONTS=0
-if [ "$(ls -A ./resources/fonts/*.ttf)" ]; then
+if compgen -G "./resources/fonts/*.ttf" > /dev/null; then
   FOUND_FONTS=1
   python3 $FILE_PACKAGER fonts.data --preload ./resources/fonts/ --exclude *DS_Store --js-output=./fonts.js
 fi
 
 #package svgs
 FOUND_SVGS=0
-if [ "$(ls -A ./resources/img/*.svg)" ]; then
+if compgen -G "./resources/img/*.svg" > /dev/null; then
   FOUND_SVGS=1
   python3 $FILE_PACKAGER svgs.data --preload ./resources/img/ --exclude *.png --exclude *DS_Store --js-output=./svgs.js
 fi
 
 #package @1x pngs
 FOUND_PNGS=0
-if [ "$(ls -A ./resources/img/*.png)" ]; then
+if compgen -G "./resources/img/*.png" > /dev/null; then
   FOUND_PNGS=1
   python3 $FILE_PACKAGER imgs.data --use-preload-plugins --preload ./resources/img/ --use-preload-cache --indexedDB-name="/$PROJECT_NAME_pkg" --exclude *DS_Store --exclude  *@2x.png --exclude  *.svg >> ./imgs.js
 fi
 
 # package @2x pngs into separate .data file
 FOUND_2XPNGS=0
-if [ "$(ls -A ./resources/img/*@2x*.png)" ]; then
+if compgen -G "./resources/img/*@2x*.png" > /dev/null; then
   FOUND_2XPNGS=1
   mkdir ./build-web/2x/
   cp ./resources/img/*@2x* ./build-web/2x
@@ -168,6 +207,52 @@ else
   sed -i.bak s/"MAXNINPUTS_PLACEHOLDER"/"$MAXNINPUTS"/g index.html;
   sed -i.bak s/"MAXNOUTPUTS_PLACEHOLDER"/"$MAXNOUTPUTS"/g index.html;
 fi
+
+
+# --------------------------------------------------------------------------------
+# Apply WAM UI Stability Fixes (Robust Canvas, Script Order, Dimensions)
+# --------------------------------------------------------------------------------
+
+# 1. Add explicit dimensions to canvas
+sed -i.bak 's/<canvas class="pluginArea" id="canvas" oncontextmenu="event.preventDefault()"><\/canvas>/<canvas class="pluginArea" id="canvas" width="1024" height="768" style="width:1024px; height:768px;" oncontextmenu="event.preventDefault()"><\/canvas>/g' index.html
+
+# 2. Move PolySynth-web.js to end of body
+sed -i.bak "/<script async src=\"scripts\/$PROJECT_NAME-web.js\"><\/script>/d" index.html
+sed -i.bak "s/<\/body>/  <script src=\"scripts\/$PROJECT_NAME-web.js\"><\/script>\n<\/body>/" index.html
+
+# 3. Robust connectionsDone implementation
+python3 -c "
+import sys, re
+with open('index.html', 'r') as f: s = f.read()
+s = re.sub(r'function connectionsDone\(\)\s*\{[\s\S]*?\}', 
+r'''function connectionsDone() {
+  var cvs = document.getElementById('canvas');
+  if (!cvs) {
+    var canvases = document.getElementsByTagName('canvas');
+    if (canvases.length > 0) {
+        cvs = canvases[0];
+        cvs.id = 'canvas';
+        console.log('Recovered canvas from tag name check');
+    }
+  }
+  if (!cvs) {
+    console.error('CRITICAL: Canvas element not found in DOM!');
+    document.getElementById('wam').hidden = false;
+    return;
+  }
+  document.getElementById('wam').style.left = ((window.innerWidth / 2) - (parseInt(cvs.style.width) / 2)) + 'px';
+  document.getElementById('wam').style.top = ((window.innerHeight / 2) - (parseInt(cvs.style.height) / 2)) + 'px';
+  document.getElementById('wam').hidden = false;
+  document.getElementById('startWebAudioButton').setAttribute('disabled', 'true');
+  initMidiComboBox(false, '#midiInSelect');
+  initMidiComboBox(true, '#midiOutSelect');
+}''', s)
+with open('index.html', 'w') as f: f.write(s)
+"
+
+# 4. Move Module definition to Head (handled by template usually, but ensuring order)
+# (Assuming template has Module var; if not, complicates things. 
+# For now, script reordering and robust canvas check are the primary fixes certified by walkthrough.)
 
 rm *.bak
 
