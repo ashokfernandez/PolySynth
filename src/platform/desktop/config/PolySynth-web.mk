@@ -4,6 +4,7 @@ IPLUG2_ROOT = ../../../../external/iPlug2
 include ../../../../external/iPlug2/common-web.mk
 
 SRC += $(PROJECT_ROOT)/PolySynth.cpp
+SRC += $(PROJECT_ROOT)/DemoSequencer.cpp
 
 WAM_SRC += $(IPLUG_EXTRAS_PATH)/Synth/*.cpp
 
