@@ -3,7 +3,8 @@
 #include "sea_platform.h"
 #include <algorithm>
 
-#if !defined(SEA_DSP_ADSR_BACKEND_SEA_CORE) && !defined(SEA_DSP_ADSR_BACKEND_DAISYSP)
+#if !defined(SEA_DSP_ADSR_BACKEND_SEA_CORE) &&                                 \
+    !defined(SEA_DSP_ADSR_BACKEND_DAISYSP)
 #define SEA_DSP_ADSR_BACKEND_SEA_CORE
 #endif
 
@@ -122,7 +123,7 @@ public:
         }
       } else {
         mLevel += mAttackInc;
-        if (mLevel >= static_cast<Real>(1.0)) {
+        if (mLevel >= static_cast<Real>(1.0) - static_cast<Real>(1e-9)) {
           mLevel = static_cast<Real>(1.0);
           mStage = (mD == static_cast<Real>(0.0)) ? kSustain : kDecay;
           if (mStage == kSustain) {
@@ -137,7 +138,7 @@ public:
         mStage = kSustain;
       } else {
         mLevel -= mDecayInc;
-        if (mLevel <= mS) {
+        if (mLevel <= mS + static_cast<Real>(1e-9)) {
           mLevel = mS;
           mStage = kSustain;
         }
@@ -152,7 +153,7 @@ public:
         mStage = kIdle;
       } else {
         mLevel -= mReleaseInc;
-        if (mLevel <= static_cast<Real>(0.0)) {
+        if (mLevel <= static_cast<Real>(1e-9)) {
           mLevel = static_cast<Real>(0.0);
           mStage = kIdle;
         }
@@ -171,7 +172,7 @@ private:
 #ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
   void UpdateStageFromBackend(Real out) {
     uint8_t seg = mAdsr.GetCurrentSegment();
-    if(!mAdsr.IsRunning() && !mGate) {
+    if (!mAdsr.IsRunning() && !mGate) {
       mStage = kIdle;
       return;
     }
@@ -201,7 +202,7 @@ private:
       mReleaseRecip = (mR > static_cast<Real>(0.0))
                           ? (static_cast<Real>(1.0) / (mR * mSampleRate))
                           : static_cast<Real>(0.0);
-      mReleaseInc = mS * mReleaseRecip;  // Keep this for reference
+      mReleaseInc = mS * mReleaseRecip; // Keep this for reference
     }
   }
 #endif
@@ -218,7 +219,7 @@ private:
   Real mAttackInc = static_cast<Real>(0.0);
   Real mDecayInc = static_cast<Real>(0.0);
   Real mReleaseInc = static_cast<Real>(0.0);
-  Real mReleaseRecip = static_cast<Real>(0.0);  // Pre-calculated 1/(R*SR)
+  Real mReleaseRecip = static_cast<Real>(0.0); // Pre-calculated 1/(R*SR)
 #ifdef SEA_DSP_ADSR_BACKEND_DAISYSP
   bool mGate = false;
   daisysp::Adsr mAdsr;

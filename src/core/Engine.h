@@ -1,11 +1,12 @@
 #pragma once
 
 #include "VoiceManager.h"
-#include "dsp/fx/FXEngine.h"
 #include "types.h"
 #include <cstdint>
-#include <cstring>
-#include <iostream>
+#include <sea_dsp/effects/sea_vintage_chorus.h>
+#include <sea_dsp/effects/sea_vintage_delay.h>
+#include <sea_dsp/sea_limiter.h>
+#include <string.h>
 
 namespace PolySynthCore {
 
@@ -18,13 +19,16 @@ public:
   void Init(double sampleRate) {
     mSampleRate = sampleRate;
     mVoiceManager.Init(sampleRate);
-    mFxEngine.Init(sampleRate);
+    mChorus.Init(sampleRate);
+    mDelay.Init(sampleRate, 2000.0);
+    mLimiter.Init(sampleRate);
     Reset();
   }
 
   void Reset() {
     mVoiceManager.Reset();
-    mFxEngine.Reset();
+    mDelay.Clear();
+    mLimiter.Reset();
   }
 
   // --- Events ---
@@ -36,7 +40,6 @@ public:
 
   void SetParameter(int paramNum, double value) {
     // Basic param dispatch could go here
-    // For now we use direct setters for demos
   }
 
   // --- High Level Setters ---
@@ -95,16 +98,24 @@ public:
 
   // --- FX Setters ---
   void SetChorus(double rateHz, double depth, double mix) {
-    mFxEngine.SetChorus(rateHz, depth, mix);
+    mChorus.SetRate(rateHz);
+    mChorus.SetDepth(depth * 5.0); // Map 0-1 to 0-5ms
+    mChorus.SetMix(mix);
   }
   void SetDelay(double timeSec, double feedback, double mix) {
-    mFxEngine.SetDelay(timeSec, feedback, mix);
+    mDelay.SetTime(timeSec * 1000.0);
+    mDelay.SetFeedback(feedback * 100.0);
+    mDelay.SetMix(mix * 100.0);
   }
   void SetDelayTempo(double bpm, double division) {
-    mFxEngine.SetDelayTempo(bpm, division);
+    // Basic fallback for now
+    double beatSec = 60.0 / bpm;
+    SetDelay(beatSec * division, 35.0, 0.0);
   }
   void SetLimiter(double threshold, double lookaheadMs, double releaseMs) {
-    mFxEngine.SetLimiter(threshold, lookaheadMs, releaseMs);
+    // Threshold should be mapped inverted if coming from UI,
+    // but here we just pass it through as the engine setter.
+    mLimiter.SetParams(threshold, lookaheadMs, releaseMs);
   }
 
   // --- Audio Processing ---
@@ -112,29 +123,40 @@ public:
     sample_t out = mVoiceManager.Process();
     left = out;
     right = out;
-    mFxEngine.Process(left, right);
+
+    sample_t fxL, fxR;
+    mChorus.Process(left, right, &fxL, &fxR);
+    mDelay.Process(fxL, fxR, &fxL, &fxR);
+    mLimiter.Process(fxL, fxR);
+
+    left = fxL;
+    right = fxR;
   }
 
   void Process(sample_t **inputs, sample_t **outputs, int nFrames, int nChans) {
-    // Basic stereo copy for now
     for (int i = 0; i < nFrames; ++i) {
       sample_t out = mVoiceManager.Process();
       sample_t left = out;
       sample_t right = out;
-      mFxEngine.Process(left, right);
-      if (nChans > 0) {
-        outputs[0][i] = left;
-      }
-      if (nChans > 1) {
-        outputs[1][i] = right;
-      }
+
+      sample_t fxL, fxR;
+      mChorus.Process(left, right, &fxL, &fxR);
+      mDelay.Process(fxL, fxR, &fxL, &fxR);
+      mLimiter.Process(fxL, fxR);
+
+      if (nChans > 0)
+        outputs[0][i] = fxL;
+      if (nChans > 1)
+        outputs[1][i] = fxR;
     }
   }
 
 private:
   double mSampleRate;
   VoiceManager mVoiceManager;
-  FXEngine mFxEngine;
+  sea::VintageChorus<double> mChorus;
+  sea::VintageDelay<double> mDelay;
+  sea::LookaheadLimiter<double> mLimiter;
 };
 
 } // namespace PolySynthCore

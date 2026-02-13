@@ -28,7 +28,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_Engine_Basic.cpp
     unit/Test_Engine_Audio.cpp
     unit/Test_VoiceManager_Poly.cpp
-    unit/Test_FXEngine.cpp
+    unit/Test_Effects.cpp
     unit/Test_PresetManager.cpp
     unit/Test_FactoryPresets.cpp
     unit/Test_PresetFileIO.cpp

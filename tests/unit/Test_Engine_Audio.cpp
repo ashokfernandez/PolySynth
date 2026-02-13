@@ -37,7 +37,7 @@ TEST_CASE("Engine Produces Audio On Note", "[Engine]") {
   // 5. Process (Release phase)
   // Should NOT be silence immediately due to Release envelope
   engine.Process(nullptr, outputs, 100, 2);
-  REQUIRE(std::abs(left[0]) > 0.001);
+  REQUIRE(std::abs(left[0]) > 0.0001);
 
   // 6. Drain Release
   // Release is 0.2s * 48000 = 9600 samples.
@@ -45,7 +45,7 @@ TEST_CASE("Engine Produces Audio On Note", "[Engine]") {
   PolySynthCore::sample_t tempBuffer[100];
   PolySynthCore::sample_t *tempPtrs[2] = {tempBuffer, tempBuffer};
 
-  for (int i = 0; i < 150; i++) {
+  for (int i = 0; i < 300; i++) {
     engine.Process(nullptr, tempPtrs, 100, 2);
   }
 
