@@ -6,7 +6,9 @@
 #if IPLUG_EDITOR
 #include "Envelope.h"
 #include "IControls.h"
-// #include "PolySection.h" // Removing missing header
+#include "PolyKnob.h"
+#include "PolyToggleButton.h"
+#include "PolySection.h"
 #endif
 #include <algorithm>
 #include <cstdlib>
@@ -68,16 +70,16 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
   if (isSlider)
     controlRect = bounds.GetCentredInside(bounds.W() * 0.7f, bounds.H() * 0.7f);
 
-  const float labelH = 18.f;
-  const float valueH = 16.f;
+  const float labelH = PolyTheme::LabelH;
+  const float valueH = PolyTheme::ValueH;
 
   IText labelTextBold =
-      IText(15.f, style.labelText.mFGColor, "Roboto-Bold", EAlign::Center);
+      IText(PolyTheme::FontLabel, style.labelText.mFGColor, "Roboto-Bold", EAlign::Center);
   IRECT labelRect = IRECT(bounds.L, controlRect.T - labelH - 1.f, bounds.R,
                           controlRect.T - 1.f);
 
   IText valueTextBold =
-      IText(14.f, style.valueText.mFGColor, "Roboto-Regular", EAlign::Center);
+      IText(PolyTheme::FontValue, style.valueText.mFGColor, "Roboto-Regular", EAlign::Center);
   IRECT valueRect = IRECT(bounds.L, controlRect.B + 1.f, bounds.R,
                           controlRect.B + valueH + 1.f);
 
@@ -87,9 +89,9 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
         new IVSliderControl(controlRect, paramIdx, "",
                             style.WithShowLabel(false).WithShowValue(false)));
   } else {
-    pGraphics->AttachControl(
-        new IVKnobControl(controlRect, paramIdx, "",
-                          style.WithShowLabel(false).WithShowValue(false)));
+    auto *knob = new PolyKnob(controlRect, paramIdx, "");
+    knob->WithShowLabel(false).WithShowValue(false);
+    pGraphics->AttachControl(knob);
   }
   pGraphics->AttachControl(
       new ICaptionControl(valueRect, paramIdx, valueTextBold, false));
@@ -209,7 +211,10 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamDelayMix)->InitDouble("Mix", 0., 0., 100., 1., "%");
   GetParam(kParamLimiterThreshold)->InitPercentage("Lmt", 0.0);
 
-  GetParam(kParamPresetSelect)->InitEnum("Patch", 0, 16);
+  GetParam(kParamPresetSelect)->InitEnum("Patch", 0,
+      {"Init", "Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5",
+       "Slot 6", "Slot 7", "Slot 8", "Slot 9", "Slot 10",
+       "Slot 11", "Slot 12", "Slot 13", "Slot 14", "Slot 15"});
   GetParam(kParamDemoMono)->InitBool("MONO", true);
   GetParam(kParamDemoPoly)->InitBool("POLY", false);
   GetParam(kParamDemoFX)->InitBool("FX", false);
@@ -229,7 +234,27 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 }
 
 #if IPLUG_EDITOR
-void PolySynthPlugin::OnUIOpen() {}
+void PolySynthPlugin::OnUIOpen() {
+  PopulatePresetMenu();
+}
+
+void PolySynthPlugin::PopulatePresetMenu() {
+#if !defined(WEB_API)
+  WDL_String basePath;
+  DesktopPath(basePath);
+  for (int i = 1; i < 16; i++) {
+    WDL_String filePath;
+    filePath.SetFormatted(512, "%s/PolySynth_Preset_%d.json", basePath.Get(), i);
+    FILE *f = fopen(filePath.Get(), "r");
+    if (f) {
+      fclose(f);
+      WDL_String label;
+      label.SetFormatted(64, "* Slot %d", i);
+      GetParam(kParamPresetSelect)->SetDisplayText(i, label.Get());
+    }
+  }
+#endif
+}
 
 void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
   if (paramIdx != kParamPresetSelect && paramIdx != kParamDemoMono &&
@@ -261,55 +286,62 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
 
   pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN);
   pGraphics->LoadFont("Roboto-Bold", ROBOTO_BOLD_FN);
+  pGraphics->AttachPanelBackground(PolyTheme::PanelBG);
 
-  // Clean Aesthetic Colors
-  const IColor panelBg = PolyTheme::PanelBG;
-  const IColor groupBorder = PolyTheme::SectionBorder;
   const IColor textDark = PolyTheme::TextDark;
-  const IColor accentRed = PolyTheme::AccentRed;
-  const IColor accentCyan = PolyTheme::AccentCyan;
-
-  pGraphics->AttachPanelBackground(panelBg);
-
   const IVStyle synthStyle =
       DEFAULT_STYLE.WithRoundness(0.04f)
           .WithShadowOffset(2.0f)
           .WithShowValue(false)
-          .WithLabelText(
-              IText(13.f, textDark, "Roboto-Regular", EAlign::Center))
-          .WithValueText(
-              IText(11.f, textDark, "Roboto-Regular", EAlign::Center))
-          .WithColor(kBG, IColor(255, 240, 238, 232))
-          .WithColor(kFG, textDark)
-          .WithColor(kPR, accentRed)
-          .WithColor(kHL, accentCyan)
-          .WithColor(kFR, groupBorder);
+          .WithLabelText(IText(PolyTheme::FontStyleLabel, textDark, "Roboto-Regular", EAlign::Center))
+          .WithValueText(IText(PolyTheme::FontStyleValue, textDark, "Roboto-Regular", EAlign::Center))
+          .WithColor(kBG, PolyTheme::ControlBG)
+          .WithColor(kFG, PolyTheme::ControlFace)
+          .WithColor(kPR, PolyTheme::AccentRed)
+          .WithColor(kHL, PolyTheme::AccentCyan)
+          .WithColor(kFR, PolyTheme::SectionBorder);
 
-  // 1. Define the Canvas
-  IRECT bounds = pGraphics->GetBounds().GetPadded(-12.f);
-  const IRECT topHeader = bounds.GetFromTop(72.f);
-  const IRECT mainArea = bounds.GetReducedFromTop(76.f);
+  IRECT bounds = pGraphics->GetBounds().GetPadded(-PolyTheme::Padding);
+  const IRECT header = bounds.GetFromTop(72.f);
+  const IRECT main = bounds.GetReducedFromTop(76.f);
+  float w = main.W();
 
-  pGraphics->AttachControl(new SectionFrame(
-      topHeader, "", groupBorder, textDark, IColor(255, 246, 244, 238)));
-  pGraphics->AttachControl(
-      new ITextControl(topHeader.GetPadded(-18.f).GetFromTop(40.f), "PolySynth",
-                       IText(40.f, textDark, "Roboto-Bold", EAlign::Near)));
+  IRECT topRow = main.GetFromTop(main.H() * 0.55f);
+  IRECT bottomRow = main.GetFromBottom(main.H() * 0.42f);
 
-  // Preset Selection
-  const IRECT presetArea = topHeader.GetFromRight(280.f)
-                               .GetCentredInside(260.f, 44.f)
-                               .GetTranslated(-10.f, 0.f);
-  pGraphics->AttachControl(
-      new IVMenuButtonControl(presetArea.GetFromLeft(160.f), kParamPresetSelect,
-                              "Select Patch", synthStyle),
-      kCtrlTagPresetSelect);
+  BuildHeader(pGraphics, header, synthStyle);
+  BuildOscillators(pGraphics, topRow.GetFromLeft(w * 0.23f), synthStyle);
+  IRECT filterArea(topRow.L + w * 0.23f, topRow.T, topRow.L + w * 0.48f, topRow.B);
+  BuildFilter(pGraphics, filterArea, synthStyle);
+  BuildEnvelope(pGraphics, IRECT(filterArea.R, topRow.T, topRow.R, topRow.B), synthStyle);
+  BuildLFO(pGraphics, bottomRow.GetFromLeft(w * 0.15f), synthStyle);
+  IRECT polyModArea(bottomRow.L + w * 0.15f, bottomRow.T, bottomRow.L + w * 0.35f, bottomRow.B);
+  BuildPolyMod(pGraphics, polyModArea, synthStyle);
+  IRECT chorusArea(polyModArea.R, bottomRow.T, polyModArea.R + w * 0.20f, bottomRow.B);
+  BuildChorus(pGraphics, chorusArea, synthStyle);
+  IRECT delayArea(chorusArea.R, bottomRow.T, chorusArea.R + w * 0.20f, bottomRow.B);
+  BuildDelay(pGraphics, delayArea, synthStyle);
+  BuildMaster(pGraphics, IRECT(delayArea.R, bottomRow.T, bottomRow.R, bottomRow.B), synthStyle);
+}
 
-  // Save Button
-  IVStyle saveButtonStyle =
-      synthStyle.WithColor(kBG, accentRed).WithColor(kFG, COLOR_WHITE);
-  saveButtonStyle.labelText.WithFont("Roboto-Bold").WithSize(18.f);
-  pGraphics->AttachControl(
+void PolySynthPlugin::BuildHeader(IGraphics *g, const IRECT &bounds,
+                                   const IVStyle &style) {
+  const IColor textDark = PolyTheme::TextDark;
+  g->AttachControl(new SectionFrame(bounds, "", PolyTheme::SectionBorder,
+                                    textDark, PolyTheme::HeaderBG));
+  g->AttachControl(new ITextControl(bounds.GetPadded(-18.f).GetFromTop(40.f),
+                                    "PolySynth",
+                                    IText(PolyTheme::FontTitle, textDark, "Roboto-Bold", EAlign::Near)));
+
+  const IRECT presetArea =
+      bounds.GetFromRight(280.f).GetCentredInside(260.f, 44.f).GetTranslated(-10.f, 0.f);
+  g->AttachControl(new IVMenuButtonControl(presetArea.GetFromLeft(160.f),
+                                           kParamPresetSelect, "Select Patch", style),
+                   kCtrlTagPresetSelect);
+
+  IVStyle saveStyle = style.WithColor(kBG, PolyTheme::AccentRed).WithColor(kFG, COLOR_WHITE);
+  saveStyle.labelText.WithFont("Roboto-Bold").WithSize(18.f);
+  g->AttachControl(
       new IVButtonControl(
           presetArea.GetFromRight(70.f),
           [&](IControl *pCaller) {
@@ -318,196 +350,133 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
                       (int)GetParam(kParamPresetSelect)->Value(), 0, nullptr);
             pCaller->SetDirty(false);
           },
-          "SAVE", saveButtonStyle),
+          "SAVE", saveStyle),
       kCtrlTagSaveBtn);
 
-  // Demo Controls moved to Header (Left of Preset)
-  // Use a dedicated area with padding
-  const IRECT demoArea = topHeader.GetFromRight(topHeader.W() * 0.45f)
+  const IRECT demoArea = bounds.GetFromRight(bounds.W() * 0.45f)
                              .GetFromLeft(180.f)
                              .GetCentredInside(180.f, 30.f)
                              .GetTranslated(-20.f, 0.f);
-  IVStyle demoStyle = synthStyle.WithRoundness(0.5f).WithValueText(
-      IText(12.f, textDark, "Roboto-Bold"));
+  g->AttachControl(new PolyToggleButton(
+      demoArea.GetGridCell(0, 0, 1, 3).GetPadded(-2.f), kParamDemoMono, "MONO"));
+  g->AttachControl(new PolyToggleButton(
+      demoArea.GetGridCell(0, 1, 1, 3).GetPadded(-2.f), kParamDemoPoly, "POLY"));
+  g->AttachControl(new PolyToggleButton(
+      demoArea.GetGridCell(0, 2, 1, 3).GetPadded(-2.f), kParamDemoFX, "FX"));
+}
 
-  auto createDemoBtn = [&](int idx, const char *label, IRECT r) {
-    pGraphics->AttachControl(new IVSwitchControl(
-        r, idx, label,
-        demoStyle.WithShowLabel(true)
-            .WithLabelText(IText(12.f, textDark, "Roboto-Bold", EAlign::Center))
-            .WithDrawFrame(false)));
-  };
+void PolySynthPlugin::BuildOscillators(IGraphics *g, const IRECT &bounds,
+                                        const IVStyle &style) {
+  g->AttachControl(new PolySection(bounds, "OSCILLATORS"));
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 2), kParamOscWave, "WAVE A", style);
+  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 2), kParamOscBWave, "WAVE B", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 2), kParamOscPulseWidthA, "PULSE A", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 2), kParamOscPulseWidthB, "PULSE B", style);
+}
 
-  createDemoBtn(kParamDemoMono, "MONO",
-                demoArea.GetGridCell(0, 0, 1, 3).GetPadded(-2.f));
-  createDemoBtn(kParamDemoPoly, "POLY",
-                demoArea.GetGridCell(0, 1, 1, 3).GetPadded(-2.f));
-  createDemoBtn(kParamDemoFX, "FX",
-                demoArea.GetGridCell(0, 2, 1, 3).GetPadded(-2.f));
+void PolySynthPlugin::BuildFilter(IGraphics *g, const IRECT &bounds,
+                                   const IVStyle &style) {
+  const IColor textDark = PolyTheme::TextDark;
+  g->AttachControl(new PolySection(bounds, "FILTER"));
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
 
-  auto attachFrame = [&](const IRECT &r, const char *label) {
-    pGraphics->AttachControl(new SectionFrame(r, label, groupBorder, textDark));
-    return r.GetPadded(-8.f).GetFromBottom(r.H() - 36.f);
-  };
+  IRECT modelArea = inner.GetFromBottom(40.f).GetPadded(-4.f);
+  const IVStyle tabStyle = style
+      .WithColor(kFG, PolyTheme::TabInactiveBG)
+      .WithColor(kPR, PolyTheme::AccentRed)
+      .WithValueText(IText(PolyTheme::FontTabSwitch, textDark, "Roboto-Bold"));
+  g->AttachControl(new IVTabSwitchControl(
+      modelArea, kParamFilterModel, {"LP", "BP", "HP", "NT"}, "", tabStyle));
 
-  // 2. Define Rows within Main Area
-  // Top row taller for Envelope
-  IRECT topRow = mainArea.GetFromTop(mainArea.H() * 0.55f);
-  IRECT bottomRow =
-      mainArea.GetFromBottom(mainArea.H() * 0.42f); // Gap in between
+  IRECT topFilter = inner.GetFromTop(inner.H() - 50.f);
+  IRECT cutoffArea = topFilter.GetFromTop(topFilter.H() * 0.65f).GetCentredInside(90.f);
+  auto *cutoffKnob = new PolyKnob(cutoffArea, kParamFilterCutoff, "Cutoff");
+  cutoffKnob->WithShowValue(false);
+  g->AttachControl(cutoffKnob);
 
-  float w = mainArea.W();
+  IRECT cutoffValueArea(cutoffArea.L, cutoffArea.B + 2.f, cutoffArea.R, cutoffArea.B + 18.f);
+  g->AttachControl(new ICaptionControl(cutoffValueArea, kParamFilterCutoff,
+                                       IText(PolyTheme::FontValue, textDark, "Roboto-Bold", EAlign::Center), false));
 
-  // 3. Define Columns (Slicing) - TOP ROW
-  IRECT oscArea = topRow.GetFromLeft(w * 0.23f);
-  IRECT filterArea =
-      IRECT(oscArea.R, topRow.T, oscArea.R + w * 0.25f, topRow.B);
-  IRECT envArea = IRECT(filterArea.R, topRow.T, topRow.R, topRow.B);
+  IRECT secondaryArea(inner.L, cutoffValueArea.B, inner.R, modelArea.T);
+  AttachStackedControl(g, secondaryArea.GetGridCell(0, 0, 1, 2), kParamFilterResonance, "RESO", style);
+  AttachStackedControl(g, secondaryArea.GetGridCell(0, 1, 1, 2), kParamFilterEnvAmount, "CONTOUR", style);
+}
 
-  // BOTTOM ROW
-  IRECT lfoArea = bottomRow.GetFromLeft(w * 0.15f);
-  IRECT polyModArea =
-      IRECT(lfoArea.R, bottomRow.T, lfoArea.R + w * 0.20f, bottomRow.B);
-  IRECT chorusArea =
-      IRECT(polyModArea.R, bottomRow.T, polyModArea.R + w * 0.20f, bottomRow.B);
-  IRECT delayArea =
-      IRECT(chorusArea.R, bottomRow.T, chorusArea.R + w * 0.20f, bottomRow.B);
-  IRECT masterArea = IRECT(delayArea.R, bottomRow.T, bottomRow.R, bottomRow.B);
+void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
+                                     const IVStyle &style) {
+  g->AttachControl(new PolySection(bounds, "AMP ENVELOPE"));
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  const IRECT vizArea = inner.GetFromTop(inner.H() * 0.5f).GetPadded(-8.f).GetTranslated(0, 6.f);
+  const IRECT sliderArea = inner.GetFromBottom(inner.H() * 0.45f);
 
-  // --- OSCILLATORS ---
-  const IRECT oscInner = attachFrame(oscArea, "OSCILLATORS");
-  AttachStackedControl(pGraphics, oscInner.GetGridCell(0, 0, 2, 2),
-                       kParamOscWave, "WAVE A", synthStyle);
-  AttachStackedControl(pGraphics, oscInner.GetGridCell(0, 1, 2, 2),
-                       kParamOscBWave, "WAVE B", synthStyle);
-  AttachStackedControl(pGraphics, oscInner.GetGridCell(1, 0, 2, 2),
-                       kParamOscPulseWidthA, "PULSE A", synthStyle);
-  AttachStackedControl(pGraphics, oscInner.GetGridCell(1, 1, 2, 2),
-                       kParamOscPulseWidthB, "PULSE B", synthStyle);
-
-  // --- FILTER (HERO) ---
-  const IRECT filterInner = attachFrame(filterArea, "FILTER");
-
-  // 1. Slice Model Switch off bottom - INCREASE HEIGHT FURTHER to prevent
-  // overlap
-  IRECT modelArea =
-      filterInner.GetFromBottom(50.f).GetPadded(-4.f).GetMidHPadded(10.f);
-  pGraphics->AttachControl(new IVTabSwitchControl(
-      modelArea, kParamFilterModel, {"LP", "BP", "HP", "NT"}, "",
-      synthStyle.WithValueText(IText(12.f, textDark, "Roboto-Bold"))));
-
-  // 2. Hero Knob Area - REDUCE HEIGHT slightly to make room
-  // We need to slice explicitly to fit the value label between knob and
-  // secondary controls
-  IRECT topFilter = filterInner.GetFromTop(
-      filterInner.H() - 50.f); // Everything above Model switch
-  IRECT cutoffArea =
-      topFilter.GetFromTop(topFilter.H() * 0.65f).GetCentredInside(90.f);
-
-  pGraphics->AttachControl(
-      new IVKnobControl(cutoffArea, kParamFilterCutoff, "Cutoff",
-                        synthStyle.WithLabelText(IText(
-                            16.f, textDark, "Roboto-Bold", EAlign::Center))));
-
-  // Add dedicated Value Label for Cutoff (below knob)
-  IRECT cutoffValueArea = IRECT(cutoffArea.L, cutoffArea.B + 2.f, cutoffArea.R,
-                                cutoffArea.B + 18.f);
-  pGraphics->AttachControl(new ICaptionControl(
-      cutoffValueArea, kParamFilterCutoff,
-      IText(14.f, textDark, "Roboto-Bold", EAlign::Center), false));
-
-  // 3. Secondary Knobs (Reso, Contour) below cutoff
-  IRECT secondaryArea =
-      IRECT(filterInner.L, cutoffValueArea.B, filterInner.R, modelArea.T);
-  AttachStackedControl(pGraphics, secondaryArea.GetGridCell(0, 0, 1, 2),
-                       kParamFilterResonance, "RESO", synthStyle);
-  AttachStackedControl(pGraphics, secondaryArea.GetGridCell(0, 1, 1, 2),
-                       kParamFilterEnvAmount, "CONTOUR", synthStyle);
-
-  // --- ENVELOPE ---
-  const IRECT envInner = attachFrame(envArea, "AMP ENVELOPE");
-  const IRECT envVisualArea = envInner.GetFromTop(envInner.H() * 0.5f)
-                                  .GetPadded(-8.f)
-                                  .GetTranslated(0, 6.f);
-  const IRECT envSliderArea = envInner.GetFromBottom(envInner.H() * 0.45f);
-
-  Envelope *pEnvelope = new Envelope(envVisualArea, synthStyle);
+  Envelope *pEnvelope = new Envelope(vizArea, style);
   pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
                      GetParam(kParamDecay)->Value() / 1000.f,
                      GetParam(kParamSustain)->Value() / 100.f,
                      GetParam(kParamRelease)->Value() / 1000.f);
-  pEnvelope->SetColors(accentCyan, accentCyan.WithOpacity(0.15f));
-  pGraphics->AttachControl(pEnvelope, kCtrlTagEnvelope);
+  pEnvelope->SetColors(PolyTheme::AccentCyan, PolyTheme::AccentCyan.WithOpacity(0.15f));
+  g->AttachControl(pEnvelope, kCtrlTagEnvelope);
 
-  AttachStackedControl(pGraphics, envSliderArea.GetGridCell(0, 0, 1, 4),
-                       kParamAttack, "A", synthStyle, true);
-  AttachStackedControl(pGraphics, envSliderArea.GetGridCell(0, 1, 1, 4),
-                       kParamDecay, "D", synthStyle, true);
-  AttachStackedControl(pGraphics, envSliderArea.GetGridCell(0, 2, 1, 4),
-                       kParamSustain, "S", synthStyle, true);
-  AttachStackedControl(pGraphics, envSliderArea.GetGridCell(0, 3, 1, 4),
-                       kParamRelease, "R", synthStyle, true);
+  AttachStackedControl(g, sliderArea.GetGridCell(0, 0, 1, 4), kParamAttack, "A", style, true);
+  AttachStackedControl(g, sliderArea.GetGridCell(0, 1, 1, 4), kParamDecay, "D", style, true);
+  AttachStackedControl(g, sliderArea.GetGridCell(0, 2, 1, 4), kParamSustain, "S", style, true);
+  AttachStackedControl(g, sliderArea.GetGridCell(0, 3, 1, 4), kParamRelease, "R", style, true);
+}
 
-  // --- LFO ---
-  const IRECT lfoInner = attachFrame(lfoArea, "LFO");
-  AttachStackedControl(pGraphics, lfoInner.GetGridCell(0, 0, 2, 2),
-                       kParamLFOShape, "SHAPE", synthStyle);
-  AttachStackedControl(pGraphics, lfoInner.GetGridCell(0, 1, 2, 2),
-                       kParamLFORateHz, "RATE", synthStyle);
-  AttachStackedControl(pGraphics, lfoInner.GetGridCell(1, 0, 2, 2),
-                       kParamLFODepth, "DEPTH", synthStyle);
-  AttachStackedControl(pGraphics, lfoInner.GetGridCell(1, 1, 2, 2),
-                       kParamOscMix, "MIX", synthStyle);
+void PolySynthPlugin::BuildLFO(IGraphics *g, const IRECT &bounds,
+                                const IVStyle &style) {
+  g->AttachControl(new PolySection(bounds, "LFO"));
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 2), kParamLFOShape, "SHAPE", style);
+  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 2), kParamLFORateHz, "RATE", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 2), kParamLFODepth, "DEPTH", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 2), kParamOscMix, "MIX", style);
+}
 
-  // --- POLY MOD ---
-  const IRECT polyInner = attachFrame(polyModArea, "POLY MOD");
-  AttachStackedControl(pGraphics, polyInner.GetGridCell(0, 0, 2, 3),
-                       kParamPolyModOscBToFreqA, "B-FREQ", synthStyle);
-  AttachStackedControl(pGraphics, polyInner.GetGridCell(0, 1, 2, 3),
-                       kParamPolyModOscBToPWM, "B-PWM", synthStyle);
-  AttachStackedControl(pGraphics, polyInner.GetGridCell(0, 2, 2, 3),
-                       kParamPolyModOscBToFilter, "B-FILT", synthStyle);
-  AttachStackedControl(pGraphics, polyInner.GetGridCell(1, 0, 2, 3),
-                       kParamPolyModFilterEnvToFreqA, "E-FREQ", synthStyle);
-  AttachStackedControl(pGraphics, polyInner.GetGridCell(1, 1, 2, 3),
-                       kParamPolyModFilterEnvToPWM, "E-PWM", synthStyle);
-  AttachStackedControl(pGraphics, polyInner.GetGridCell(1, 2, 2, 3),
-                       kParamPolyModFilterEnvToFilter, "E-FILT", synthStyle);
+void PolySynthPlugin::BuildPolyMod(IGraphics *g, const IRECT &bounds,
+                                    const IVStyle &style) {
+  g->AttachControl(new PolySection(bounds, "POLY MOD"));
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 3), kParamPolyModOscBToFreqA, "B-FREQ", style);
+  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 3), kParamPolyModOscBToPWM, "B-PWM", style);
+  AttachStackedControl(g, inner.GetGridCell(0, 2, 2, 3), kParamPolyModOscBToFilter, "B-FILT", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 3), kParamPolyModFilterEnvToFreqA, "E-FREQ", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 3), kParamPolyModFilterEnvToPWM, "E-PWM", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 2, 2, 3), kParamPolyModFilterEnvToFilter, "E-FILT", style);
+}
 
-  // --- CHORUS & DELAY FIX: Use PADDING to prevent overlap ---
-  auto gridWithPad = [](IRECT r, int row, int col, int nr, int nc) {
+void PolySynthPlugin::BuildChorus(IGraphics *g, const IRECT &bounds,
+                                   const IVStyle &style) {
+  g->AttachControl(new PolySection(bounds, "CHORUS"));
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  auto pad = [](IRECT r, int row, int col, int nr, int nc) {
     return r.GetGridCell(row, col, nr, nc).GetPadded(-2.f);
   };
+  AttachStackedControl(g, pad(inner, 0, 0, 1, 3), kParamChorusRate, "RATE", style);
+  AttachStackedControl(g, pad(inner, 0, 1, 1, 3), kParamChorusDepth, "DEPTH", style);
+  AttachStackedControl(g, pad(inner, 0, 2, 1, 3), kParamChorusMix, "MIX", style);
+}
 
-  // --- CHORUS ---
-  const IRECT chorusInner = attachFrame(chorusArea, "CHORUS");
-  // Use 1 row of 3 smaller knobs to guarantee vertical space for labels
-  AttachStackedControl(pGraphics, gridWithPad(chorusInner, 0, 0, 1, 3),
-                       kParamChorusRate, "RATE", synthStyle);
-  AttachStackedControl(pGraphics, gridWithPad(chorusInner, 0, 1, 1, 3),
-                       kParamChorusDepth, "DEPTH", synthStyle);
-  AttachStackedControl(pGraphics, gridWithPad(chorusInner, 0, 2, 1, 3),
-                       kParamChorusMix, "MIX", synthStyle);
-  // Wait, if 1 row, might be too small horizontally? No, 160px/3 = 53px.
-  // With stacked control logic, knob size is min(W, H*0.7).
-  // W=53, H=150(?). So size = 53. Fits fine. Labels will be above.
+void PolySynthPlugin::BuildDelay(IGraphics *g, const IRECT &bounds,
+                                  const IVStyle &style) {
+  g->AttachControl(new PolySection(bounds, "DELAY"));
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  auto pad = [](IRECT r, int row, int col, int nr, int nc) {
+    return r.GetGridCell(row, col, nr, nc).GetPadded(-2.f);
+  };
+  AttachStackedControl(g, pad(inner, 0, 0, 1, 3), kParamDelayTime, "TIME", style);
+  AttachStackedControl(g, pad(inner, 0, 1, 1, 3), kParamDelayFeedback, "FDBK", style);
+  AttachStackedControl(g, pad(inner, 0, 2, 1, 3), kParamDelayMix, "MIX", style);
+}
 
-  // --- DELAY ---
-  const IRECT delayInner = attachFrame(delayArea, "DELAY");
-  // Same 1x3 layout for consistency
-  AttachStackedControl(pGraphics, gridWithPad(delayInner, 0, 0, 1, 3),
-                       kParamDelayTime, "TIME", synthStyle);
-  AttachStackedControl(pGraphics, gridWithPad(delayInner, 0, 1, 1, 3),
-                       kParamDelayFeedback, "FDBK", synthStyle);
-  AttachStackedControl(pGraphics, gridWithPad(delayInner, 0, 2, 1, 3),
-                       kParamDelayMix, "MIX", synthStyle);
-
-  // --- MASTER ---
-  const IRECT masterInner = attachFrame(masterArea, "MASTER");
-  AttachStackedControl(pGraphics, masterInner.GetGridCell(0, 0, 2, 1),
-                       kParamGain, "GAIN", synthStyle);
-  AttachStackedControl(pGraphics, masterInner.GetGridCell(1, 0, 2, 1),
-                       kParamLimiterThreshold, "LIMIT", synthStyle);
+void PolySynthPlugin::BuildMaster(IGraphics *g, const IRECT &bounds,
+                                   const IVStyle &style) {
+  g->AttachControl(new PolySection(bounds, "MASTER"));
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 1), kParamGain, "GAIN", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 1), kParamLimiterThreshold, "LIMIT", style);
 }
 #endif
 
@@ -736,6 +705,8 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     path.AppendFormatted(512, "/PolySynth_Preset_%d.json", ctrlTag);
     bool success = PolySynthCore::PresetManager::SaveToFile(mState, path.Get());
     mIsDirty = !success;
+    if (success)
+      PopulatePresetMenu();
     return true;
   } else if (msgTag == kMsgTagLoadPreset) {
     WDL_String path;

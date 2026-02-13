@@ -70,26 +70,130 @@ envelope->SetColors(COLOR_BLUE, COLOR_BLUE.WithOpacity(0.2f));
 
 ---
 
+### PolyKnob
+Themed rotary knob with arc indicator, label, and value readout.
+
+**Implementation:** Custom control defined in `PolyKnob.h`
+- Base class: `IKnobControlBase`
+- Default size: 80x116px (80px knob + 18px label top + 18px value bottom)
+- Features: accent color arc, soft shadow, bezel highlight, glow pass
+- Configurable: show/hide label, show/hide value, custom accent color
+
+**Usage:**
+```cpp
+#include "PolyKnob.h"
+
+auto* knob = new PolyKnob(IRECT(x, y, x+80, y+116), paramIdx, "Cutoff");
+knob->SetAccent(PolyTheme::AccentCyan);  // Optional: change accent color
+pGraphics->AttachControl(knob);
+
+// For stacked controls (no label/value overlap):
+auto* bare = new PolyKnob(bounds, paramIdx, "");
+bare->WithShowLabel(false).WithShowValue(false);
+```
+
+**API:**
+- `SetAccent(IColor)` - Set the arc/indicator accent color
+- `WithShowLabel(bool)` - Show or hide the top label text (fluent)
+- `WithShowValue(bool)` - Show or hide the bottom value readout (fluent)
+
+**Why custom?** Provides a consistent themed appearance across the synth UI with the PolyTheme color system, cached arc rendering, and configurable label/value visibility for use in stacked control layouts.
+
+---
+
+### PolySection
+Cached panel background with title, premium surface treatment, and depth borders.
+
+**Implementation:** Custom control defined in `PolySection.h`
+- Base class: `IControl` (display-only, `mIgnoreMouse = true`)
+- Features: drop shadow, panel fill, top sheen, scanline texture, double border, title text
+- Performance: Uses `ILayerPtr` caching - panel is rendered once and redrawn from cache
+- Invalidates cache automatically on resize via `OnResize()` override
+
+**Usage:**
+```cpp
+#include "PolySection.h"
+
+pGraphics->AttachControl(new PolySection(
+    IRECT(x, y, x+300, y+200), "FILTER"));
+```
+
+**Why custom?** iPlug2 doesn't provide a themed section panel with caching. This control creates the characteristic PolySynth panel appearance with a single-draw cache for performance.
+
+---
+
+### PolyToggleButton
+Latching toggle button with themed active/inactive states.
+
+**Implementation:** Custom control defined in `PolyToggleButton.h`
+- Base class: `ISwitchControlBase` (2 states)
+- Active state: colored background (AccentCyan), white text
+- Inactive state: transparent background, dark text, subtle border
+- Hover: semi-transparent white overlay
+- **Key design decision:** Uses `GetValue() > 0.5` for active state (not `mMouseDown`), which fixes the latching bug present in `IVSwitchControl`
+
+**Usage:**
+```cpp
+#include "PolyToggleButton.h"
+
+pGraphics->AttachControl(new PolyToggleButton(
+    IRECT(x, y, x+80, y+28), paramIdx, "MONO"));
+```
+
+**Why custom?** The built-in `IVSwitchControl` passes `mMouseDown` (momentary) to `DrawPressableShape`, causing buttons to only appear active while the mouse is held down. `PolyToggleButton` correctly reads the persistent parameter value for visual state, providing proper toggle behavior.
+
+---
+
+### PolyTheme
+Centralized color constants for the PolySynth UI theme.
+
+**Implementation:** Namespace defined in `PolyTheme.h`
+- Panel colors: `PanelBG`, `SectionBorder`
+- Text colors: `TextDark`
+- Accent colors: `AccentRed`, `AccentCyan`
+- Knob colors: `KnobRingOff`, `KnobRingOn`
+- Toggle colors: `ToggleActiveBG`, `ToggleActiveFG`, `ToggleInactiveBG`
+- Effects: `Highlight` (semi-transparent white overlay)
+
+**Usage:**
+```cpp
+#include "PolyTheme.h"
+
+g.FillRoundRect(PolyTheme::PanelBG, bounds, 5.f);
+g.DrawText(IText(14.f, PolyTheme::TextDark, "Roboto-Bold"), text, rect);
+```
+
+**Why centralized?** All custom controls reference PolyTheme instead of hardcoding colors, ensuring visual consistency and enabling future theme switching.
+
+---
+
 ## Design Philosophy
 
-### When to Use Built-in Controls
-For standard UI elements (knobs, sliders, buttons, etc.), we prefer iPlug2's built-in controls because:
-1. **Battle-tested:** Handle edge cases, accessibility, and platform quirks
-2. **Styling system:** Can be customized through iPlug2's `IVStyle` without code changes
-3. **Maintenance:** No custom drawing code to maintain
-4. **Consistency:** Match iPlug2 conventions and best practices
+### When to Use Custom Poly* Controls
+For PolySynth-specific UI elements, prefer the custom `Poly*` controls because:
+1. **Theme consistency:** All controls use `PolyTheme` colors for a unified look
+2. **Bug-free behavior:** Fixes known iPlug2 issues (e.g., `IVSwitchControl` latching bug)
+3. **Performance:** `PolySection` uses `ILayerPtr` caching for efficient redraws
+4. **Flexibility:** Fluent API for configuring label/value visibility, accent colors, etc.
 
-### When to Write Custom Controls
-Create custom controls only when:
+### When to Use Built-in iPlug2 Controls
+Use iPlug2's built-in controls when:
+1. **No custom equivalent exists yet** (faders, radio buttons, tab switches)
+2. **Prototyping:** Quick iteration before building a custom themed version
+3. **Standard behavior is sufficient** and theme consistency is not critical
+
+### When to Write New Custom Controls
+Create a new custom control when:
 1. **No built-in equivalent exists** (like ADSR envelope visualizer)
-2. **Highly specialized behavior** not covered by built-in controls
-3. **Custom drawing is essential** to the component's purpose
+2. **Built-in behavior has bugs** that affect the user experience
+3. **Custom drawing is essential** to maintain PolySynth's visual identity
 
 ### Control Design Guidelines
 1. **Header-Only:** Controls are header-only for easy inclusion
-2. **Minimal Dependencies:** Only depend on IGraphics, no DSP code
-3. **Customizable:** Expose color and behavior customization where appropriate
-4. **Reusable:** Shared between testing (ComponentGallery) and production code
+2. **Minimal Dependencies:** Only depend on IGraphics + PolyTheme, no DSP code
+3. **Theme-First:** Use `PolyTheme` colors instead of hardcoded `IColor()` values
+4. **Customizable:** Expose color and behavior customization via fluent API where appropriate
+5. **Reusable:** Shared between testing (ComponentGallery) and production code (PolySynth)
 
 ---
 
