@@ -18,16 +18,6 @@ namespace {
 static const double kToPercentage = 100.0;
 static const double kToMs = 1000.0;
 
-#if IPLUG_DSP
-static constexpr int kDefaultOscAWave =
-    static_cast<int>(sea::Oscillator::WaveformType::Saw);
-static constexpr int kDefaultOscBWave =
-    static_cast<int>(sea::Oscillator::WaveformType::Sine);
-#else
-static constexpr int kDefaultOscAWave = 1;
-static constexpr int kDefaultOscBWave = 0;
-#endif
-
 #if IPLUG_EDITOR
 class SectionFrame final : public IControl {
 public:
@@ -159,63 +149,107 @@ void PolySynthPlugin::SyncUIState() {
 PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
 #if IPLUG_DSP
-  mState.Reset(); // Ensure audible defaults (Gain 1.0, etc.)
+  mState.Reset(); // Single source of truth for synth defaults
 #endif
 
-  GetParam(kParamGain)->InitDouble("Gain", 75., 0., 100., 1.25, "%");
-  GetParam(kParamNoteGlideTime)->InitMilliseconds("Glide", 0., 0.0, 30.);
+  GetParam(kParamGain)
+      ->InitDouble("Gain", mState.masterGain * kToPercentage, 0., 100., 1.25,
+                   "%");
+  GetParam(kParamNoteGlideTime)
+      ->InitMilliseconds("Glide", mState.glideTime * kToMs, 0.0, 30.);
   GetParam(kParamAttack)
-      ->InitDouble("Attack", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone,
+      ->InitDouble("Attack", mState.ampAttack * kToMs, 1., 1000., 0.1, "ms",
+                   IParam::kFlagsNone,
                    "ADSR", IParam::ShapePowCurve(3.));
   GetParam(kParamDecay)
-      ->InitDouble("Decay", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone,
+      ->InitDouble("Decay", mState.ampDecay * kToMs, 1., 1000., 0.1, "ms",
+                   IParam::kFlagsNone,
                    "ADSR", IParam::ShapePowCurve(3.));
   GetParam(kParamSustain)
-      ->InitDouble("Sustain", 50., 0., 100., 1, "%", IParam::kFlagsNone,
-                   "ADSR");
+      ->InitDouble("Sustain", mState.ampSustain * kToPercentage, 0., 100., 1,
+                   "%", IParam::kFlagsNone, "ADSR");
   GetParam(kParamRelease)
-      ->InitDouble("Release", 10., 2., 1000., 0.1, "ms", IParam::kFlagsNone,
+      ->InitDouble("Release", mState.ampRelease * kToMs, 2., 1000., 0.1, "ms",
+                   IParam::kFlagsNone,
                    "ADSR");
 
-  GetParam(kParamLFOShape)->InitEnum("LFO", 1, {"Sin", "Tri", "Sqr", "Saw"});
-  GetParam(kParamLFORateHz)->InitFrequency("Rate", 1., 0.01, 40.);
-  GetParam(kParamLFODepth)->InitPercentage("Dep");
+  GetParam(kParamLFOShape)
+      ->InitEnum("LFO", mState.lfoShape, {"Sin", "Tri", "Sqr", "Saw"});
+  GetParam(kParamLFORateHz)->InitFrequency("Rate", mState.lfoRate, 0.01, 40.);
+  GetParam(kParamLFODepth)->InitDouble("Dep", mState.lfoDepth * kToPercentage,
+                                       0., 100., 1., "%");
 
   GetParam(kParamFilterCutoff)
-      ->InitDouble("Cutoff", 2000.0, 20., 20000., 1., "Hz", IParam::kFlagsNone,
+      ->InitDouble("Cutoff", mState.filterCutoff, 20., 20000., 1., "Hz",
+                   IParam::kFlagsNone,
                    "Filter", IParam::ShapeExp());
-  GetParam(kParamFilterResonance)->InitDouble("Reso", 0., 0., 100., 1., "%");
-  GetParam(kParamFilterEnvAmount)->InitPercentage("Contour");
-  GetParam(kParamFilterModel)->InitEnum("Model", 0, {"CL", "LD", "P12", "P24"});
+  GetParam(kParamFilterResonance)
+      ->InitDouble("Reso", mState.filterResonance * kToPercentage, 0., 100.,
+                   1., "%");
+  GetParam(kParamFilterEnvAmount)
+      ->InitDouble("Contour", mState.filterEnvAmount * kToPercentage, 0.,
+                   100., 1., "%");
+  GetParam(kParamFilterModel)
+      ->InitEnum("Model", mState.filterModel, {"CL", "LD", "P12", "P24"});
 
   GetParam(kParamOscWave)
-      ->InitEnum("OscA", kDefaultOscAWave, {"SAW", "SQR", "TRI", "SIN"});
+      ->InitEnum("OscA", mState.oscAWaveform, {"SAW", "SQR", "TRI", "SIN"});
   GetParam(kParamOscBWave)
-      ->InitEnum("OscB", kDefaultOscBWave, {"SAW", "SQR", "TRI", "SIN"});
-  GetParam(kParamOscMix)->InitDouble("Osc Bal", 0., 0., 100., 1., "%");
-  GetParam(kParamOscPulseWidthA)->InitPercentage("PWA");
-  GetParam(kParamOscPulseWidthB)->InitPercentage("PWB");
+      ->InitEnum("OscB", mState.oscBWaveform, {"SAW", "SQR", "TRI", "SIN"});
+  GetParam(kParamOscMix)
+      ->InitDouble("Osc Bal", mState.mixOscB * kToPercentage, 0., 100., 1.,
+                   "%");
+  GetParam(kParamOscPulseWidthA)
+      ->InitDouble("PWA", mState.oscAPulseWidth * kToPercentage, 0., 100., 1.,
+                   "%");
+  GetParam(kParamOscPulseWidthB)
+      ->InitDouble("PWB", mState.oscBPulseWidth * kToPercentage, 0., 100., 1.,
+                   "%");
 
-  GetParam(kParamPolyModOscBToFreqA)->InitPercentage("FM Depth");
-  GetParam(kParamPolyModOscBToPWM)->InitPercentage("PWM Mod");
-  GetParam(kParamPolyModOscBToFilter)->InitPercentage("B-V");
-  GetParam(kParamPolyModFilterEnvToFreqA)->InitPercentage("Env FM");
-  GetParam(kParamPolyModFilterEnvToPWM)->InitPercentage("Env PWM");
-  GetParam(kParamPolyModFilterEnvToFilter)->InitPercentage("Env VCF");
+  GetParam(kParamPolyModOscBToFreqA)
+      ->InitDouble("FM Depth", mState.polyModOscBToFreqA * kToPercentage, 0.,
+                   100., 1., "%");
+  GetParam(kParamPolyModOscBToPWM)
+      ->InitDouble("PWM Mod", mState.polyModOscBToPWM * kToPercentage, 0.,
+                   100., 1., "%");
+  GetParam(kParamPolyModOscBToFilter)
+      ->InitDouble("B-V", mState.polyModOscBToFilter * kToPercentage, 0.,
+                   100., 1., "%");
+  GetParam(kParamPolyModFilterEnvToFreqA)
+      ->InitDouble("Env FM", mState.polyModFilterEnvToFreqA * kToPercentage,
+                   0., 100., 1., "%");
+  GetParam(kParamPolyModFilterEnvToPWM)
+      ->InitDouble("Env PWM", mState.polyModFilterEnvToPWM * kToPercentage,
+                   0., 100., 1., "%");
+  GetParam(kParamPolyModFilterEnvToFilter)
+      ->InitDouble("Env VCF", mState.polyModFilterEnvToFilter * kToPercentage,
+                   0., 100., 1., "%");
 
-  GetParam(kParamChorusRate)->InitFrequency("Rate", 0.25, 0.05, 2.0);
-  GetParam(kParamChorusDepth)->InitDouble("Dep", 50., 0., 100., 1., "%");
-  GetParam(kParamChorusMix)->InitDouble("Mix", 0., 0., 100., 1., "%");
-  GetParam(kParamDelayTime)->InitMilliseconds("Time", 350., 50., 1200.);
-  GetParam(kParamDelayFeedback)->InitDouble("Fbk", 35., 0., 95., 1., "%");
-  GetParam(kParamDelayMix)->InitDouble("Mix", 0., 0., 100., 1., "%");
-  GetParam(kParamLimiterThreshold)->InitPercentage("Lmt", 0.0);
+  GetParam(kParamChorusRate)->InitFrequency("Rate", mState.fxChorusRate, 0.05,
+                                            2.0);
+  GetParam(kParamChorusDepth)
+      ->InitDouble("Dep", mState.fxChorusDepth * kToPercentage, 0., 100., 1.,
+                   "%");
+  GetParam(kParamChorusMix)
+      ->InitDouble("Mix", mState.fxChorusMix * kToPercentage, 0., 100., 1.,
+                   "%");
+  GetParam(kParamDelayTime)
+      ->InitMilliseconds("Time", mState.fxDelayTime * kToMs, 50., 1200.);
+  GetParam(kParamDelayFeedback)
+      ->InitDouble("Fbk", mState.fxDelayFeedback * kToPercentage, 0., 95., 1.,
+                   "%");
+  GetParam(kParamDelayMix)
+      ->InitDouble("Mix", mState.fxDelayMix * kToPercentage, 0., 100., 1.,
+                   "%");
+  GetParam(kParamLimiterThreshold)
+      ->InitDouble("Lmt", (1.0 - mState.fxLimiterThreshold) * kToPercentage,
+                   0., 100., 1., "%");
 
   GetParam(kParamPresetSelect)->InitEnum("Patch", 0,
       {"Init", "Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5",
        "Slot 6", "Slot 7", "Slot 8", "Slot 9", "Slot 10",
        "Slot 11", "Slot 12", "Slot 13", "Slot 14", "Slot 15"});
-  GetParam(kParamDemoMono)->InitBool("MONO", true);
+  GetParam(kParamDemoMono)->InitBool("MONO", false);
   GetParam(kParamDemoPoly)->InitBool("POLY", false);
   GetParam(kParamDemoFX)->InitBool("FX", false);
 
@@ -228,14 +262,17 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 #endif
 
 #if IPLUG_DSP
-  // Default to Mono Demo ON for debugging
-  mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(), mDSP);
+  mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+  SyncUIState();
 #endif
 }
 
 #if IPLUG_EDITOR
 void PolySynthPlugin::OnUIOpen() {
   PopulatePresetMenu();
+#if IPLUG_DSP
+  SyncUIState();
+#endif
 }
 
 void PolySynthPlugin::PopulatePresetMenu() {
