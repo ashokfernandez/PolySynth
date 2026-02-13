@@ -642,6 +642,7 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
     break;
   }
 
+#if IPLUG_EDITOR
   if (paramIdx == kParamAttack || paramIdx == kParamDecay ||
       paramIdx == kParamSustain || paramIdx == kParamRelease) {
     if (GetUI()) {
@@ -655,6 +656,7 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
       }
     }
   }
+#endif
 }
 
 bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
