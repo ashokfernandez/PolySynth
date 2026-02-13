@@ -4,9 +4,9 @@ IPLUG2_ROOT = ../../../../external/iPlug2
 include ../../../../external/iPlug2/common-web.mk
 
 SRC += $(PROJECT_ROOT)/PolySynth.cpp
-SRC += $(PROJECT_ROOT)/DemoSequencer.cpp
 
 WAM_SRC += $(IPLUG_EXTRAS_PATH)/Synth/*.cpp
+WAM_SRC += $(PROJECT_ROOT)/DemoSequencer.cpp
 
 SEA_DSP_INCLUDE = $(PROJECT_ROOT)/../../../libs/SEA_DSP/include
 UI_CONTROLS_INCLUDE = $(PROJECT_ROOT)/../../../UI/Controls

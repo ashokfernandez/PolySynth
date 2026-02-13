@@ -13,6 +13,16 @@ namespace {
 static const double kToPercentage = 100.0;
 static const double kToMs = 1000.0;
 
+#if IPLUG_DSP
+static constexpr int kDefaultOscAWave =
+    static_cast<int>(sea::Oscillator::WaveformType::Saw);
+static constexpr int kDefaultOscBWave =
+    static_cast<int>(sea::Oscillator::WaveformType::Sine);
+#else
+static constexpr int kDefaultOscAWave = 1;
+static constexpr int kDefaultOscBWave = 0;
+#endif
+
 #if IPLUG_EDITOR
 class SectionFrame final : public IControl {
 public:
@@ -145,10 +155,13 @@ void PolySynthPlugin::SyncUIState() {
   }
   mIsUpdatingUI = false;
 }
+#endif
 
 PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
+#if IPLUG_DSP
   mState.Reset(); // Ensure audible defaults (Gain 1.0, etc.)
+#endif
 
   GetParam(kParamGain)->InitDouble("Gain", 75., 0., 100., 1.25, "%");
   GetParam(kParamNoteGlideTime)->InitMilliseconds("Glide", 0., 0.0, 30.);
@@ -176,11 +189,9 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamFilterModel)->InitEnum("Model", 0, {"CL", "LD", "P12", "P24"});
 
   GetParam(kParamOscWave)
-      ->InitEnum("OscA", (int)sea::Oscillator::WaveformType::Saw,
-                 {"SAW", "SQR", "TRI", "SIN"});
+      ->InitEnum("OscA", kDefaultOscAWave, {"SAW", "SQR", "TRI", "SIN"});
   GetParam(kParamOscBWave)
-      ->InitEnum("OscB", (int)sea::Oscillator::WaveformType::Sine,
-                 {"SAW", "SQR", "TRI", "SIN"});
+      ->InitEnum("OscB", kDefaultOscBWave, {"SAW", "SQR", "TRI", "SIN"});
   GetParam(kParamOscMix)->InitDouble("Mix", 0., 0., 100., 1., "%");
   GetParam(kParamOscPulseWidthA)->InitPercentage("PWA");
   GetParam(kParamOscPulseWidthB)->InitPercentage("PWB");
@@ -213,10 +224,11 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   mLayoutFunc = [this](IGraphics *pGraphics) { OnLayout(pGraphics); };
 #endif
 
+#if IPLUG_DSP
   // Default to Mono Demo ON for debugging
   mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(), mDSP);
-}
 #endif
+}
 
 #if IPLUG_EDITOR
 void PolySynthPlugin::OnUIOpen() {}
