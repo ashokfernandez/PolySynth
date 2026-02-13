@@ -667,7 +667,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
       exit(0);
     }
   }
-#if IPLUG_EDITOR
+#if IPLUG_EDITOR && !defined(WEB_API)
   else if (msgTag == kMsgTagSavePreset) {
     WDL_String path;
     DesktopPath(path);
