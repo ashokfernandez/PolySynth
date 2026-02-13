@@ -1,12 +1,12 @@
 #include "PolySynth.h"
-#include "../../core/PresetManager.h"
 #include "../../../UI/Controls/PolyTheme.h"
+#include "../../core/PresetManager.h"
 #include "IPlugPaths.h"
 #include "IPlug_include_in_plug_src.h"
 #if IPLUG_EDITOR
 #include "Envelope.h"
 #include "IControls.h"
-#include "PolySection.h"
+// #include "PolySection.h" // Removing missing header
 #endif
 #include <algorithm>
 #include <cstdlib>
@@ -163,13 +163,14 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamGain)->InitDouble("Gain", 75., 0., 100., 1.25, "%");
   GetParam(kParamNoteGlideTime)->InitMilliseconds("Glide", 0., 0.0, 30.);
   GetParam(kParamAttack)
-      ->InitDouble("Attack", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone, "ADSR",
-                   IParam::ShapePowCurve(3.));
+      ->InitDouble("Attack", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone,
+                   "ADSR", IParam::ShapePowCurve(3.));
   GetParam(kParamDecay)
-      ->InitDouble("Decay", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone, "ADSR",
-                   IParam::ShapePowCurve(3.));
+      ->InitDouble("Decay", 10., 1., 1000., 0.1, "ms", IParam::kFlagsNone,
+                   "ADSR", IParam::ShapePowCurve(3.));
   GetParam(kParamSustain)
-      ->InitDouble("Sustain", 50., 0., 100., 1, "%", IParam::kFlagsNone, "ADSR");
+      ->InitDouble("Sustain", 50., 0., 100., 1, "%", IParam::kFlagsNone,
+                   "ADSR");
   GetParam(kParamRelease)
       ->InitDouble("Release", 10., 2., 1000., 0.1, "ms", IParam::kFlagsNone,
                    "ADSR");
@@ -284,17 +285,16 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
           .WithColor(kHL, accentCyan)
           .WithColor(kFR, groupBorder);
 
+  // 1. Define the Canvas
   IRECT bounds = pGraphics->GetBounds().GetPadded(-12.f);
   const IRECT topHeader = bounds.GetFromTop(72.f);
   const IRECT mainArea = bounds.GetReducedFromTop(76.f);
-  const IRECT footerArea = mainArea.GetFromBottom(40.f);
-  const IRECT controlsArea = mainArea.GetReducedFromBottom(44.f);
 
   pGraphics->AttachControl(new SectionFrame(
       topHeader, "", groupBorder, textDark, IColor(255, 246, 244, 238)));
-  pGraphics->AttachControl(new ITextControl(
-      topHeader.GetPadded(-18.f).GetFromTop(40.f), "PolySynth",
-      IText(40.f, textDark, "Roboto-Bold", EAlign::Near)));
+  pGraphics->AttachControl(
+      new ITextControl(topHeader.GetPadded(-18.f).GetFromTop(40.f), "PolySynth",
+                       IText(40.f, textDark, "Roboto-Bold", EAlign::Near)));
 
   // Preset Selection
   const IRECT presetArea = topHeader.GetFromRight(280.f)
@@ -305,7 +305,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
                               "Select Patch", synthStyle),
       kCtrlTagPresetSelect);
 
-  // Premium SAVE button
+  // Save Button
   IVStyle saveButtonStyle =
       synthStyle.WithColor(kBG, accentRed).WithColor(kFG, COLOR_WHITE);
   saveButtonStyle.labelText.WithFont("Roboto-Bold").WithSize(18.f);
@@ -321,31 +321,60 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
           "SAVE", saveButtonStyle),
       kCtrlTagSaveBtn);
 
-  auto attachFrame = [&](const IRECT &r, const char *label) {
-    pGraphics->AttachControl(new PolySection(r, label));
-    return r.GetPadded(-8.f).GetFromBottom(
-        r.H() - 36.f); // Significant space for bold header
+  // Demo Controls moved to Header (Left of Preset)
+  // Use a dedicated area with padding
+  const IRECT demoArea = topHeader.GetFromRight(topHeader.W() * 0.45f)
+                             .GetFromLeft(180.f)
+                             .GetCentredInside(180.f, 30.f)
+                             .GetTranslated(-20.f, 0.f);
+  IVStyle demoStyle = synthStyle.WithRoundness(0.5f).WithValueText(
+      IText(12.f, textDark, "Roboto-Bold"));
+
+  auto createDemoBtn = [&](int idx, const char *label, IRECT r) {
+    pGraphics->AttachControl(new IVSwitchControl(
+        r, idx, label,
+        demoStyle.WithShowLabel(true)
+            .WithLabelText(IText(12.f, textDark, "Roboto-Bold", EAlign::Center))
+            .WithDrawFrame(false)));
   };
 
-  // Proportional row division (Top is taller for Envelope)
-  IRECT topRow = controlsArea.GetFromTop(controlsArea.H() * 0.58f);
-  IRECT bottomRow = controlsArea.GetFromBottom(controlsArea.H() * 0.40f);
-  float w = controlsArea.W();
+  createDemoBtn(kParamDemoMono, "MONO",
+                demoArea.GetGridCell(0, 0, 1, 3).GetPadded(-2.f));
+  createDemoBtn(kParamDemoPoly, "POLY",
+                demoArea.GetGridCell(0, 1, 1, 3).GetPadded(-2.f));
+  createDemoBtn(kParamDemoFX, "FX",
+                demoArea.GetGridCell(0, 2, 1, 3).GetPadded(-2.f));
 
-  IRECT oscArea = topRow.GetFromLeft(w * 0.24f);
+  auto attachFrame = [&](const IRECT &r, const char *label) {
+    pGraphics->AttachControl(new SectionFrame(r, label, groupBorder, textDark));
+    return r.GetPadded(-8.f).GetFromBottom(r.H() - 36.f);
+  };
+
+  // 2. Define Rows within Main Area
+  // Top row taller for Envelope
+  IRECT topRow = mainArea.GetFromTop(mainArea.H() * 0.55f);
+  IRECT bottomRow =
+      mainArea.GetFromBottom(mainArea.H() * 0.42f); // Gap in between
+
+  float w = mainArea.W();
+
+  // 3. Define Columns (Slicing) - TOP ROW
+  IRECT oscArea = topRow.GetFromLeft(w * 0.23f);
   IRECT filterArea =
-      IRECT(oscArea.R, topRow.T, oscArea.R + w * 0.24f, topRow.B);
-  IRECT envArea =
-      IRECT(filterArea.R, topRow.T, filterArea.R + w * 0.32f, topRow.B);
-  IRECT lfoArea = IRECT(envArea.R, topRow.T, topRow.R, topRow.B);
+      IRECT(oscArea.R, topRow.T, oscArea.R + w * 0.25f, topRow.B);
+  IRECT envArea = IRECT(filterArea.R, topRow.T, topRow.R, topRow.B);
 
-  IRECT polyModArea = bottomRow.GetFromLeft(w * 0.24f);
-  IRECT fxArea =
-      IRECT(polyModArea.R, bottomRow.T, polyModArea.R + w * 0.24f, bottomRow.B);
-  IRECT masterArea =
-      IRECT(fxArea.R, bottomRow.T, fxArea.R + w * 0.20f, bottomRow.B);
-  IRECT demoArea = IRECT(masterArea.R, bottomRow.T, bottomRow.R, bottomRow.B);
+  // BOTTOM ROW
+  IRECT lfoArea = bottomRow.GetFromLeft(w * 0.15f);
+  IRECT polyModArea =
+      IRECT(lfoArea.R, bottomRow.T, lfoArea.R + w * 0.20f, bottomRow.B);
+  IRECT chorusArea =
+      IRECT(polyModArea.R, bottomRow.T, polyModArea.R + w * 0.20f, bottomRow.B);
+  IRECT delayArea =
+      IRECT(chorusArea.R, bottomRow.T, chorusArea.R + w * 0.20f, bottomRow.B);
+  IRECT masterArea = IRECT(delayArea.R, bottomRow.T, bottomRow.R, bottomRow.B);
 
+  // --- OSCILLATORS ---
   const IRECT oscInner = attachFrame(oscArea, "OSCILLATORS");
   AttachStackedControl(pGraphics, oscInner.GetGridCell(0, 0, 2, 2),
                        kParamOscWave, "WAVE A", synthStyle);
@@ -356,22 +385,52 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   AttachStackedControl(pGraphics, oscInner.GetGridCell(1, 1, 2, 2),
                        kParamOscPulseWidthB, "PULSE B", synthStyle);
 
+  // --- FILTER (HERO) ---
   const IRECT filterInner = attachFrame(filterArea, "FILTER");
-  AttachStackedControl(pGraphics, filterInner.GetGridCell(0, 0, 2, 2),
-                       kParamFilterCutoff, "CUTOFF", synthStyle);
-  AttachStackedControl(pGraphics, filterInner.GetGridCell(0, 1, 2, 2),
-                       kParamFilterResonance, "RESO", synthStyle);
-  AttachStackedControl(pGraphics, filterInner.GetGridCell(1, 0, 2, 2),
-                       kParamFilterEnvAmount, "ENV AMT", synthStyle);
-  AttachStackedControl(pGraphics, filterInner.GetGridCell(1, 1, 2, 2),
-                       kParamFilterModel, "MODEL", synthStyle);
 
+  // 1. Slice Model Switch off bottom - INCREASE HEIGHT FURTHER to prevent
+  // overlap
+  IRECT modelArea =
+      filterInner.GetFromBottom(50.f).GetPadded(-4.f).GetMidHPadded(10.f);
+  pGraphics->AttachControl(new IVTabSwitchControl(
+      modelArea, kParamFilterModel, {"LP", "BP", "HP", "NT"}, "",
+      synthStyle.WithValueText(IText(12.f, textDark, "Roboto-Bold"))));
+
+  // 2. Hero Knob Area - REDUCE HEIGHT slightly to make room
+  // We need to slice explicitly to fit the value label between knob and
+  // secondary controls
+  IRECT topFilter = filterInner.GetFromTop(
+      filterInner.H() - 50.f); // Everything above Model switch
+  IRECT cutoffArea =
+      topFilter.GetFromTop(topFilter.H() * 0.65f).GetCentredInside(90.f);
+
+  pGraphics->AttachControl(
+      new IVKnobControl(cutoffArea, kParamFilterCutoff, "Cutoff",
+                        synthStyle.WithLabelText(IText(
+                            16.f, textDark, "Roboto-Bold", EAlign::Center))));
+
+  // Add dedicated Value Label for Cutoff (below knob)
+  IRECT cutoffValueArea = IRECT(cutoffArea.L, cutoffArea.B + 2.f, cutoffArea.R,
+                                cutoffArea.B + 18.f);
+  pGraphics->AttachControl(new ICaptionControl(
+      cutoffValueArea, kParamFilterCutoff,
+      IText(14.f, textDark, "Roboto-Bold", EAlign::Center), false));
+
+  // 3. Secondary Knobs (Reso, Contour) below cutoff
+  IRECT secondaryArea =
+      IRECT(filterInner.L, cutoffValueArea.B, filterInner.R, modelArea.T);
+  AttachStackedControl(pGraphics, secondaryArea.GetGridCell(0, 0, 1, 2),
+                       kParamFilterResonance, "RESO", synthStyle);
+  AttachStackedControl(pGraphics, secondaryArea.GetGridCell(0, 1, 1, 2),
+                       kParamFilterEnvAmount, "CONTOUR", synthStyle);
+
+  // --- ENVELOPE ---
   const IRECT envInner = attachFrame(envArea, "AMP ENVELOPE");
-  // Visualization shifted down significantly (12px translation)
   const IRECT envVisualArea = envInner.GetFromTop(envInner.H() * 0.5f)
-                                  .GetTranslated(0, 12.f)
-                                  .GetPadded(-4.f);
+                                  .GetPadded(-8.f)
+                                  .GetTranslated(0, 6.f);
   const IRECT envSliderArea = envInner.GetFromBottom(envInner.H() * 0.45f);
+
   Envelope *pEnvelope = new Envelope(envVisualArea, synthStyle);
   pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
                      GetParam(kParamDecay)->Value() / 1000.f,
@@ -379,6 +438,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
                      GetParam(kParamRelease)->Value() / 1000.f);
   pEnvelope->SetColors(accentCyan, accentCyan.WithOpacity(0.15f));
   pGraphics->AttachControl(pEnvelope, kCtrlTagEnvelope);
+
   AttachStackedControl(pGraphics, envSliderArea.GetGridCell(0, 0, 1, 4),
                        kParamAttack, "A", synthStyle, true);
   AttachStackedControl(pGraphics, envSliderArea.GetGridCell(0, 1, 1, 4),
@@ -388,6 +448,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   AttachStackedControl(pGraphics, envSliderArea.GetGridCell(0, 3, 1, 4),
                        kParamRelease, "R", synthStyle, true);
 
+  // --- LFO ---
   const IRECT lfoInner = attachFrame(lfoArea, "LFO");
   AttachStackedControl(pGraphics, lfoInner.GetGridCell(0, 0, 2, 2),
                        kParamLFOShape, "SHAPE", synthStyle);
@@ -398,6 +459,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   AttachStackedControl(pGraphics, lfoInner.GetGridCell(1, 1, 2, 2),
                        kParamOscMix, "MIX", synthStyle);
 
+  // --- POLY MOD ---
   const IRECT polyInner = attachFrame(polyModArea, "POLY MOD");
   AttachStackedControl(pGraphics, polyInner.GetGridCell(0, 0, 2, 3),
                        kParamPolyModOscBToFreqA, "B-FREQ", synthStyle);
@@ -412,49 +474,40 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   AttachStackedControl(pGraphics, polyInner.GetGridCell(1, 2, 2, 3),
                        kParamPolyModFilterEnvToFilter, "E-FILT", synthStyle);
 
-  const IRECT fxInner = attachFrame(fxArea, "EFFECTS");
-  AttachStackedControl(pGraphics, fxInner.GetGridCell(0, 0, 2, 3),
-                       kParamChorusRate, "CH RATE", synthStyle);
-  AttachStackedControl(pGraphics, fxInner.GetGridCell(0, 1, 2, 3),
-                       kParamChorusDepth, "CH DEPTH", synthStyle);
-  AttachStackedControl(pGraphics, fxInner.GetGridCell(0, 2, 2, 3),
-                       kParamChorusMix, "CH MIX", synthStyle);
-  AttachStackedControl(pGraphics, fxInner.GetGridCell(1, 0, 2, 3),
-                       kParamDelayTime, "DL TIME", synthStyle);
-  AttachStackedControl(pGraphics, fxInner.GetGridCell(1, 1, 2, 3),
-                       kParamDelayFeedback, "DL FEEDBACK", synthStyle);
-  AttachStackedControl(pGraphics, fxInner.GetGridCell(1, 2, 2, 3),
-                       kParamDelayMix, "DL MIX", synthStyle);
+  // --- CHORUS & DELAY FIX: Use PADDING to prevent overlap ---
+  auto gridWithPad = [](IRECT r, int row, int col, int nr, int nc) {
+    return r.GetGridCell(row, col, nr, nc).GetPadded(-2.f);
+  };
 
-  // Master Section Fix: Divided into two sub-rows to prevent crowding
+  // --- CHORUS ---
+  const IRECT chorusInner = attachFrame(chorusArea, "CHORUS");
+  // Use 1 row of 3 smaller knobs to guarantee vertical space for labels
+  AttachStackedControl(pGraphics, gridWithPad(chorusInner, 0, 0, 1, 3),
+                       kParamChorusRate, "RATE", synthStyle);
+  AttachStackedControl(pGraphics, gridWithPad(chorusInner, 0, 1, 1, 3),
+                       kParamChorusDepth, "DEPTH", synthStyle);
+  AttachStackedControl(pGraphics, gridWithPad(chorusInner, 0, 2, 1, 3),
+                       kParamChorusMix, "MIX", synthStyle);
+  // Wait, if 1 row, might be too small horizontally? No, 160px/3 = 53px.
+  // With stacked control logic, knob size is min(W, H*0.7).
+  // W=53, H=150(?). So size = 53. Fits fine. Labels will be above.
+
+  // --- DELAY ---
+  const IRECT delayInner = attachFrame(delayArea, "DELAY");
+  // Same 1x3 layout for consistency
+  AttachStackedControl(pGraphics, gridWithPad(delayInner, 0, 0, 1, 3),
+                       kParamDelayTime, "TIME", synthStyle);
+  AttachStackedControl(pGraphics, gridWithPad(delayInner, 0, 1, 1, 3),
+                       kParamDelayFeedback, "FDBK", synthStyle);
+  AttachStackedControl(pGraphics, gridWithPad(delayInner, 0, 2, 1, 3),
+                       kParamDelayMix, "MIX", synthStyle);
+
+  // --- MASTER ---
   const IRECT masterInner = attachFrame(masterArea, "MASTER");
-  IRECT masterTop = masterInner.GetFromTop(masterInner.H() * 0.5f);
-  IRECT masterBottom = masterInner.GetFromBottom(masterInner.H() * 0.5f);
-  AttachStackedControl(pGraphics, masterTop.GetGridCell(0, 0, 1, 2), kParamGain,
-                       "GAIN", synthStyle);
-  AttachStackedControl(pGraphics, masterTop.GetGridCell(0, 1, 1, 2),
-                       kParamLimiterThreshold, "LMT", synthStyle);
-  AttachStackedControl(pGraphics, masterBottom.GetGridCell(0, 0, 1, 2),
-                       kParamNoteGlideTime, "GLIDE", synthStyle);
-
-  const IRECT demoInner = attachFrame(demoArea, "DEMO");
-  IVStyle demoStyle = synthStyle.WithRoundness(0.08f);
-
-  pGraphics->AttachControl(
-      new IVSwitchControl(demoInner.GetGridCell(0, 0, 3, 1).GetPadded(-4.f),
-                          kParamDemoMono, "MONO SEQ", demoStyle));
-  pGraphics->AttachControl(
-      new IVSwitchControl(demoInner.GetGridCell(1, 0, 3, 1).GetPadded(-4.f),
-                          kParamDemoPoly, "POLY SEQ", demoStyle));
-  pGraphics->AttachControl(
-      new IVSwitchControl(demoInner.GetGridCell(2, 0, 3, 1).GetPadded(-4.f),
-                          kParamDemoFX, "FX SHOW", demoStyle));
-
-  pGraphics->AttachControl(new SectionFrame(footerArea, "OUTPUT", groupBorder,
-                                            textDark, IColor(255, 10, 10, 10)));
-  pGraphics->AttachControl(new ITextControl(
-      footerArea.GetPadded(-10.f), "Ready",
-      IText(14.f, accentCyan, "Roboto-Regular", EAlign::Near)));
+  AttachStackedControl(pGraphics, masterInner.GetGridCell(0, 0, 2, 1),
+                       kParamGain, "GAIN", synthStyle);
+  AttachStackedControl(pGraphics, masterInner.GetGridCell(1, 0, 2, 1),
+                       kParamLimiterThreshold, "LIMIT", synthStyle);
 }
 #endif
 
