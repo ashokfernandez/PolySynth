@@ -61,7 +61,7 @@ public:
     g.PathMoveTo(left, top + h);              // Start at bottom-left
     g.PathLineTo(left + attackX, top);        // Attack: rise to peak
     g.PathLineTo(left + decayX, top + sustainLevel);  // Decay: fall to sustain
-    g.PathLineTo(left + releaseX, top + sustainLevel); // Sustain: hold level
+    g.PathLineTo(left + sustainEndX, top + sustainLevel); // Sustain: hold level
     g.PathLineTo(left + w, top + h);          // Release: fall to zero
 
     // Stroke the outline
@@ -72,7 +72,7 @@ public:
     g.PathMoveTo(left, top + h);
     g.PathLineTo(left + attackX, top);
     g.PathLineTo(left + decayX, top + sustainLevel);
-    g.PathLineTo(left + releaseX, top + sustainLevel);
+    g.PathLineTo(left + sustainEndX, top + sustainLevel);
     g.PathLineTo(left + w, top + h);
     g.PathLineTo(left, top + h); // Close the path
     g.PathFill(mFillColor);

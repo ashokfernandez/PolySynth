@@ -17,9 +17,13 @@ public:
     SetDirty(false);
   }
 
+  PolyKnob& WithShowLabel(bool show) { mShowLabel = show; return *this; }
+  PolyKnob& WithShowValue(bool show) { mShowValue = show; return *this; }
+
   void Draw(IGraphics& g) override {
-    g.DrawText(IText(12.f, PolyTheme::TextDark, "Roboto-Bold", EAlign::Center),
-               mLabelStr.Get(), mLabelRect);
+    if (mShowLabel)
+      g.DrawText(IText(PolyTheme::FontControl, PolyTheme::TextDark, "Roboto-Bold", EAlign::Center),
+                 mLabelStr.Get(), mLabelRect);
 
     const float angle = -135.f + (GetValue() * 270.f);
     const float radius = mKnobRect.W() * 0.5f;
@@ -27,13 +31,13 @@ public:
     const float cy = mKnobRect.MH();
 
     // Soft depth/shadow under the knob body
-    g.FillCircle(IColor(45, 0, 0, 0), cx + 1.f, cy + 2.f, radius - 1.f);
+    g.FillCircle(PolyTheme::ShadowDark, cx + 1.f, cy + 2.f, radius - 1.f);
 
     // Knob body with subtle bezel + highlight for Skia crispness
-    g.FillCircle(IColor(255, 247, 245, 240), cx, cy, radius - 1.5f);
-    g.DrawCircle(IColor(60, 255, 255, 255), cx, cy - 0.5f, radius - 2.0f, nullptr,
+    g.FillCircle(PolyTheme::KnobBody, cx, cy, radius - 1.5f);
+    g.DrawCircle(PolyTheme::InnerGlow, cx, cy - 0.5f, radius - 2.0f, nullptr,
                  1.f);
-    g.DrawCircle(IColor(35, 0, 0, 0), cx, cy + 1.f, radius - 2.0f, nullptr, 1.f);
+    g.DrawCircle(PolyTheme::ShadowLight, cx, cy + 1.f, radius - 2.0f, nullptr, 1.f);
 
     // Track and active arc + soft glow pass
     g.DrawArc(PolyTheme::KnobRingOff, cx, cy, radius, -135.f, 135.f, 0, 3.f);
@@ -47,12 +51,13 @@ public:
     g.DrawLine(mAccentColor, cx, cy, x2, y2, nullptr, 2.f);
     g.FillCircle(PolyTheme::Highlight, x2, y2, 1.8f);
 
-    WDL_String valStr;
-    if (GetParam())
-      GetParam()->GetDisplay(valStr);
-
-    g.DrawText(IText(12.f, PolyTheme::TextDark, "Roboto-Regular", EAlign::Center),
-               valStr.Get(), mValueRect);
+    if (mShowValue) {
+      WDL_String valStr;
+      if (GetParam())
+        GetParam()->GetDisplay(valStr);
+      g.DrawText(IText(PolyTheme::FontControl, PolyTheme::TextDark, "Roboto-Regular", EAlign::Center),
+                 valStr.Get(), mValueRect);
+    }
   }
 
   void OnMouseDown(float x, float y, const IMouseMod& mod) override {
@@ -63,13 +68,15 @@ public:
 
 private:
   void UpdateLayout() {
-    mLabelRect = mRECT.GetFromTop(18.f);
-    mValueRect = mRECT.GetFromBottom(18.f);
+    mLabelRect = mRECT.GetFromTop(PolyTheme::LabelH);
+    mValueRect = mRECT.GetFromBottom(PolyTheme::LabelH);
     mKnobRect = mRECT.GetPadded(-5.f).GetMidVPadded(mRECT.W() * 0.4f);
   }
 
   WDL_String mLabelStr;
   IColor mAccentColor = PolyTheme::KnobRingOn;
+  bool mShowLabel = true;
+  bool mShowValue = true;
   IRECT mLabelRect;
   IRECT mKnobRect;
   IRECT mValueRect;

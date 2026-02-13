@@ -71,3 +71,17 @@ export const TabSwitch = {
 export const RadioButton = {
   render: () => createGalleryFrame('radiobutton')
 };
+
+// --- Custom PolySynth controls ---
+
+export const PolyKnob = {
+  render: () => createGalleryFrame('polyknob')
+};
+
+export const PolySection = {
+  render: () => createGalleryFrame('polysection')
+};
+
+export const PolyToggle = {
+  render: () => createGalleryFrame('polytoggle')
+};

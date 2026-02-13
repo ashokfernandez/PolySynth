@@ -17,7 +17,7 @@ GALLERY_COMPONENT=KNOB "${REPO_ROOT}/scripts/build_single_gallery.sh" knob
 echo "Launching parallel UI builds for all variants..."
 
 # List of all component variants to build
-COMPONENTS=("knob" "fader" "envelope" "button" "switch" "toggle" "slideswitch" "tabswitch" "radiobutton")
+COMPONENTS=("knob" "fader" "envelope" "button" "switch" "toggle" "slideswitch" "tabswitch" "radiobutton" "polyknob" "polysection" "polytoggle")
 
 for comp in "${COMPONENTS[@]}"; do
   # Skip 'knob' processor build if we already did it, but actually build_single_gallery

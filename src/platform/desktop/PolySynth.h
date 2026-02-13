@@ -113,6 +113,18 @@ public:
   void OnUIOpen() override;
   void OnParamChangeUI(int paramIdx, EParamSource source) override;
   void OnLayout(IGraphics *pGraphics);
+  void PopulatePresetMenu();
+
+private:
+  void BuildHeader(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildOscillators(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildFilter(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildEnvelope(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildLFO(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildPolyMod(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildChorus(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildDelay(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildMaster(IGraphics *g, const IRECT &bounds, const IVStyle &style);
 #endif
 
 #if IPLUG_DSP

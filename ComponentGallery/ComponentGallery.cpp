@@ -2,8 +2,11 @@
 #include "IPlug_include_in_plug_src.h"
 
 #if IPLUG_EDITOR
-// Include Envelope (custom control - no built-in equivalent)
+// Custom controls from UI/Controls
 #include "Envelope.h"
+#include "PolyKnob.h"
+#include "PolySection.h"
+#include "PolyToggleButton.h"
 #endif
 
 #include <cstring>
@@ -106,6 +109,71 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
   pGraphics->AttachControl(new IVRadioButtonControl(
       IRECT(padding, padding, padding + radioWidth, padding + radioHeight),
       kParamRadioButton, {"Choice A", "Choice B", "Choice C"}));
+
+#elif defined(GALLERY_COMPONENT_POLYKNOB)
+  // PolyKnob: custom themed knob with arc indicator, label, and value readout
+  const float polyKnobSize = 80.0f;
+  const float polyKnobSpacing = 20.0f;
+
+  // Default accent (red)
+  pGraphics->AttachControl(new PolyKnob(
+      IRECT(padding, padding, padding + polyKnobSize, padding + polyKnobSize + 36.f),
+      kParamKnob, "Cutoff"));
+
+  // Cyan accent variant
+  auto* cyanKnob = new PolyKnob(
+      IRECT(padding + polyKnobSize + polyKnobSpacing, padding,
+            padding + 2.f * polyKnobSize + polyKnobSpacing,
+            padding + polyKnobSize + 36.f),
+      kParamFader, "Reso");
+  cyanKnob->SetAccent(PolyTheme::AccentCyan);
+  pGraphics->AttachControl(cyanKnob);
+
+  // No-label/no-value variant (as used in stacked controls)
+  auto* bareKnob = new PolyKnob(
+      IRECT(padding + 2.f * (polyKnobSize + polyKnobSpacing), padding + 18.f,
+            padding + 2.f * (polyKnobSize + polyKnobSpacing) + polyKnobSize,
+            padding + 18.f + polyKnobSize),
+      kParamKnob, "");
+  bareKnob->WithShowLabel(false).WithShowValue(false);
+  pGraphics->AttachControl(bareKnob);
+
+#elif defined(GALLERY_COMPONENT_POLYSECTION)
+  // PolySection: cached panel with title, sheen, scanlines, and depth border
+  const float sectionWidth = 300.0f;
+  const float sectionHeight = 200.0f;
+  pGraphics->AttachControl(new PolySection(
+      IRECT(padding, padding, padding + sectionWidth, padding + sectionHeight),
+      "FILTER"));
+
+  // Second section to show side-by-side appearance
+  pGraphics->AttachControl(new PolySection(
+      IRECT(padding + sectionWidth + 20.f, padding,
+            padding + 2.f * sectionWidth + 20.f, padding + sectionHeight),
+      "LFO"));
+
+#elif defined(GALLERY_COMPONENT_POLYTOGGLE)
+  // PolyToggleButton: latching toggle with themed active/inactive states
+  const float toggleWidth = 80.0f;
+  const float toggleHeight = 28.0f;
+  const float toggleGap = 10.0f;
+
+  // Inactive state (default value = 0)
+  pGraphics->AttachControl(new PolyToggleButton(
+      IRECT(padding, padding, padding + toggleWidth, padding + toggleHeight),
+      kParamToggle, "MONO"));
+
+  // A second toggle wired to a different param to show both states simultaneously
+  pGraphics->AttachControl(new PolyToggleButton(
+      IRECT(padding + toggleWidth + toggleGap, padding,
+            padding + 2.f * toggleWidth + toggleGap, padding + toggleHeight),
+      kParamButton, "POLY"));
+
+  // A third toggle for the row layout
+  pGraphics->AttachControl(new PolyToggleButton(
+      IRECT(padding + 2.f * (toggleWidth + toggleGap), padding,
+            padding + 3.f * toggleWidth + 2.f * toggleGap, padding + toggleHeight),
+      kParamSlideSwitch, "FX"));
 
 #else
   // Default: show knob
