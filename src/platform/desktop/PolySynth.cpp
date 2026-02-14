@@ -148,15 +148,8 @@ void PolySynthPlugin::SyncUIState() {
 
 PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
-  // Create a temporary state object to get default values
-  // For DSP builds, we'll use mState; for UI-only builds, we use a local temp
-  PolySynthCore::SynthState defaultState;
-#if IPLUG_DSP
-  mState.Reset(); // Single source of truth for synth defaults
+  mState.Reset();
   PolySynthCore::SynthState& state = mState;
-#else
-  PolySynthCore::SynthState& state = defaultState;
-#endif
 
   GetParam(kParamGain)
       ->InitDouble("Gain", state.masterGain * kToPercentage, 0., 100., 1.25,

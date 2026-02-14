@@ -48,6 +48,7 @@ std::string PresetManager::Serialize(const SynthState &state) {
   SERIALIZE(j, state, filterCutoff);
   SERIALIZE(j, state, filterResonance);
   SERIALIZE(j, state, filterEnvAmount);
+  SERIALIZE(j, state, filterModel);
   SERIALIZE(j, state, filterKeyboardTrack);
 
   // Filter Env
@@ -122,6 +123,7 @@ bool PresetManager::Deserialize(const std::string &jsonStr,
     DESERIALIZE(j, outState, filterCutoff);
     DESERIALIZE(j, outState, filterResonance);
     DESERIALIZE(j, outState, filterEnvAmount);
+    DESERIALIZE(j, outState, filterModel);
     DESERIALIZE(j, outState, filterKeyboardTrack);
 
     // Filter Env

@@ -3,6 +3,10 @@
 #include "DemoSequencer.h"
 #include "IPlug_include_in_plug_hdr.h"
 
+#if !IPLUG_DSP && !IPLUG_EDITOR
+  #error "PolySynth requires at least one of IPLUG_DSP or IPLUG_EDITOR"
+#endif
+
 #if IPLUG_EDITOR
 #include "IGraphics.h"
 #endif
@@ -141,11 +145,11 @@ public:
 
 private:
   PolySynthDSP mDSP{8};
-  PolySynthCore::SynthState mState;
   DemoSequencer mDemoSequencer;
   bool mIsUpdatingUI = false;
 #endif
 
 private:
+  PolySynthCore::SynthState mState;
   bool mIsDirty = false;
 };

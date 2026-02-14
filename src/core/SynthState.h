@@ -3,6 +3,7 @@
 #include "types.h"
 #include <stdint.h>
 #include <string.h>
+#include <type_traits>
 
 namespace PolySynthCore {
 
@@ -79,42 +80,11 @@ struct SynthState {
   double fxLimiterThreshold = 0.95; // 0.0 to 1.0
 
   // --- Helper Methods -----------------------
-  void Reset() {
-    masterGain = 0.75;
-    oscAWaveform = 0;
-    oscAFreq = 440.0;
-    oscAPulseWidth = 0.5;
-    oscBWaveform = 0;
-    oscBFreq = 440.0;
-    oscBFineTune = 0.0;
-    oscBPulseWidth = 0.5;
-    mixOscA = 1.0;
-    mixOscB = 0.0;
-    mixNoise = 0.0;
-    filterCutoff = 2000.0;
-    filterResonance = 0.0;
-    filterEnvAmount = 0.0;
-    filterModel = 1;
-    filterAttack = 0.01;
-    filterDecay = 0.1;
-    filterSustain = 0.5;
-    filterRelease = 0.2;
-    ampAttack = 0.01;
-    ampDecay = 0.1;
-    ampSustain = 1.0;
-    ampRelease = 0.1;
-    lfoShape = 0;
-    lfoRate = 1.0;
-    lfoDepth = 0.0;
-    fxChorusRate = 0.25;
-    fxChorusDepth = 0.5;
-    fxChorusMix = 0.0;
-    fxDelayTime = 0.35;
-    fxDelayFeedback = 0.35;
-    fxDelayMix = 0.0;
-    fxLimiterThreshold = 1.0;
-    polyphony = 8;
-  }
+  void Reset() { *this = SynthState{}; }
 };
+
+// SynthState must remain an aggregate so Reset() via value-initialization works.
+static_assert(std::is_aggregate_v<SynthState>,
+              "SynthState must remain an aggregate for Reset() to work");
 
 } // namespace PolySynthCore
