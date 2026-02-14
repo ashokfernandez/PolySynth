@@ -33,6 +33,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_FactoryPresets.cpp
     unit/Test_PresetFileIO.cpp
     unit/Test_PolyMod.cpp
+    unit/Test_SynthState.cpp
     ../src/core/PresetManager.cpp
 )
 
