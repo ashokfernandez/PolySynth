@@ -238,6 +238,21 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
       ->InitDouble("Lmt", (1.0 - state.fxLimiterThreshold) * kToPercentage, 0.,
                    100., 1., "%");
 
+  GetParam(kParamPolyphonyLimit)->InitInt("Poly", state.polyphony, 1, 16);
+  GetParam(kParamAllocationMode)
+      ->InitEnum("Alloc", state.allocationMode,
+                 {"Oldest", "Lowest", "Highest"});
+  GetParam(kParamStealPriority)
+      ->InitEnum("Steal", state.stealPriority,
+                 {"Oldest", "Lowest", "Quietest"});
+  GetParam(kParamUnisonCount)->InitInt("Uni", state.unisonCount, 1, 8);
+  GetParam(kParamUnisonSpread)
+      ->InitDouble("Sprd", state.unisonSpread * kToPercentage, 0., 100., 1.,
+                   "%");
+  GetParam(kParamStereoSpread)
+      ->InitDouble("Width", state.stereoSpread * kToPercentage, 0., 100., 1.,
+                   "%");
+
   GetParam(kParamPresetSelect)
       ->InitEnum("Patch", 0,
                  {"Init", "Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5",
@@ -437,17 +452,20 @@ void PolySynthPlugin::BuildHeader(IGraphics *g, const IRECT &bounds,
                        "WIDTH", style);
 
   // Text displays
+  // Place to the right of voice controls, but left of preset selector
+  // Voice area ends at x=400. Preset starts at ~W-280.
+  // We have space between 400 and W-280.
+  // Let's bind it explicitly to be safe.
+
   IRECT textArea =
-      bounds.GetFromLeft(600.f).GetFromRight(180.f); // x=420 to x=600
+      IRECT(voiceArea.R + 10.f, voiceArea.T, bounds.R - 290.f, voiceArea.B);
 
   g->AttachControl(
-      new ITextControl(textArea.GetGridCell(0, 0, 2, 1).GetPadded(-4.f), "",
-                       IText(12.f, textDark)),
+      new ITextControl(textArea.GetFromTop(15.f), "", IText(12.f, textDark)),
       kCtrlTagActiveVoices);
-  g->AttachControl(
-      new ITextControl(textArea.GetGridCell(1, 0, 2, 1).GetPadded(-2.f), "",
-                       IText(15.f, textDark, "Roboto-Bold")),
-      kCtrlTagChordName);
+  g->AttachControl(new ITextControl(textArea.GetFromBottom(25.f), "",
+                                    IText(15.f, textDark, "Roboto-Bold")),
+                   kCtrlTagChordName);
 }
 
 void PolySynthPlugin::BuildOscillators(IGraphics *g, const IRECT &bounds,
