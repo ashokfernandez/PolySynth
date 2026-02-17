@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstdint>
 #include <type_traits>
 
@@ -34,6 +33,19 @@ template <typename Slot, size_t MaxSlots> class VoiceAllocator {
   // void     Slot::StartSteal();
 
 public:
+  static_assert(
+      std::is_invocable_r_v<bool, decltype(&Slot::IsActive), const Slot *>,
+      "Slot must have bool IsActive() const");
+  static_assert(std::is_invocable_r_v<uint64_t, decltype(&Slot::GetTimestamp),
+                                      const Slot *>,
+                "Slot must have uint64_t GetTimestamp() const");
+  static_assert(
+      std::is_invocable_r_v<float, decltype(&Slot::GetPitch), const Slot *>,
+      "Slot must have float GetPitch() const");
+  static_assert(
+      std::is_invocable_r_v<void, decltype(&Slot::StartSteal), Slot *>,
+      "Slot must have void StartSteal()");
+
   VoiceAllocator() = default;
 
   // --- Configuration ---
@@ -81,7 +93,8 @@ public:
   // Returns slot index or -1 if no free slot within polyphony limit
   int AllocateSlot(Slot *slots) {
     int activeCount = 0;
-    for (size_t i = 0; i < MaxSlots; ++i) {
+    // Bug fix: only count active voices within the current polyphony limit
+    for (int i = 0; i < mPolyphonyLimit; ++i) {
       if (slots[i].IsActive()) {
         activeCount++;
       }
@@ -159,7 +172,10 @@ public:
 
   bool IsSustainDown() const { return mSustainDown; }
 
-  bool ShouldHold(int note) const { return mSustainDown; }
+  bool ShouldHold(int note) const {
+    (void)note; // Note-agnostic sustain for now
+    return mSustainDown;
+  }
 
   void MarkSustained(int note) {
     if (note >= 0 && note < 128) {

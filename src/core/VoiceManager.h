@@ -449,17 +449,9 @@ public:
   // Configuration setters (delegate to allocator)
   void SetPolyphonyLimit(int limit) {
     mAllocator.SetPolyphonyLimit(limit);
-    // Need to enforce? The plan says EnforcePolyphonyLimit is available.
-    // Usually setting polyphony limit assumes immediate enforcement if current
-    // active > limit. The plan task 2.6 doesn't explicitly mention calling
-    // EnforcePolyphonyLimit here, but Test_VoiceAllocation integration test
-    // "Polyphony limit reduction kills excess" requires it.
-
+    // Immediately kill excess voices if active count exceeds new limit
     int killIndices[kMaxVoices];
-    int killCount = mAllocator.EnforcePolyphonyLimit(mVoices.data(),
-                                                     killIndices, kMaxVoices);
-    // EnforcePolyphonyLimit calls StartSteal on victims, so they are marked as
-    // Stolen.
+    mAllocator.EnforcePolyphonyLimit(mVoices.data(), killIndices, kMaxVoices);
   }
 
   void SetAllocationMode(int mode) {
