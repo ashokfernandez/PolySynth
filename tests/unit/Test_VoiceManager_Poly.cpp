@@ -38,22 +38,23 @@ TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
   for (int i = 0; i < 50; i++)
     vm.Process();
 
-  // Fill remaining voices (3..16). Ages will be 0.
-  for (int i = 3; i <= 16; i++) {
+  // Fill remaining voices up to kMaxVoices. Ages will be 0.
+  for (int i = 3; i <= PolySynthCore::kMaxVoices; i++) {
     vm.OnNoteOn(i, 100);
   }
 
   // Now all voices are active.
   // Voice 1 (Note 1) has age 100 + 50 = 150.
   // Voice 2 (Note 2) has age 50.
-  // Voices 3..16 have age 0.
+  // Voices 3..kMaxVoices have age 0.
 
-  // Trigger 17th note. Should steal Note 1 (Oldest).
-  vm.OnNoteOn(17, 100);
+  // Trigger one extra note beyond capacity. Should steal Note 1 (oldest).
+  const int overflowNote = PolySynthCore::kMaxVoices + 1;
+  vm.OnNoteOn(overflowNote, 100);
 
   REQUIRE(vm.GetActiveVoiceCount() == PolySynthCore::kMaxVoices);
   REQUIRE_FALSE(vm.IsNoteActive(1));
-  REQUIRE(vm.IsNoteActive(17));
+  REQUIRE(vm.IsNoteActive(overflowNote));
 
   // Let's verify that we still produce sound.
   PolySynthCore::sample_t val = vm.Process();

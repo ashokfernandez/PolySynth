@@ -209,7 +209,7 @@ public:
 
   void StartSteal() {
     mStolenFadeGain = 1.0f;
-    const double fadeSamples = 0.002 * mSampleRate;
+    const double fadeSamples = std::max(1.0, 0.002 * mSampleRate);
     mStolenFadeDelta = 1.0 / fadeSamples;
     mVoiceState = VoiceState::Stolen;
   }
@@ -534,6 +534,8 @@ public:
     }
     return false;
   }
+
+  uint64_t GetGlobalTimestamp() const { return mGlobalTimestamp; }
 
 
 

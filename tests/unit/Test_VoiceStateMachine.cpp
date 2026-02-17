@@ -78,9 +78,16 @@ TEST_CASE("VoiceManager timestamp increments on each NoteOn", "[VoiceStateMachin
     PolySynthCore::VoiceManager vm;
     vm.Init(48000.0);
 
+    REQUIRE(vm.GetGlobalTimestamp() == 0);
+
     vm.OnNoteOn(60, 100);
+    REQUIRE(vm.GetGlobalTimestamp() == 1);
+
     vm.OnNoteOn(64, 100);
+    REQUIRE(vm.GetGlobalTimestamp() == 2);
+
     vm.OnNoteOn(67, 100);
+    REQUIRE(vm.GetGlobalTimestamp() == 3);
 
     auto states = vm.GetVoiceStates();
     int activeCount = 0;
