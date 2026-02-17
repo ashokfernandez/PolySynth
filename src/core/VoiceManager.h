@@ -19,7 +19,7 @@ public:
 
   Voice() = default;
 
-  void Init(double sampleRate) {
+  void Init(double sampleRate, uint8_t voiceID = 0) {
     mOscA.Init(sampleRate);
     mOscB.Init(sampleRate);
     mOscA.SetFrequency(440.0);
@@ -48,6 +48,15 @@ public:
     mActive = false;
     mNote = -1;
     mAge = 0;
+    mSampleRate = sampleRate;
+    mVoiceID = voiceID;
+    mVoiceState = VoiceState::Idle;
+    mTimestamp = 0;
+    mCurrentPitch = 0.0f;
+    mPanPosition = 0.0f;
+    mStolenFadeGain = 0.0f;
+    mStolenFadeDelta = 0.0;
+    mLastAmpEnvVal = 0.0f;
     mBaseCutoff = 2000.0;
     mBaseRes = 0.707;
     mPolyModOscBToFreqA = 0.0;
@@ -59,7 +68,7 @@ public:
     mFilterModel = FilterModel::Ladder;
   }
 
-  void NoteOn(int note, int velocity) {
+  void NoteOn(int note, int velocity, uint64_t timestamp = 0) {
     mFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
     mOscA.SetFrequency(mFreq);
     mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
@@ -73,16 +82,29 @@ public:
     mActive = true;
     mNote = note;
     mAge = 0;
+    mVoiceState = VoiceState::Attack;
+    mTimestamp = timestamp;
+    mCurrentPitch = static_cast<float>(mFreq);
   }
 
   void NoteOff() {
     mAmpEnv.NoteOff();
     mFilterEnv.NoteOff();
+    mVoiceState = VoiceState::Release;
   }
 
   inline sample_t Process() {
     if (!mActive)
       return 0.0;
+
+    if (mVoiceState == VoiceState::Stolen && mStolenFadeGain <= 0.0f) {
+      mActive = false;
+      mNote = -1;
+      mVoiceState = VoiceState::Idle;
+      mAge = 0;
+      mLastAmpEnvVal = 0.0f;
+      return 0.0;
+    }
 
     sample_t lfoVal = mLfo.Process();
     sample_t filterEnvVal = mFilterEnv.Process();
@@ -156,6 +178,10 @@ public:
     }
 
     sample_t ampEnvVal = mAmpEnv.Process();
+    mLastAmpEnvVal = static_cast<float>(ampEnvVal);
+
+    // Sprint 1 note: Attack→Sustain transition is intentionally deferred.
+    // State-based sustain tracking will be introduced with richer envelope phase info.
 
     // Amp Modulation (Tremolo)
     double ampMod = 1.0;
@@ -170,15 +196,55 @@ public:
       mActive = false;
       mNote = -1;
       mAge = 0;
+      mVoiceState = VoiceState::Idle;
     }
 
     sample_t out = flt * ampEnvVal * mVelocity * ampMod;
+    if (mVoiceState == VoiceState::Stolen) {
+      const float gain = std::max(0.0f, mStolenFadeGain);
+      out *= gain;
+      mStolenFadeGain = std::max(0.0f, mStolenFadeGain - static_cast<float>(mStolenFadeDelta));
+      if (mStolenFadeGain <= 0.0f) {
+        mActive = false;
+        mNote = -1;
+        mVoiceState = VoiceState::Idle;
+        mAge = 0;
+        mLastAmpEnvVal = 0.0f;
+      }
+    }
     return out;
   }
 
   bool IsActive() const { return mActive; }
   int GetNote() const { return mNote; }
   uint64_t GetAge() const { return mAge; }
+
+  void StartSteal() {
+    mStolenFadeGain = 1.0f;
+    const double fadeSamples = std::max(1.0, 0.002 * mSampleRate);
+    mStolenFadeDelta = 1.0 / fadeSamples;
+    mVoiceState = VoiceState::Stolen;
+  }
+
+  VoiceState GetVoiceState() const { return mVoiceState; }
+  uint8_t GetVoiceID() const { return mVoiceID; }
+  uint64_t GetTimestamp() const { return mTimestamp; }
+  float GetCurrentPitch() const { return mCurrentPitch; }
+  float GetPitch() const { return mCurrentPitch; }
+  float GetPanPosition() const { return mPanPosition; }
+  void SetPanPosition(float pan) { mPanPosition = std::clamp(pan, -1.0f, 1.0f); }
+
+  VoiceRenderState GetRenderState() const {
+    VoiceRenderState rs;
+    rs.voiceID = mVoiceID;
+    rs.state = mVoiceState;
+    rs.note = mNote;
+    rs.velocity = static_cast<int>(mVelocity * 127.0);
+    rs.currentPitch = mCurrentPitch;
+    rs.panPosition = mPanPosition;
+    rs.amplitude = mLastAmpEnvVal;
+    return rs;
+  }
 
   void SetADSR(double a, double d, double s, double r) {
     mAmpEnv.SetParams(a, d, s, r);
@@ -283,23 +349,36 @@ private:
   double mPolyModFilterEnvToFreqA = 0.0;
   double mPolyModFilterEnvToPWM = 0.0;
   double mPolyModFilterEnvToFilter = 0.0;
+
+  uint8_t mVoiceID = 0;
+  VoiceState mVoiceState = VoiceState::Idle;
+  uint64_t mTimestamp = 0;
+  float mCurrentPitch = 0.0f;
+  float mPanPosition = 0.0f;
+  float mStolenFadeGain = 0.0f;
+  double mStolenFadeDelta = 0.0;
+  float mLastAmpEnvVal = 0.0f;
+  double mSampleRate = 48000.0;
 };
 
 class VoiceManager {
 public:
-  static constexpr int kNumVoices = 8;
+  static constexpr int kNumVoices = kMaxVoices;
 
   VoiceManager() = default;
 
   void Init(double sampleRate) {
-    for (auto &voice : mVoices) {
-      voice.Init(sampleRate);
+    mSampleRate = sampleRate;
+    mGlobalTimestamp = 0;
+    for (int i = 0; i < kNumVoices; i++) {
+      mVoices[i].Init(sampleRate, static_cast<uint8_t>(i));
     }
   }
 
   void Reset() {
-    for (auto &voice : mVoices) {
-      voice.Init(44100.0); // Reset defaults
+    mGlobalTimestamp = 0;
+    for (int i = 0; i < kNumVoices; i++) {
+      mVoices[i].Init(44100.0, static_cast<uint8_t>(i));
     }
   }
 
@@ -310,7 +389,8 @@ public:
     }
 
     if (voice) {
-      voice->NoteOn(note, velocity);
+      // Sprint 1: immediate retrigger on steal keeps legacy behavior/goldens stable.
+      voice->NoteOn(note, velocity, ++mGlobalTimestamp);
     }
   }
 
@@ -331,8 +411,7 @@ public:
     for (auto &voice : mVoices) {
       sum += voice.Process();
     }
-    return sum * 0.25; // Headroom scaling (1/sqrt(N) or similar, 0.25 is safe
-                       // for 8 voices)
+    return sum * (1.0 / std::sqrt(static_cast<double>(kNumVoices)));
   }
 
   void SetADSR(double a, double d, double s, double r) {
@@ -470,6 +549,37 @@ public:
     return false;
   }
 
+  uint64_t GetGlobalTimestamp() const { return mGlobalTimestamp; }
+
+
+  // --- Sprint 1: Voice state query helpers ---
+  std::array<VoiceRenderState, kMaxVoices> GetVoiceStates() const {
+    std::array<VoiceRenderState, kMaxVoices> states{};
+    for (int i = 0; i < kNumVoices; i++) {
+      states[i] = mVoices[i].GetRenderState();
+    }
+    return states;
+  }
+
+  int GetHeldNotes(std::array<int, kMaxVoices> &buf) const {
+    int count = 0;
+    for (const auto &voice : mVoices) {
+      if (voice.IsActive() && voice.GetNote() >= 0) {
+        const int note = voice.GetNote();
+        bool found = false;
+        for (int j = 0; j < count; j++) {
+          if (buf[j] == note) {
+            found = true;
+            break;
+          }
+        }
+        if (!found && count < kMaxVoices) {
+          buf[count++] = note;
+        }
+      }
+    }
+    return count;
+  }
 private:
   Voice *FindFreeVoice() {
     for (auto &voice : mVoices) {
@@ -494,6 +604,8 @@ private:
   }
 
   std::array<Voice, kNumVoices> mVoices;
+  double mSampleRate = 44100.0;
+  uint64_t mGlobalTimestamp = 0;
 };
 
 } // namespace PolySynthCore
