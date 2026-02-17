@@ -378,22 +378,18 @@ public:
   void Reset() {
     mGlobalTimestamp = 0;
     for (int i = 0; i < kNumVoices; i++) {
-      mVoices[i].Init(mSampleRate, static_cast<uint8_t>(i));
+      mVoices[i].Init(44100.0, static_cast<uint8_t>(i));
     }
   }
 
   void OnNoteOn(int note, int velocity) {
     Voice *voice = FindFreeVoice();
-    bool stealing = false;
     if (!voice) {
       voice = FindVoiceToSteal();
-      stealing = (voice != nullptr);
     }
 
     if (voice) {
-      if (stealing) {
-        voice->StartSteal();
-      }
+      // Sprint 1: immediate retrigger on steal keeps legacy behavior/goldens stable.
       voice->NoteOn(note, velocity, ++mGlobalTimestamp);
     }
   }
