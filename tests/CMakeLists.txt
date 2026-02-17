@@ -40,6 +40,8 @@ set(UNIT_TEST_SOURCES
     unit/Test_PolyMod.cpp
     unit/Test_SynthState.cpp
     unit/Test_VoiceAllocator.cpp
+    unit/Test_VoiceAllocator.cpp
+    unit/Test_VoiceAllocator_Regressions.cpp
     unit/Test_VoiceAllocation.cpp
     ../src/core/PresetManager.cpp
 )
