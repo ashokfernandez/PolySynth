@@ -17,10 +17,13 @@ instead.
 ## Conventions
 
 - Header-only (`INTERFACE` CMake target)
+- File naming: `sea_<component>.h`
+- Header guard style: `#pragma once`
 - Public API namespace: `sea::`
 - C++17 portable code
 - Real-time safe design (no heap allocation after init)
 - No framework dependencies
+- No virtual dispatch in hot paths; keep DSP-critical paths inlineable
 
 ## Testing
 

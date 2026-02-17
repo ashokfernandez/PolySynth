@@ -31,7 +31,7 @@ constexpr int kMaxVoices = POLYSYNTH_MAX_VOICES;
 enum class VoiceState : uint8_t {
   Idle = 0,
   Attack,
-  Sustain,
+  Sustain,    // Sprint 1: transition deferred; set in later sprint when phase tracking is added
   Release,
   Stolen
 };
@@ -47,7 +47,8 @@ struct VoiceRenderState {
   float amplitude = 0.0f;
 };
 
-// Event sent from audio thread to UI thread via SPSCRingBuffer
+// Event sent from audio thread to UI thread via SPSCRingBuffer.
+// Used in Sprint 2 for audio→UI event passing.
 struct VoiceEvent {
   enum class Type : uint8_t { NoteOn, NoteOff, Steal, StateChange };
   Type type = Type::NoteOn;

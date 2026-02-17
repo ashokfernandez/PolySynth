@@ -56,6 +56,7 @@ public:
     mPanPosition = 0.0f;
     mStolenFadeGain = 0.0f;
     mStolenFadeDelta = 0.0;
+    mLastAmpEnvVal = 0.0f;
     mBaseCutoff = 2000.0;
     mBaseRes = 0.707;
     mPolyModOscBToFreqA = 0.0;
@@ -96,15 +97,13 @@ public:
     if (!mActive)
       return 0.0;
 
-    if (mVoiceState == VoiceState::Stolen) {
-      mStolenFadeGain -= static_cast<float>(mStolenFadeDelta);
-      if (mStolenFadeGain <= 0.0f) {
-        mActive = false;
-        mNote = -1;
-        mVoiceState = VoiceState::Idle;
-        mAge = 0;
-        return 0.0;
-      }
+    if (mVoiceState == VoiceState::Stolen && mStolenFadeGain <= 0.0f) {
+      mActive = false;
+      mNote = -1;
+      mVoiceState = VoiceState::Idle;
+      mAge = 0;
+      mLastAmpEnvVal = 0.0f;
+      return 0.0;
     }
 
     sample_t lfoVal = mLfo.Process();
@@ -179,6 +178,10 @@ public:
     }
 
     sample_t ampEnvVal = mAmpEnv.Process();
+    mLastAmpEnvVal = static_cast<float>(ampEnvVal);
+
+    // Sprint 1 note: Attack→Sustain transition is intentionally deferred.
+    // State-based sustain tracking will be introduced with richer envelope phase info.
 
     // Amp Modulation (Tremolo)
     double ampMod = 1.0;
@@ -198,7 +201,16 @@ public:
 
     sample_t out = flt * ampEnvVal * mVelocity * ampMod;
     if (mVoiceState == VoiceState::Stolen) {
-      out *= mStolenFadeGain;
+      const float gain = std::max(0.0f, mStolenFadeGain);
+      out *= gain;
+      mStolenFadeGain = std::max(0.0f, mStolenFadeGain - static_cast<float>(mStolenFadeDelta));
+      if (mStolenFadeGain <= 0.0f) {
+        mActive = false;
+        mNote = -1;
+        mVoiceState = VoiceState::Idle;
+        mAge = 0;
+        mLastAmpEnvVal = 0.0f;
+      }
     }
     return out;
   }
@@ -230,7 +242,7 @@ public:
     rs.velocity = static_cast<int>(mVelocity * 127.0);
     rs.currentPitch = mCurrentPitch;
     rs.panPosition = mPanPosition;
-    rs.amplitude = 0.0f;
+    rs.amplitude = mLastAmpEnvVal;
     return rs;
   }
 
@@ -345,6 +357,7 @@ private:
   float mPanPosition = 0.0f;
   float mStolenFadeGain = 0.0f;
   double mStolenFadeDelta = 0.0;
+  float mLastAmpEnvVal = 0.0f;
   double mSampleRate = 48000.0;
 };
 
@@ -365,17 +378,22 @@ public:
   void Reset() {
     mGlobalTimestamp = 0;
     for (int i = 0; i < kNumVoices; i++) {
-      mVoices[i].Init(44100.0, static_cast<uint8_t>(i));
+      mVoices[i].Init(mSampleRate, static_cast<uint8_t>(i));
     }
   }
 
   void OnNoteOn(int note, int velocity) {
     Voice *voice = FindFreeVoice();
+    bool stealing = false;
     if (!voice) {
       voice = FindVoiceToSteal();
+      stealing = (voice != nullptr);
     }
 
     if (voice) {
+      if (stealing) {
+        voice->StartSteal();
+      }
       voice->NoteOn(note, velocity, ++mGlobalTimestamp);
     }
   }
@@ -538,7 +556,7 @@ public:
   uint64_t GetGlobalTimestamp() const { return mGlobalTimestamp; }
 
 
-
+  // --- Sprint 1: Voice state query helpers ---
   std::array<VoiceRenderState, kMaxVoices> GetVoiceStates() const {
     std::array<VoiceRenderState, kMaxVoices> states{};
     for (int i = 0; i < kNumVoices; i++) {
