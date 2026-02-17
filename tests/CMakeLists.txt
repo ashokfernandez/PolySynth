@@ -22,12 +22,17 @@ include_directories(../external/catch2)
 # --- SEA_DSP Library ---
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../libs/SEA_DSP" "${CMAKE_CURRENT_BINARY_DIR}/libs/SEA_DSP")
 
+# --- SEA_Util Library ---
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../libs/SEA_Util" "${CMAKE_CURRENT_BINARY_DIR}/libs/SEA_Util")
+
 # --- Unit Tests ---
 set(UNIT_TEST_SOURCES
     main_test.cpp
     unit/Test_Engine_Basic.cpp
     unit/Test_Engine_Audio.cpp
     unit/Test_VoiceManager_Poly.cpp
+    unit/Test_SPSCRingBuffer.cpp
+    unit/Test_VoiceStateMachine.cpp
     unit/Test_Effects.cpp
     unit/Test_PresetManager.cpp
     unit/Test_FactoryPresets.cpp
@@ -69,7 +74,7 @@ add_executable(demo_factory_presets demos/demo_factory_presets.cpp)
 add_executable(demo_fx_engine demos/demo_fx_engine.cpp)
 
 # Link SEA_DSP to all targets
-target_link_libraries(run_tests PRIVATE SEA_DSP)
+target_link_libraries(run_tests PRIVATE SEA_DSP SEA_Util)
 target_link_libraries(demo_render_wav PRIVATE SEA_DSP)
 target_link_libraries(demo_adsr PRIVATE SEA_DSP)
 target_link_libraries(demo_engine_poly PRIVATE SEA_DSP)

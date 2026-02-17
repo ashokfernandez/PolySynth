@@ -19,8 +19,8 @@ TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
   REQUIRE(vm.IsNoteActive(67));
 
   // 2. Voice Stealing Logic
-  // We have 8 voices. We already used 3.
-  // Let's use 6 more (Total 9 requests).
+  // We have kMaxVoices voices. We already used 3.
+  // Fill remaining voices, then request one extra for steal.
   // The first one (60) should be stolen if it's the oldest?
   // Actually, all voices are same age (0) if I didn't process in between?
   // In my impl, Age increments on Process().
@@ -38,22 +38,22 @@ TEST_CASE("VoiceManager Polyphony", "[VoiceManager]") {
   for (int i = 0; i < 50; i++)
     vm.Process();
 
-  // Fill remaining 6 voices (3..8). Ages will be 0.
-  for (int i = 3; i <= 8; i++) {
+  // Fill remaining voices (3..16). Ages will be 0.
+  for (int i = 3; i <= 16; i++) {
     vm.OnNoteOn(i, 100);
   }
 
-  // Now all 8 voices are active.
+  // Now all voices are active.
   // Voice 1 (Note 1) has age 100 + 50 = 150.
   // Voice 2 (Note 2) has age 50.
-  // Voices 3..8 have age 0.
+  // Voices 3..16 have age 0.
 
-  // Trigger 9th note. Should steal Note 1 (Oldest).
-  vm.OnNoteOn(9, 100);
+  // Trigger 17th note. Should steal Note 1 (Oldest).
+  vm.OnNoteOn(17, 100);
 
-  REQUIRE(vm.GetActiveVoiceCount() == 8);
+  REQUIRE(vm.GetActiveVoiceCount() == PolySynthCore::kMaxVoices);
   REQUIRE_FALSE(vm.IsNoteActive(1));
-  REQUIRE(vm.IsNoteActive(9));
+  REQUIRE(vm.IsNoteActive(17));
 
   // Let's verify that we still produce sound.
   PolySynthCore::sample_t val = vm.Process();
