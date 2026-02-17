@@ -44,6 +44,8 @@ set(UNIT_TEST_SOURCES
     unit/Test_VoiceAllocator_Regressions.cpp
     unit/Test_VoiceAllocation.cpp
     unit/Test_TheoryEngine.cpp
+    unit/Test_Portamento.cpp
+    unit/Test_StereoPanning.cpp
     ../src/core/PresetManager.cpp
 )
 

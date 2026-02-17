@@ -25,6 +25,9 @@ public:
     mOscB.Init(sampleRate);
     mOscA.SetFrequency(440.0);
     mOscB.SetFrequency(440.0 * std::pow(2.0, mDetuneB / 1200.0));
+    mTargetFreq = 440.0;
+    mGlideTime = 0.0;
+
     mBasePulseWidthA = 0.5;
     mBasePulseWidthB = 0.5;
     mOscA.SetPulseWidth(mBasePulseWidthA);
@@ -70,11 +73,20 @@ public:
   }
 
   void NoteOn(int note, int velocity, uint64_t timestamp = 0) {
-    mFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
-    mOscA.SetFrequency(mFreq);
-    mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
-    mOscA.Reset();
-    mOscB.Reset();
+    double newFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
+    mTargetFreq = newFreq;
+
+    if (mGlideTime > 0.0 && mActive) {
+      // Legato glide: keep current frequency, glide to target
+      // Don't reset oscillators — smooth transition
+    } else {
+      // Normal retrigger: jump to frequency immediately
+      mFreq = newFreq;
+      mOscA.SetFrequency(mFreq);
+      mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
+      mOscA.Reset();
+      mOscB.Reset();
+    }
 
     mVelocity = velocity / 127.0;
 
@@ -117,6 +129,20 @@ public:
 
     sample_t lfoVal = mLfo.Process();
     sample_t filterEnvVal = mFilterEnv.Process();
+
+    // Portamento: glide toward target frequency
+    if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > 0.01) {
+      double alpha = 1.0 - std::exp(-1.0 / (mGlideTime * mSampleRate));
+      mFreq += (mTargetFreq - mFreq) * alpha;
+      // Snap to target when close enough
+      if (std::abs(mFreq - mTargetFreq) < 0.01) {
+        mFreq = mTargetFreq;
+      }
+      mCurrentPitch = static_cast<float>(mFreq);
+      // Update oscillator base frequencies (will be modulated below)
+      // Note: We don't set mOscA/B immediate here because they get set below
+      // with modulation
+    }
 
     // Pitch Modulation (Vibrato)
     double modFreqA = mFreq;
@@ -255,9 +281,12 @@ public:
     rs.velocity = static_cast<int>(mVelocity * 127.0);
     rs.currentPitch = mCurrentPitch;
     rs.panPosition = mPanPosition;
+    rs.panPosition = mPanPosition;
     rs.amplitude = mLastAmpEnvVal;
     return rs;
   }
+
+  void SetGlideTime(double seconds) { mGlideTime = std::max(0.0, seconds); }
 
   void SetADSR(double a, double d, double s, double r) {
     mAmpEnv.SetParams(a, d, s, r);
@@ -371,6 +400,10 @@ private:
   float mStolenFadeGain = 0.0f;
   double mStolenFadeDelta = 0.0;
   float mLastAmpEnvVal = 0.0f;
+
+  double mTargetFreq = 440.0;
+  double mGlideTime = 0.0;
+
   double mSampleRate = 48000.0;
 };
 
@@ -470,6 +503,41 @@ public:
       sum += voice.Process();
     }
     return sum * (1.0 / std::sqrt(static_cast<double>(kNumVoices)));
+  }
+
+  inline void ProcessStereo(double &outLeft, double &outRight) {
+    outLeft = 0.0;
+    outRight = 0.0;
+    // kPi is not defined in this scope, usually it's in a math header or we can
+    // use M_PI or define it. PolySynth usually uses <cmath>. M_PI is standard.
+    // Plan used kPi. I'll use 3.14159265358979323846 or M_PI if available.
+    // C++17 has std::numbers::pi but need <numbers>.
+    // Let's check if kPi is defined in types.h?
+    // It's likely M_PI. Plan said kPi.
+    // I'll use 3.14159265358979323846 directly to be safe, or M_PI.
+    const double kPi = 3.14159265358979323846;
+
+    for (auto &voice : mVoices) {
+      sample_t mono = voice.Process();
+      if (mono == 0.0)
+        continue;
+
+      float pan = voice.GetPanPosition();
+      // Constant-power panning: theta maps [-1,+1] to [0, pi/2]
+      double theta = (static_cast<double>(pan) + 1.0) * kPi * 0.25;
+      outLeft += mono * std::cos(theta);
+      outRight += mono * std::sin(theta);
+    }
+    // Headroom scaling
+    double scale = 1.0 / std::sqrt(static_cast<double>(kNumVoices));
+    outLeft *= scale;
+    outRight *= scale;
+  }
+
+  void SetGlideTime(double seconds) {
+    for (auto &voice : mVoices) {
+      voice.SetGlideTime(seconds);
+    }
   }
 
   void SetADSR(double a, double d, double s, double r) {
