@@ -132,7 +132,7 @@ public:
 
     // Portamento: glide toward target frequency
     if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > 0.01) {
-      double alpha = 1.0 - std::exp(-1.0 / (mGlideTime * mSampleRate));
+      double alpha = 1.0 - std::exp(-3.0 / (mGlideTime * mSampleRate));
       mFreq += (mTargetFreq - mFreq) * alpha;
       // Snap to target when close enough
       if (std::abs(mFreq - mTargetFreq) < 0.01) {

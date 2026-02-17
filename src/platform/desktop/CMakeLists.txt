@@ -17,6 +17,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../UI/Controls
     ${IPLUG2_DIR}/Dependencies/Extras/nlohmann
     ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/SEA_DSP/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/SEA_Util/include
 )
 
 iplug_add_plugin(${PROJECT_NAME}

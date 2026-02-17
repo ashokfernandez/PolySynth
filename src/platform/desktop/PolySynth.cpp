@@ -7,11 +7,12 @@
 #include "Envelope.h"
 #include "IControls.h"
 #include "PolyKnob.h"
-#include "PolyToggleButton.h"
 #include "PolySection.h"
+#include "PolyToggleButton.h"
 #endif
 #include <algorithm>
 #include <cstdlib>
+#include <sea_util/sea_theory_engine.h>
 #include <vector>
 
 namespace {
@@ -63,13 +64,13 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
   const float labelH = PolyTheme::LabelH;
   const float valueH = PolyTheme::ValueH;
 
-  IText labelTextBold =
-      IText(PolyTheme::FontLabel, style.labelText.mFGColor, "Roboto-Bold", EAlign::Center);
+  IText labelTextBold = IText(PolyTheme::FontLabel, style.labelText.mFGColor,
+                              "Roboto-Bold", EAlign::Center);
   IRECT labelRect = IRECT(bounds.L, controlRect.T - labelH - 1.f, bounds.R,
                           controlRect.T - 1.f);
 
-  IText valueTextBold =
-      IText(PolyTheme::FontValue, style.valueText.mFGColor, "Roboto-Regular", EAlign::Center);
+  IText valueTextBold = IText(PolyTheme::FontValue, style.valueText.mFGColor,
+                              "Roboto-Regular", EAlign::Center);
   IRECT valueRect = IRECT(bounds.L, controlRect.B + 1.f, bounds.R,
                           controlRect.B + valueH + 1.f);
 
@@ -149,7 +150,7 @@ void PolySynthPlugin::SyncUIState() {
 PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
   mState.Reset();
-  PolySynthCore::SynthState& state = mState;
+  PolySynthCore::SynthState &state = mState;
 
   GetParam(kParamGain)
       ->InitDouble("Gain", state.masterGain * kToPercentage, 0., 100., 1.25,
@@ -158,36 +159,32 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
       ->InitMilliseconds("Glide", state.glideTime * kToMs, 0.0, 30.);
   GetParam(kParamAttack)
       ->InitDouble("Attack", state.ampAttack * kToMs, 1., 1000., 0.1, "ms",
-                   IParam::kFlagsNone,
-                   "ADSR", IParam::ShapePowCurve(3.));
+                   IParam::kFlagsNone, "ADSR", IParam::ShapePowCurve(3.));
   GetParam(kParamDecay)
       ->InitDouble("Decay", state.ampDecay * kToMs, 1., 1000., 0.1, "ms",
-                   IParam::kFlagsNone,
-                   "ADSR", IParam::ShapePowCurve(3.));
+                   IParam::kFlagsNone, "ADSR", IParam::ShapePowCurve(3.));
   GetParam(kParamSustain)
       ->InitDouble("Sustain", state.ampSustain * kToPercentage, 0., 100., 1,
                    "%", IParam::kFlagsNone, "ADSR");
   GetParam(kParamRelease)
       ->InitDouble("Release", state.ampRelease * kToMs, 2., 1000., 0.1, "ms",
-                   IParam::kFlagsNone,
-                   "ADSR");
+                   IParam::kFlagsNone, "ADSR");
 
   GetParam(kParamLFOShape)
       ->InitEnum("LFO", state.lfoShape, {"Sin", "Tri", "Sqr", "Saw"});
   GetParam(kParamLFORateHz)->InitFrequency("Rate", state.lfoRate, 0.01, 40.);
-  GetParam(kParamLFODepth)->InitDouble("Dep", state.lfoDepth * kToPercentage,
-                                       0., 100., 1., "%");
+  GetParam(kParamLFODepth)
+      ->InitDouble("Dep", state.lfoDepth * kToPercentage, 0., 100., 1., "%");
 
   GetParam(kParamFilterCutoff)
       ->InitDouble("Cutoff", state.filterCutoff, 20., 20000., 1., "Hz",
-                   IParam::kFlagsNone,
-                   "Filter", IParam::ShapeExp());
+                   IParam::kFlagsNone, "Filter", IParam::ShapeExp());
   GetParam(kParamFilterResonance)
-      ->InitDouble("Reso", state.filterResonance * kToPercentage, 0., 100.,
-                   1., "%");
+      ->InitDouble("Reso", state.filterResonance * kToPercentage, 0., 100., 1.,
+                   "%");
   GetParam(kParamFilterEnvAmount)
-      ->InitDouble("Contour", state.filterEnvAmount * kToPercentage, 0.,
-                   100., 1., "%");
+      ->InitDouble("Contour", state.filterEnvAmount * kToPercentage, 0., 100.,
+                   1., "%");
   GetParam(kParamFilterModel)
       ->InitEnum("Model", state.filterModel, {"CL", "LD", "P12", "P24"});
 
@@ -196,8 +193,7 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   GetParam(kParamOscBWave)
       ->InitEnum("OscB", state.oscBWaveform, {"SAW", "SQR", "TRI", "SIN"});
   GetParam(kParamOscMix)
-      ->InitDouble("Osc Bal", state.mixOscB * kToPercentage, 0., 100., 1.,
-                   "%");
+      ->InitDouble("Osc Bal", state.mixOscB * kToPercentage, 0., 100., 1., "%");
   GetParam(kParamOscPulseWidthA)
       ->InitDouble("PWA", state.oscAPulseWidth * kToPercentage, 0., 100., 1.,
                    "%");
@@ -209,45 +205,44 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
       ->InitDouble("FM Depth", state.polyModOscBToFreqA * kToPercentage, 0.,
                    100., 1., "%");
   GetParam(kParamPolyModOscBToPWM)
-      ->InitDouble("PWM Mod", state.polyModOscBToPWM * kToPercentage, 0.,
-                   100., 1., "%");
+      ->InitDouble("PWM Mod", state.polyModOscBToPWM * kToPercentage, 0., 100.,
+                   1., "%");
   GetParam(kParamPolyModOscBToFilter)
-      ->InitDouble("B-V", state.polyModOscBToFilter * kToPercentage, 0.,
-                   100., 1., "%");
+      ->InitDouble("B-V", state.polyModOscBToFilter * kToPercentage, 0., 100.,
+                   1., "%");
   GetParam(kParamPolyModFilterEnvToFreqA)
-      ->InitDouble("Env FM", state.polyModFilterEnvToFreqA * kToPercentage,
-                   0., 100., 1., "%");
+      ->InitDouble("Env FM", state.polyModFilterEnvToFreqA * kToPercentage, 0.,
+                   100., 1., "%");
   GetParam(kParamPolyModFilterEnvToPWM)
-      ->InitDouble("Env PWM", state.polyModFilterEnvToPWM * kToPercentage,
-                   0., 100., 1., "%");
+      ->InitDouble("Env PWM", state.polyModFilterEnvToPWM * kToPercentage, 0.,
+                   100., 1., "%");
   GetParam(kParamPolyModFilterEnvToFilter)
       ->InitDouble("Env VCF", state.polyModFilterEnvToFilter * kToPercentage,
                    0., 100., 1., "%");
 
-  GetParam(kParamChorusRate)->InitFrequency("Rate", state.fxChorusRate, 0.05,
-                                            2.0);
+  GetParam(kParamChorusRate)
+      ->InitFrequency("Rate", state.fxChorusRate, 0.05, 2.0);
   GetParam(kParamChorusDepth)
       ->InitDouble("Dep", state.fxChorusDepth * kToPercentage, 0., 100., 1.,
                    "%");
   GetParam(kParamChorusMix)
-      ->InitDouble("Mix", state.fxChorusMix * kToPercentage, 0., 100., 1.,
-                   "%");
+      ->InitDouble("Mix", state.fxChorusMix * kToPercentage, 0., 100., 1., "%");
   GetParam(kParamDelayTime)
       ->InitMilliseconds("Time", state.fxDelayTime * kToMs, 50., 1200.);
   GetParam(kParamDelayFeedback)
       ->InitDouble("Fbk", state.fxDelayFeedback * kToPercentage, 0., 95., 1.,
                    "%");
   GetParam(kParamDelayMix)
-      ->InitDouble("Mix", state.fxDelayMix * kToPercentage, 0., 100., 1.,
-                   "%");
+      ->InitDouble("Mix", state.fxDelayMix * kToPercentage, 0., 100., 1., "%");
   GetParam(kParamLimiterThreshold)
-      ->InitDouble("Lmt", (1.0 - state.fxLimiterThreshold) * kToPercentage,
-                   0., 100., 1., "%");
+      ->InitDouble("Lmt", (1.0 - state.fxLimiterThreshold) * kToPercentage, 0.,
+                   100., 1., "%");
 
-  GetParam(kParamPresetSelect)->InitEnum("Patch", 0,
-      {"Init", "Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5",
-       "Slot 6", "Slot 7", "Slot 8", "Slot 9", "Slot 10",
-       "Slot 11", "Slot 12", "Slot 13", "Slot 14", "Slot 15"});
+  GetParam(kParamPresetSelect)
+      ->InitEnum("Patch", 0,
+                 {"Init", "Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5",
+                  "Slot 6", "Slot 7", "Slot 8", "Slot 9", "Slot 10", "Slot 11",
+                  "Slot 12", "Slot 13", "Slot 14", "Slot 15"});
   GetParam(kParamDemoMono)->InitBool("MONO", false);
   GetParam(kParamDemoPoly)->InitBool("POLY", false);
   GetParam(kParamDemoFX)->InitBool("FX", false);
@@ -280,7 +275,8 @@ void PolySynthPlugin::PopulatePresetMenu() {
   DesktopPath(basePath);
   for (int i = 1; i < 16; i++) {
     WDL_String filePath;
-    filePath.SetFormatted(512, "%s/PolySynth_Preset_%d.json", basePath.Get(), i);
+    filePath.SetFormatted(512, "%s/PolySynth_Preset_%d.json", basePath.Get(),
+                          i);
     FILE *f = fopen(filePath.Get(), "r");
     if (f) {
       fclose(f);
@@ -329,8 +325,10 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       DEFAULT_STYLE.WithRoundness(0.04f)
           .WithShadowOffset(2.0f)
           .WithShowValue(false)
-          .WithLabelText(IText(PolyTheme::FontStyleLabel, textDark, "Roboto-Regular", EAlign::Center))
-          .WithValueText(IText(PolyTheme::FontStyleValue, textDark, "Roboto-Regular", EAlign::Center))
+          .WithLabelText(IText(PolyTheme::FontStyleLabel, textDark,
+                               "Roboto-Regular", EAlign::Center))
+          .WithValueText(IText(PolyTheme::FontStyleValue, textDark,
+                               "Roboto-Regular", EAlign::Center))
           .WithColor(kBG, PolyTheme::ControlBG)
           .WithColor(kFG, PolyTheme::ControlFace)
           .WithColor(kPR, PolyTheme::AccentRed)
@@ -347,104 +345,190 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
 
   BuildHeader(pGraphics, header, synthStyle);
   BuildOscillators(pGraphics, topRow.GetFromLeft(w * 0.23f), synthStyle);
-  IRECT filterArea(topRow.L + w * 0.23f, topRow.T, topRow.L + w * 0.48f, topRow.B);
+  IRECT filterArea(topRow.L + w * 0.23f, topRow.T, topRow.L + w * 0.48f,
+                   topRow.B);
   BuildFilter(pGraphics, filterArea, synthStyle);
-  BuildEnvelope(pGraphics, IRECT(filterArea.R, topRow.T, topRow.R, topRow.B), synthStyle);
+  BuildEnvelope(pGraphics, IRECT(filterArea.R, topRow.T, topRow.R, topRow.B),
+                synthStyle);
   BuildLFO(pGraphics, bottomRow.GetFromLeft(w * 0.15f), synthStyle);
-  IRECT polyModArea(bottomRow.L + w * 0.15f, bottomRow.T, bottomRow.L + w * 0.35f, bottomRow.B);
+  IRECT polyModArea(bottomRow.L + w * 0.15f, bottomRow.T,
+                    bottomRow.L + w * 0.35f, bottomRow.B);
   BuildPolyMod(pGraphics, polyModArea, synthStyle);
-  IRECT chorusArea(polyModArea.R, bottomRow.T, polyModArea.R + w * 0.20f, bottomRow.B);
+  IRECT chorusArea(polyModArea.R, bottomRow.T, polyModArea.R + w * 0.20f,
+                   bottomRow.B);
   BuildChorus(pGraphics, chorusArea, synthStyle);
-  IRECT delayArea(chorusArea.R, bottomRow.T, chorusArea.R + w * 0.20f, bottomRow.B);
+  IRECT delayArea(chorusArea.R, bottomRow.T, chorusArea.R + w * 0.20f,
+                  bottomRow.B);
   BuildDelay(pGraphics, delayArea, synthStyle);
-  BuildMaster(pGraphics, IRECT(delayArea.R, bottomRow.T, bottomRow.R, bottomRow.B), synthStyle);
+  BuildMaster(pGraphics,
+              IRECT(delayArea.R, bottomRow.T, bottomRow.R, bottomRow.B),
+              synthStyle);
 }
 
 void PolySynthPlugin::BuildHeader(IGraphics *g, const IRECT &bounds,
-                                   const IVStyle &style) {
+                                  const IVStyle &style) {
   const IColor textDark = PolyTheme::TextDark;
   g->AttachControl(new SectionFrame(bounds, "", PolyTheme::SectionBorder,
                                     textDark, PolyTheme::HeaderBG));
-  g->AttachControl(new ITextControl(bounds.GetPadded(-18.f).GetFromTop(40.f),
-                                    "PolySynth",
-                                    IText(PolyTheme::FontTitle, textDark, "Roboto-Bold", EAlign::Near)));
+  g->AttachControl(new ITextControl(
+      bounds.GetPadded(-18.f).GetFromTop(40.f), "PolySynth",
+      IText(PolyTheme::FontTitle, textDark, "Roboto-Bold", EAlign::Near)));
 
-  const IRECT presetArea =
-      bounds.GetFromRight(280.f).GetCentredInside(260.f, 44.f).GetTranslated(-10.f, 0.f);
+  const IRECT presetArea = bounds.GetFromRight(280.f)
+                               .GetCentredInside(260.f, 44.f)
+                               .GetTranslated(-10.f, 0.f);
   g->AttachControl(new IVMenuButtonControl(presetArea.GetFromLeft(160.f),
-                                           kParamPresetSelect, "Select Patch", style),
+                                           kParamPresetSelect, "Select Patch",
+                                           style),
                    kCtrlTagPresetSelect);
 
-  IVStyle saveStyle = style.WithColor(kBG, PolyTheme::AccentRed).WithColor(kFG, COLOR_WHITE);
+  IVStyle saveStyle =
+      style.WithColor(kBG, PolyTheme::AccentRed).WithColor(kFG, COLOR_WHITE);
   saveStyle.labelText.WithFont("Roboto-Bold").WithSize(18.f);
-  g->AttachControl(
-      new IVButtonControl(
-          presetArea.GetFromRight(70.f),
-          [&](IControl *pCaller) {
-            mIsDirty = false;
-            OnMessage(kMsgTagSavePreset,
-                      (int)GetParam(kParamPresetSelect)->Value(), 0, nullptr);
-            pCaller->SetDirty(false);
-          },
-          "SAVE", saveStyle),
-      kCtrlTagSaveBtn);
+  g->AttachControl(new IVButtonControl(
+                       presetArea.GetFromRight(70.f),
+                       [&](IControl *pCaller) {
+                         mIsDirty = false;
+                         OnMessage(kMsgTagSavePreset,
+                                   (int)GetParam(kParamPresetSelect)->Value(),
+                                   0, nullptr);
+                         pCaller->SetDirty(false);
+                       },
+                       "SAVE", saveStyle),
+                   kCtrlTagSaveBtn);
 
   const IRECT demoArea = bounds.GetFromRight(bounds.W() * 0.45f)
                              .GetFromLeft(180.f)
                              .GetCentredInside(180.f, 30.f)
                              .GetTranslated(-20.f, 0.f);
-  g->AttachControl(new PolyToggleButton(
-      demoArea.GetGridCell(0, 0, 1, 3).GetPadded(-2.f), kParamDemoMono, "MONO"));
-  g->AttachControl(new PolyToggleButton(
-      demoArea.GetGridCell(0, 1, 1, 3).GetPadded(-2.f), kParamDemoPoly, "POLY"));
+  g->AttachControl(
+      new PolyToggleButton(demoArea.GetGridCell(0, 0, 1, 3).GetPadded(-2.f),
+                           kParamDemoMono, "MONO"));
+  g->AttachControl(
+      new PolyToggleButton(demoArea.GetGridCell(0, 1, 1, 3).GetPadded(-2.f),
+                           kParamDemoPoly, "POLY"));
   g->AttachControl(new PolyToggleButton(
       demoArea.GetGridCell(0, 2, 1, 3).GetPadded(-2.f), kParamDemoFX, "FX"));
+
+  // Add Voice Manager Controls
+  // Positioned between Title and Preset/Demo area
+  // Approximate area: Left of presetArea (which is right-aligned).
+  // Title ends around 140px. Preset area starts around W-280.
+  // We have the middle space.
+  const IRECT voiceControlsArea = bounds.GetFromLeft(bounds.W() - 290.f)
+                                      .GetFromRight(bounds.W() - 290.f - 150.f);
+  // Actually, better to place explicitly.
+  // bounds is total width.
+  // Title ~200px.
+  // Right side ~450px.
+  // Center area ~350px.
+
+  IRECT controlsRect =
+      bounds.GetCentredInside(300.f, 50.f).GetTranslated(-50.f, 0.f);
+
+  AttachStackedControl(g, controlsRect.GetGridCell(0, 0, 1, 3),
+                       kParamPolyphonyLimit, "POLY", style);
+  AttachStackedControl(g, controlsRect.GetGridCell(0, 1, 1, 3),
+                       kParamUnisonCount, "UNI", style);
+  AttachStackedControl(g, controlsRect.GetGridCell(0, 2, 1, 3),
+                       kParamStereoSpread, "WIDTH", style);
+
+  // Info Displays (Voices, Chord)
+  // Place them to the right of controls
+  IRECT infoRect =
+      controlsRect.GetTranslated(320.f, 0.f).GetCentredInside(100.f, 40.f);
+  // This might overlap with preset area...
+  // Let's use a safer layout relative to existing logic.
+
+  // Existing:
+  // Title: Left-aligned.
+  // Preset: GetFromRight(280)
+  // Demo: GetFromRight(45%).GetFromLeft(180) -> This is effectively "Left part
+  // of Right Half".
+
+  // Let's put our controls around 200px from Left.
+  IRECT voiceArea =
+      bounds.GetFromLeft(400.f).GetFromRight(240.f); // x=160 to x=400
+
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 0, 1, 3),
+                       kParamPolyphonyLimit, "POLY", style);
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 1, 1, 3), kParamUnisonCount,
+                       "UNI", style);
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 2, 1, 3), kParamStereoSpread,
+                       "WIDTH", style);
+
+  // Text displays
+  IRECT textArea =
+      bounds.GetFromLeft(600.f).GetFromRight(180.f); // x=420 to x=600
+
+  g->AttachControl(
+      new ITextControl(textArea.GetGridCell(0, 0, 2, 1).GetPadded(-4.f), "",
+                       IText(12.f, textDark)),
+      kCtrlTagActiveVoices);
+  g->AttachControl(
+      new ITextControl(textArea.GetGridCell(1, 0, 2, 1).GetPadded(-2.f), "",
+                       IText(15.f, textDark, "Roboto-Bold")),
+      kCtrlTagChordName);
 }
 
 void PolySynthPlugin::BuildOscillators(IGraphics *g, const IRECT &bounds,
-                                        const IVStyle &style) {
+                                       const IVStyle &style) {
   g->AttachControl(new PolySection(bounds, "OSCILLATORS"));
-  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
-  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 2), kParamOscWave, "WAVE A", style);
-  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 2), kParamOscBWave, "WAVE B", style);
-  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 2), kParamOscPulseWidthA, "PULSE A", style);
-  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 2), kParamOscPulseWidthB, "PULSE B", style);
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
+                          .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 2), kParamOscWave,
+                       "WAVE A", style);
+  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 2), kParamOscBWave,
+                       "WAVE B", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 2), kParamOscPulseWidthA,
+                       "PULSE A", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 2), kParamOscPulseWidthB,
+                       "PULSE B", style);
 }
 
 void PolySynthPlugin::BuildFilter(IGraphics *g, const IRECT &bounds,
-                                   const IVStyle &style) {
+                                  const IVStyle &style) {
   const IColor textDark = PolyTheme::TextDark;
   g->AttachControl(new PolySection(bounds, "FILTER"));
-  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
+                          .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
 
   IRECT modelArea = inner.GetFromBottom(40.f).GetPadded(-4.f);
-  const IVStyle tabStyle = style
-      .WithColor(kFG, PolyTheme::TabInactiveBG)
-      .WithColor(kPR, PolyTheme::AccentRed)
-      .WithValueText(IText(PolyTheme::FontTabSwitch, textDark, "Roboto-Bold"));
+  const IVStyle tabStyle = style.WithColor(kFG, PolyTheme::TabInactiveBG)
+                               .WithColor(kPR, PolyTheme::AccentRed)
+                               .WithValueText(IText(PolyTheme::FontTabSwitch,
+                                                    textDark, "Roboto-Bold"));
   g->AttachControl(new IVTabSwitchControl(
       modelArea, kParamFilterModel, {"LP", "BP", "HP", "NT"}, "", tabStyle));
 
   IRECT topFilter = inner.GetFromTop(inner.H() - 50.f);
-  IRECT cutoffArea = topFilter.GetFromTop(topFilter.H() * 0.65f).GetCentredInside(90.f);
+  IRECT cutoffArea =
+      topFilter.GetFromTop(topFilter.H() * 0.65f).GetCentredInside(90.f);
   auto *cutoffKnob = new PolyKnob(cutoffArea, kParamFilterCutoff, "Cutoff");
   cutoffKnob->WithShowValue(false);
   g->AttachControl(cutoffKnob);
 
-  IRECT cutoffValueArea(cutoffArea.L, cutoffArea.B + 2.f, cutoffArea.R, cutoffArea.B + 18.f);
-  g->AttachControl(new ICaptionControl(cutoffValueArea, kParamFilterCutoff,
-                                       IText(PolyTheme::FontValue, textDark, "Roboto-Bold", EAlign::Center), false));
+  IRECT cutoffValueArea(cutoffArea.L, cutoffArea.B + 2.f, cutoffArea.R,
+                        cutoffArea.B + 18.f);
+  g->AttachControl(new ICaptionControl(
+      cutoffValueArea, kParamFilterCutoff,
+      IText(PolyTheme::FontValue, textDark, "Roboto-Bold", EAlign::Center),
+      false));
 
   IRECT secondaryArea(inner.L, cutoffValueArea.B, inner.R, modelArea.T);
-  AttachStackedControl(g, secondaryArea.GetGridCell(0, 0, 1, 2), kParamFilterResonance, "RESO", style);
-  AttachStackedControl(g, secondaryArea.GetGridCell(0, 1, 1, 2), kParamFilterEnvAmount, "CONTOUR", style);
+  AttachStackedControl(g, secondaryArea.GetGridCell(0, 0, 1, 2),
+                       kParamFilterResonance, "RESO", style);
+  AttachStackedControl(g, secondaryArea.GetGridCell(0, 1, 1, 2),
+                       kParamFilterEnvAmount, "CONTOUR", style);
 }
 
 void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
-                                     const IVStyle &style) {
+                                    const IVStyle &style) {
   g->AttachControl(new PolySection(bounds, "AMP ENVELOPE"));
-  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
-  const IRECT vizArea = inner.GetFromTop(inner.H() * 0.5f).GetPadded(-8.f).GetTranslated(0, 6.f);
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
+                          .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  const IRECT vizArea =
+      inner.GetFromTop(inner.H() * 0.5f).GetPadded(-8.f).GetTranslated(0, 6.f);
   const IRECT sliderArea = inner.GetFromBottom(inner.H() * 0.45f);
 
   Envelope *pEnvelope = new Envelope(vizArea, style);
@@ -452,67 +536,94 @@ void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
                      GetParam(kParamDecay)->Value() / 1000.f,
                      GetParam(kParamSustain)->Value() / 100.f,
                      GetParam(kParamRelease)->Value() / 1000.f);
-  pEnvelope->SetColors(PolyTheme::AccentCyan, PolyTheme::AccentCyan.WithOpacity(0.15f));
+  pEnvelope->SetColors(PolyTheme::AccentCyan,
+                       PolyTheme::AccentCyan.WithOpacity(0.15f));
   g->AttachControl(pEnvelope, kCtrlTagEnvelope);
 
-  AttachStackedControl(g, sliderArea.GetGridCell(0, 0, 1, 4), kParamAttack, "A", style, true);
-  AttachStackedControl(g, sliderArea.GetGridCell(0, 1, 1, 4), kParamDecay, "D", style, true);
-  AttachStackedControl(g, sliderArea.GetGridCell(0, 2, 1, 4), kParamSustain, "S", style, true);
-  AttachStackedControl(g, sliderArea.GetGridCell(0, 3, 1, 4), kParamRelease, "R", style, true);
+  AttachStackedControl(g, sliderArea.GetGridCell(0, 0, 1, 4), kParamAttack, "A",
+                       style, true);
+  AttachStackedControl(g, sliderArea.GetGridCell(0, 1, 1, 4), kParamDecay, "D",
+                       style, true);
+  AttachStackedControl(g, sliderArea.GetGridCell(0, 2, 1, 4), kParamSustain,
+                       "S", style, true);
+  AttachStackedControl(g, sliderArea.GetGridCell(0, 3, 1, 4), kParamRelease,
+                       "R", style, true);
 }
 
 void PolySynthPlugin::BuildLFO(IGraphics *g, const IRECT &bounds,
-                                const IVStyle &style) {
+                               const IVStyle &style) {
   g->AttachControl(new PolySection(bounds, "LFO"));
-  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
-  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 2), kParamLFOShape, "SHAPE", style);
-  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 2), kParamLFORateHz, "RATE", style);
-  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 2), kParamLFODepth, "DEPTH", style);
-  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 2), kParamOscMix, "MIX", style);
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
+                          .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 2), kParamLFOShape,
+                       "SHAPE", style);
+  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 2), kParamLFORateHz,
+                       "RATE", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 2), kParamLFODepth,
+                       "DEPTH", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 2), kParamOscMix, "MIX",
+                       style);
 }
 
 void PolySynthPlugin::BuildPolyMod(IGraphics *g, const IRECT &bounds,
-                                    const IVStyle &style) {
+                                   const IVStyle &style) {
   g->AttachControl(new PolySection(bounds, "POLY MOD"));
-  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
-  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 3), kParamPolyModOscBToFreqA, "B-FREQ", style);
-  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 3), kParamPolyModOscBToPWM, "B-PWM", style);
-  AttachStackedControl(g, inner.GetGridCell(0, 2, 2, 3), kParamPolyModOscBToFilter, "B-FILT", style);
-  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 3), kParamPolyModFilterEnvToFreqA, "E-FREQ", style);
-  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 3), kParamPolyModFilterEnvToPWM, "E-PWM", style);
-  AttachStackedControl(g, inner.GetGridCell(1, 2, 2, 3), kParamPolyModFilterEnvToFilter, "E-FILT", style);
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
+                          .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 3),
+                       kParamPolyModOscBToFreqA, "B-FREQ", style);
+  AttachStackedControl(g, inner.GetGridCell(0, 1, 2, 3), kParamPolyModOscBToPWM,
+                       "B-PWM", style);
+  AttachStackedControl(g, inner.GetGridCell(0, 2, 2, 3),
+                       kParamPolyModOscBToFilter, "B-FILT", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 3),
+                       kParamPolyModFilterEnvToFreqA, "E-FREQ", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 1, 2, 3),
+                       kParamPolyModFilterEnvToPWM, "E-PWM", style);
+  AttachStackedControl(g, inner.GetGridCell(1, 2, 2, 3),
+                       kParamPolyModFilterEnvToFilter, "E-FILT", style);
 }
 
 void PolySynthPlugin::BuildChorus(IGraphics *g, const IRECT &bounds,
-                                   const IVStyle &style) {
+                                  const IVStyle &style) {
   g->AttachControl(new PolySection(bounds, "CHORUS"));
-  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
+                          .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
   auto pad = [](IRECT r, int row, int col, int nr, int nc) {
     return r.GetGridCell(row, col, nr, nc).GetPadded(-2.f);
   };
-  AttachStackedControl(g, pad(inner, 0, 0, 1, 3), kParamChorusRate, "RATE", style);
-  AttachStackedControl(g, pad(inner, 0, 1, 1, 3), kParamChorusDepth, "DEPTH", style);
-  AttachStackedControl(g, pad(inner, 0, 2, 1, 3), kParamChorusMix, "MIX", style);
+  AttachStackedControl(g, pad(inner, 0, 0, 1, 3), kParamChorusRate, "RATE",
+                       style);
+  AttachStackedControl(g, pad(inner, 0, 1, 1, 3), kParamChorusDepth, "DEPTH",
+                       style);
+  AttachStackedControl(g, pad(inner, 0, 2, 1, 3), kParamChorusMix, "MIX",
+                       style);
 }
 
 void PolySynthPlugin::BuildDelay(IGraphics *g, const IRECT &bounds,
-                                  const IVStyle &style) {
+                                 const IVStyle &style) {
   g->AttachControl(new PolySection(bounds, "DELAY"));
-  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
+                          .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
   auto pad = [](IRECT r, int row, int col, int nr, int nc) {
     return r.GetGridCell(row, col, nr, nc).GetPadded(-2.f);
   };
-  AttachStackedControl(g, pad(inner, 0, 0, 1, 3), kParamDelayTime, "TIME", style);
-  AttachStackedControl(g, pad(inner, 0, 1, 1, 3), kParamDelayFeedback, "FDBK", style);
+  AttachStackedControl(g, pad(inner, 0, 0, 1, 3), kParamDelayTime, "TIME",
+                       style);
+  AttachStackedControl(g, pad(inner, 0, 1, 1, 3), kParamDelayFeedback, "FDBK",
+                       style);
   AttachStackedControl(g, pad(inner, 0, 2, 1, 3), kParamDelayMix, "MIX", style);
 }
 
 void PolySynthPlugin::BuildMaster(IGraphics *g, const IRECT &bounds,
-                                   const IVStyle &style) {
+                                  const IVStyle &style) {
   g->AttachControl(new PolySection(bounds, "MASTER"));
-  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding).GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
-  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 1), kParamGain, "GAIN", style);
-  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 1), kParamLimiterThreshold, "LIMIT", style);
+  const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
+                          .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  AttachStackedControl(g, inner.GetGridCell(0, 0, 2, 1), kParamGain, "GAIN",
+                       style);
+  AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 1), kParamLimiterThreshold,
+                       "LIMIT", style);
 }
 #endif
 
@@ -530,7 +641,36 @@ void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
   mDSP.UpdateState(mState);
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
 }
-void PolySynthPlugin::OnIdle() {}
+void PolySynthPlugin::OnIdle() {
+  // Update active voice count display
+  if (GetUI()) {
+    if (auto *pControl = GetUI()->GetControlWithTag(kCtrlTagActiveVoices)) {
+      int active = mDSP.GetActiveVoiceCount();
+      int limit = mState.polyphony;
+      char buf[16];
+      snprintf(buf, sizeof(buf), "%d/%d", active, limit);
+      static_cast<ITextControl *>(pControl)->SetStr(buf);
+      pControl->SetDirty(false);
+    }
+
+    // Update chord name display
+    if (auto *pControl = GetUI()->GetControlWithTag(kCtrlTagChordName)) {
+      std::array<int, PolySynthCore::kMaxVoices> notes{};
+      int noteCount = mDSP.GetHeldNotes(notes);
+
+      char chordBuf[32] = "";
+      if (noteCount >= 3) {
+        auto result = sea::TheoryEngine::Analyze(notes.data(), noteCount);
+        if (result.valid) {
+          sea::TheoryEngine::FormatChordName(result, chordBuf,
+                                             sizeof(chordBuf));
+        }
+      }
+      static_cast<ITextControl *>(pControl)->SetStr(chordBuf);
+      pControl->SetDirty(false);
+    }
+  }
+}
 void PolySynthPlugin::OnReset() {
   mDSP.Reset(GetSampleRate(), GetBlockSize());
   mDSP.UpdateState(mState);
@@ -637,6 +777,24 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
     break;
   case kParamLimiterThreshold:
     mState.fxLimiterThreshold = 1.0 - (value / kToPercentage);
+    break;
+  case kParamPolyphonyLimit:
+    mState.polyphony = (int)value;
+    break;
+  case kParamAllocationMode:
+    mState.allocationMode = (int)value;
+    break;
+  case kParamStealPriority:
+    mState.stealPriority = (int)value;
+    break;
+  case kParamUnisonCount:
+    mState.unisonCount = (int)value;
+    break;
+  case kParamUnisonSpread:
+    mState.unisonSpread = value / kToPercentage;
+    break;
+  case kParamStereoSpread:
+    mState.stereoSpread = value / kToPercentage;
     break;
   case kParamPresetSelect:
     mIsDirty = false;

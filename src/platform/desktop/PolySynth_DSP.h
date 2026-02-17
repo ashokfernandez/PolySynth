@@ -57,6 +57,14 @@ public:
     mVoiceManager.SetPolyModFilterEnvToPWM(state.polyModFilterEnvToPWM);
     mVoiceManager.SetPolyModFilterEnvToFilter(state.polyModFilterEnvToFilter);
 
+    mVoiceManager.SetGlideTime(state.glideTime);
+    mVoiceManager.SetPolyphonyLimit(state.polyphony);
+    mVoiceManager.SetAllocationMode(state.allocationMode);
+    mVoiceManager.SetStealPriority(state.stealPriority);
+    mVoiceManager.SetUnisonCount(state.unisonCount);
+    mVoiceManager.SetUnisonSpread(state.unisonSpread);
+    mVoiceManager.SetStereoSpread(state.stereoSpread);
+
     // Chorus
     mChorus.SetRate(state.fxChorusRate);
     mChorus.SetDepth(state.fxChorusDepth * 5.0); // Map 0-1 to 0-5ms
@@ -81,13 +89,15 @@ public:
 
     // Process one sample at a time
     for (int s = 0; s < nFrames; s++) {
-      PolySynthCore::sample_t out = mVoiceManager.Process() * mGain;
+      double left = 0.0;
+      double right = 0.0;
+      mVoiceManager.ProcessStereo(left, right);
 
-      PolySynthCore::sample_t left = out;
-      PolySynthCore::sample_t right = out;
+      left *= mGain;
+      right *= mGain;
 
       // Process Chorus
-      PolySynthCore::sample_t cOutL, cOutR;
+      double cOutL, cOutR;
       mChorus.Process(left, right, &cOutL, &cOutR);
       left = cOutL;
       right = cOutR;
@@ -114,7 +124,19 @@ public:
       mVoiceManager.OnNoteOn(msg.NoteNumber(), msg.Velocity());
     } else if (status == IMidiMsg::kNoteOff) {
       mVoiceManager.OnNoteOff(msg.NoteNumber());
+    } else if (status == IMidiMsg::kControlChange) {
+      if (msg.mData1 == 64) { // Sustain Pedal
+        mVoiceManager.OnSustainPedal(msg.mData2 >= 64);
+      }
     }
+  }
+
+  int GetActiveVoiceCount() const {
+    return mVoiceManager.GetActiveVoiceCount();
+  }
+
+  int GetHeldNotes(std::array<int, PolySynthCore::kMaxVoices> &buf) const {
+    return mVoiceManager.GetHeldNotes(buf);
   }
 
   void SetParam(int paramIdx, double value) {

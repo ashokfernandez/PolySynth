@@ -4,7 +4,7 @@
 #include "IPlug_include_in_plug_hdr.h"
 
 #if !IPLUG_DSP && !IPLUG_EDITOR
-  #error "PolySynth requires at least one of IPLUG_DSP or IPLUG_EDITOR"
+#error "PolySynth requires at least one of IPLUG_DSP or IPLUG_EDITOR"
 #endif
 
 #if IPLUG_EDITOR
@@ -52,6 +52,12 @@ enum EParams {
   kParamDemoMono,
   kParamDemoPoly,
   kParamDemoFX,
+  kParamPolyphonyLimit,
+  kParamAllocationMode,
+  kParamStealPriority,
+  kParamUnisonCount,
+  kParamUnisonSpread,
+  kParamStereoSpread,
   kNumParams
 };
 
@@ -103,6 +109,8 @@ enum EControlTags {
   kCtrlTagDemoFX,
   kCtrlTagPresetSelect,
   kCtrlTagSaveBtn,
+  kCtrlTagActiveVoices,
+  kCtrlTagChordName,
   kNumCtrlTags
 };
 
@@ -121,7 +129,8 @@ public:
 
 private:
   void BuildHeader(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildOscillators(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildOscillators(IGraphics *g, const IRECT &bounds,
+                        const IVStyle &style);
   void BuildFilter(IGraphics *g, const IRECT &bounds, const IVStyle &style);
   void BuildEnvelope(IGraphics *g, const IRECT &bounds, const IVStyle &style);
   void BuildLFO(IGraphics *g, const IRECT &bounds, const IVStyle &style);
