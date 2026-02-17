@@ -39,6 +39,10 @@ set(UNIT_TEST_SOURCES
     unit/Test_PresetFileIO.cpp
     unit/Test_PolyMod.cpp
     unit/Test_SynthState.cpp
+    unit/Test_VoiceAllocator.cpp
+    unit/Test_VoiceAllocator.cpp
+    unit/Test_VoiceAllocator_Regressions.cpp
+    unit/Test_VoiceAllocation.cpp
     ../src/core/PresetManager.cpp
 )
 
@@ -75,20 +79,20 @@ add_executable(demo_fx_engine demos/demo_fx_engine.cpp)
 
 # Link SEA_DSP to all targets
 target_link_libraries(run_tests PRIVATE SEA_DSP SEA_Util)
-target_link_libraries(demo_render_wav PRIVATE SEA_DSP)
-target_link_libraries(demo_adsr PRIVATE SEA_DSP)
-target_link_libraries(demo_engine_poly PRIVATE SEA_DSP)
-target_link_libraries(demo_filter_sweep PRIVATE SEA_DSP)
-target_link_libraries(demo_poly_chords PRIVATE SEA_DSP)
-target_link_libraries(demo_polymod PRIVATE SEA_DSP)
-target_link_libraries(demo_waveforms PRIVATE SEA_DSP)
-target_link_libraries(demo_pulse_width PRIVATE SEA_DSP)
-target_link_libraries(demo_osc_mix PRIVATE SEA_DSP)
-target_link_libraries(demo_filter_resonance PRIVATE SEA_DSP)
-target_link_libraries(demo_filter_envelope PRIVATE SEA_DSP)
-target_link_libraries(demo_prophet_filter PRIVATE SEA_DSP)
-target_link_libraries(demo_lfo_vibrato PRIVATE SEA_DSP)
-target_link_libraries(demo_lfo_tremolo PRIVATE SEA_DSP)
-target_link_libraries(demo_lfo_filter_wobble PRIVATE SEA_DSP)
-target_link_libraries(demo_factory_presets PRIVATE SEA_DSP)
-target_link_libraries(demo_fx_engine PRIVATE SEA_DSP)
+target_link_libraries(demo_render_wav PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_adsr PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_engine_poly PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_filter_sweep PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_poly_chords PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_polymod PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_waveforms PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_pulse_width PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_osc_mix PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_filter_resonance PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_filter_envelope PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_prophet_filter PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_lfo_vibrato PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_lfo_tremolo PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_lfo_filter_wobble PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_factory_presets PRIVATE SEA_DSP SEA_Util)
+target_link_libraries(demo_fx_engine PRIVATE SEA_DSP SEA_Util)

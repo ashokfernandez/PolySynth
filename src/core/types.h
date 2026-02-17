@@ -31,7 +31,8 @@ constexpr int kMaxVoices = POLYSYNTH_MAX_VOICES;
 enum class VoiceState : uint8_t {
   Idle = 0,
   Attack,
-  Sustain,    // Sprint 1: transition deferred; set in later sprint when phase tracking is added
+  Sustain, // Sprint 1: transition deferred; set in later sprint when phase
+           // tracking is added
   Release,
   Stolen
 };
@@ -58,5 +59,9 @@ struct VoiceEvent {
   float pitch = 0.0f;
   float pan = 0.0f;
 };
+
+// Note: AllocationMode and StealPriority enums are defined in
+// sea_util/sea_voice_allocator.h and not aliased here to avoid circular deps.
+// See sea::AllocationMode and sea::StealPriority.
 
 } // namespace PolySynthCore

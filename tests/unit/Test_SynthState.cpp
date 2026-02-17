@@ -16,6 +16,12 @@ CATCH_TEST_CASE("SynthState Reset restores all fields to defaults",
   modified.unisonDetune = 0.5;
   modified.glideTime = 1.0;
 
+  modified.allocationMode = 1;
+  modified.stealPriority = 1;
+  modified.unisonCount = 4;
+  modified.unisonSpread = 0.5;
+  modified.stereoSpread = 0.5;
+
   modified.oscAWaveform = 1;
   modified.oscAFreq = 220.0;
   modified.oscAPulseWidth = 0.3;
@@ -77,6 +83,13 @@ CATCH_TEST_CASE("SynthState Reset restores all fields to defaults",
   CATCH_CHECK(modified.unison == fresh.unison);
   CATCH_CHECK(modified.unisonDetune == fresh.unisonDetune);
   CATCH_CHECK(modified.glideTime == fresh.glideTime);
+
+  // Voice Allocation
+  CATCH_CHECK(modified.allocationMode == fresh.allocationMode);
+  CATCH_CHECK(modified.stealPriority == fresh.stealPriority);
+  CATCH_CHECK(modified.unisonCount == fresh.unisonCount);
+  CATCH_CHECK(modified.unisonSpread == fresh.unisonSpread);
+  CATCH_CHECK(modified.stereoSpread == fresh.stereoSpread);
 
   // Osc A
   CATCH_CHECK(modified.oscAWaveform == fresh.oscAWaveform);
@@ -212,6 +225,12 @@ CATCH_TEST_CASE("SynthState serialization round-trip preserves all fields",
   original.unisonDetune = 0.33;
   original.glideTime = 0.07;
 
+  original.allocationMode = 1;
+  original.stealPriority = 2;
+  original.unisonCount = 5;
+  original.unisonSpread = 0.25;
+  original.stereoSpread = 0.75;
+
   original.oscAWaveform = 1;
   original.oscAFreq = 330.0;
   original.oscAPulseWidth = 0.4;
@@ -276,6 +295,12 @@ CATCH_TEST_CASE("SynthState serialization round-trip preserves all fields",
   CATCH_CHECK(loaded.unison == original.unison);
   CATCH_CHECK(loaded.unisonDetune == original.unisonDetune);
   CATCH_CHECK(loaded.glideTime == original.glideTime);
+
+  CATCH_CHECK(loaded.allocationMode == original.allocationMode);
+  CATCH_CHECK(loaded.stealPriority == original.stealPriority);
+  CATCH_CHECK(loaded.unisonCount == original.unisonCount);
+  CATCH_CHECK(loaded.unisonSpread == original.unisonSpread);
+  CATCH_CHECK(loaded.stereoSpread == original.stereoSpread);
 
   CATCH_CHECK(loaded.oscAWaveform == original.oscAWaveform);
   CATCH_CHECK(loaded.oscAFreq == original.oscAFreq);
