@@ -10,6 +10,7 @@
 #include <sea_dsp/sea_ladder_filter.h>
 #include <sea_dsp/sea_lfo.h>
 #include <sea_dsp/sea_oscillator.h>
+#include <sea_util/sea_voice_allocator.h>
 
 namespace PolySynthCore {
 
@@ -91,6 +92,14 @@ public:
     mAmpEnv.NoteOff();
     mFilterEnv.NoteOff();
     mVoiceState = VoiceState::Release;
+  }
+
+  void ApplyDetuneCents(double cents) {
+    double factor = std::pow(2.0, cents / 1200.0);
+    mFreq *= factor;
+    mCurrentPitch = static_cast<float>(mFreq);
+    mOscA.SetFrequency(mFreq);
+    mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
   }
 
   inline sample_t Process() {
@@ -181,7 +190,8 @@ public:
     mLastAmpEnvVal = static_cast<float>(ampEnvVal);
 
     // Sprint 1 note: Attack→Sustain transition is intentionally deferred.
-    // State-based sustain tracking will be introduced with richer envelope phase info.
+    // State-based sustain tracking will be introduced with richer envelope
+    // phase info.
 
     // Amp Modulation (Tremolo)
     double ampMod = 1.0;
@@ -203,7 +213,8 @@ public:
     if (mVoiceState == VoiceState::Stolen) {
       const float gain = std::max(0.0f, mStolenFadeGain);
       out *= gain;
-      mStolenFadeGain = std::max(0.0f, mStolenFadeGain - static_cast<float>(mStolenFadeDelta));
+      mStolenFadeGain = std::max(
+          0.0f, mStolenFadeGain - static_cast<float>(mStolenFadeDelta));
       if (mStolenFadeGain <= 0.0f) {
         mActive = false;
         mNote = -1;
@@ -232,7 +243,9 @@ public:
   float GetCurrentPitch() const { return mCurrentPitch; }
   float GetPitch() const { return mCurrentPitch; }
   float GetPanPosition() const { return mPanPosition; }
-  void SetPanPosition(float pan) { mPanPosition = std::clamp(pan, -1.0f, 1.0f); }
+  void SetPanPosition(float pan) {
+    mPanPosition = std::clamp(pan, -1.0f, 1.0f);
+  }
 
   VoiceRenderState GetRenderState() const {
     VoiceRenderState rs;
@@ -373,6 +386,7 @@ public:
     for (int i = 0; i < kNumVoices; i++) {
       mVoices[i].Init(sampleRate, static_cast<uint8_t>(i));
     }
+    mAllocator.SetPolyphonyLimit(kNumVoices);
   }
 
   void Reset() {
@@ -383,28 +397,80 @@ public:
   }
 
   void OnNoteOn(int note, int velocity) {
-    Voice *voice = FindFreeVoice();
-    if (!voice) {
-      voice = FindVoiceToSteal();
-    }
+    int unisonCount = mAllocator.GetUnisonCount();
+    for (int u = 0; u < unisonCount; u++) {
+      int idx = mAllocator.AllocateSlot(mVoices.data());
+      if (idx < 0) {
+        idx = mAllocator.FindStealVictim(mVoices.data());
+      }
+      if (idx < 0)
+        break; // No voice available
 
-    if (voice) {
-      // Sprint 1: immediate retrigger on steal keeps legacy behavior/goldens stable.
-      voice->NoteOn(note, velocity, ++mGlobalTimestamp);
+      mVoices[idx].NoteOn(note, velocity, ++mGlobalTimestamp);
+
+      // Apply unison detune and pan
+      auto info = mAllocator.GetUnisonVoiceInfo(u);
+      if (info.detuneCents != 0.0) {
+        mVoices[idx].ApplyDetuneCents(info.detuneCents);
+      }
+      mVoices[idx].SetPanPosition(static_cast<float>(info.panPosition));
     }
   }
 
   void OnNoteOff(int note) {
-    // Find voice playing this note
+    if (mAllocator.ShouldHold(note)) {
+      mAllocator.MarkSustained(note);
+      return;
+    }
+    // Release all voices playing this note
     for (auto &voice : mVoices) {
       if (voice.IsActive() && voice.GetNote() == note) {
         voice.NoteOff();
-        // Don't break, in case multiple voices have same note (unlikely but
-        // possible in some midi scenarios) Actually usually we want to note off
-        // all of them? Or just one? Standard behavior: note off all matching.
       }
     }
   }
+
+  void OnSustainPedal(bool down) {
+    mAllocator.OnSustainPedal(down);
+    if (!down) {
+      // Release all sustained notes
+      int releasedNotes[128];
+      int count = mAllocator.ReleaseSustainedNotes(releasedNotes, 128);
+      for (int i = 0; i < count; i++) {
+        for (auto &voice : mVoices) {
+          if (voice.IsActive() && voice.GetNote() == releasedNotes[i]) {
+            voice.NoteOff();
+          }
+        }
+      }
+    }
+  }
+
+  // Configuration setters (delegate to allocator)
+  void SetPolyphonyLimit(int limit) {
+    mAllocator.SetPolyphonyLimit(limit);
+    // Need to enforce? The plan says EnforcePolyphonyLimit is available.
+    // Usually setting polyphony limit assumes immediate enforcement if current
+    // active > limit. The plan task 2.6 doesn't explicitly mention calling
+    // EnforcePolyphonyLimit here, but Test_VoiceAllocation integration test
+    // "Polyphony limit reduction kills excess" requires it.
+
+    int killIndices[kMaxVoices];
+    int killCount = mAllocator.EnforcePolyphonyLimit(mVoices.data(),
+                                                     killIndices, kMaxVoices);
+    // EnforcePolyphonyLimit calls StartSteal on victims, so they are marked as
+    // Stolen.
+  }
+
+  void SetAllocationMode(int mode) {
+    mAllocator.SetAllocationMode(static_cast<sea::AllocationMode>(mode));
+  }
+  void SetStealPriority(int priority) {
+    mAllocator.SetStealPriority(static_cast<sea::StealPriority>(priority));
+  }
+  void SetUnisonCount(int count) { mAllocator.SetUnisonCount(count); }
+  void SetUnisonSpread(double spread) { mAllocator.SetUnisonSpread(spread); }
+  void SetStereoSpread(double spread) { mAllocator.SetStereoSpread(spread); }
 
   inline sample_t Process() {
     sample_t sum = 0.0;
@@ -551,7 +617,6 @@ public:
 
   uint64_t GetGlobalTimestamp() const { return mGlobalTimestamp; }
 
-
   // --- Sprint 1: Voice state query helpers ---
   std::array<VoiceRenderState, kMaxVoices> GetVoiceStates() const {
     std::array<VoiceRenderState, kMaxVoices> states{};
@@ -580,30 +645,10 @@ public:
     }
     return count;
   }
+
 private:
-  Voice *FindFreeVoice() {
-    for (auto &voice : mVoices) {
-      if (!voice.IsActive())
-        return &voice;
-    }
-    return nullptr;
-  }
-
-  Voice *FindVoiceToSteal() {
-    // Steal oldest voice
-    Voice *oldest = nullptr;
-    uint64_t maxAge = 0;
-
-    for (auto &voice : mVoices) {
-      if (voice.GetAge() >= maxAge) {
-        maxAge = voice.GetAge();
-        oldest = &voice;
-      }
-    }
-    return oldest;
-  }
-
   std::array<Voice, kNumVoices> mVoices;
+  sea::VoiceAllocator<Voice, kMaxVoices> mAllocator;
   double mSampleRate = 44100.0;
   uint64_t mGlobalTimestamp = 0;
 };

@@ -25,6 +25,13 @@ std::string PresetManager::Serialize(const SynthState &state) {
   SERIALIZE(j, state, unisonDetune);
   SERIALIZE(j, state, glideTime);
 
+  // Voice Allocation
+  SERIALIZE(j, state, allocationMode);
+  SERIALIZE(j, state, stealPriority);
+  SERIALIZE(j, state, unisonCount);
+  SERIALIZE(j, state, unisonSpread);
+  SERIALIZE(j, state, stereoSpread);
+
   // Osc A
   SERIALIZE(j, state, oscAWaveform);
   SERIALIZE(j, state, oscAFreq);
@@ -99,6 +106,13 @@ bool PresetManager::Deserialize(const std::string &jsonStr,
     DESERIALIZE(j, outState, unison);
     DESERIALIZE(j, outState, unisonDetune);
     DESERIALIZE(j, outState, glideTime);
+
+    // Voice Allocation
+    DESERIALIZE(j, outState, allocationMode);
+    DESERIALIZE(j, outState, stealPriority);
+    DESERIALIZE(j, outState, unisonCount);
+    DESERIALIZE(j, outState, unisonSpread);
+    DESERIALIZE(j, outState, stereoSpread);
 
     // Osc A
     DESERIALIZE(j, outState, oscAWaveform);

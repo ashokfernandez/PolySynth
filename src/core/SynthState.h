@@ -16,6 +16,13 @@ struct SynthState {
   double unisonDetune = 0.0; // 0.0 to 1.0 (Hz spread)
   double glideTime = 0.0;    // Seconds
 
+  // --- Voice Allocation (Sprint 2) --------
+  int allocationMode = 0;    // 0=Reset (scan from 0), 1=Cycle (round-robin)
+  int stealPriority = 0;     // 0=Oldest, 1=LowestPitch, 2=LowestAmplitude
+  int unisonCount = 1;       // 1-8 voices per note
+  double unisonSpread = 0.0; // 0.0-1.0 (detune amount)
+  double stereoSpread = 0.0; // 0.0-1.0 (stereo width)
+
   // --- Oscillator A -------------------------
   int oscAWaveform = 0;        // 0=Saw, 1=Square
   double oscAFreq = 440.0;     // Hz (Base)
@@ -83,7 +90,8 @@ struct SynthState {
   void Reset() { *this = SynthState{}; }
 };
 
-// SynthState must remain an aggregate so Reset() via value-initialization works.
+// SynthState must remain an aggregate so Reset() via value-initialization
+// works.
 static_assert(std::is_aggregate_v<SynthState>,
               "SynthState must remain an aggregate for Reset() to work");
 
