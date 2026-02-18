@@ -568,8 +568,6 @@ void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
                        PolyTheme::AccentCyan.WithOpacity(0.15f));
   g->AttachControl(pEnvelope, kCtrlTagEnvelope);
 
-  g->AttachControl(pEnvelope, kCtrlTagEnvelope);
-
   // Manual ADSR Layout for maximum slider length
   const int nParams = 4;
   int params[4] = {kParamAttack, kParamDecay, kParamSustain, kParamRelease};
