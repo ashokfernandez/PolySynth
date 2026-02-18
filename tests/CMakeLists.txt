@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(../src/core)
 include_directories(../external/iPlug2/Dependencies/Extras/nlohmann)
 include_directories(utils)
+include_directories(mocks)
 
 # Fetch Catch2
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../external/catch2)
@@ -28,6 +29,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../libs/SEA_Util" "${CMAKE_CURRENT
 # --- Unit Tests ---
 set(UNIT_TEST_SOURCES
     main_test.cpp
+    unit/Test_UI_Components.cpp
     unit/Test_Engine_Basic.cpp
     unit/Test_Engine_Audio.cpp
     unit/Test_VoiceManager_Poly.cpp
@@ -46,6 +48,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_TheoryEngine.cpp
     unit/Test_Portamento.cpp
     unit/Test_StereoPanning.cpp
+    unit/Test_VoiceManager_Features.cpp
     ../src/core/PresetManager.cpp
 )
 

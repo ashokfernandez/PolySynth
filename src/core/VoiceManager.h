@@ -258,7 +258,8 @@ public:
 
   void StartSteal() {
     mStolenFadeGain = 1.0f;
-    const double fadeSamples = std::max(1.0, 0.002 * mSampleRate);
+    // Increase fade to 20ms to prevent clicks/crunch when reducing polyphony
+    const double fadeSamples = std::max(1.0, 0.020 * mSampleRate);
     mStolenFadeDelta = 1.0 / fadeSamples;
     mVoiceState = VoiceState::Stolen;
   }
@@ -443,6 +444,44 @@ public:
 
       // Apply unison detune and pan
       auto info = mAllocator.GetUnisonVoiceInfo(u);
+
+      // If we are in non-unison mode, apply stereo spread based on voice index
+      // to spread voices across the stereo field.
+      if (mAllocator.GetUnisonCount() <= 1 &&
+          mAllocator.GetStereoSpread() > 0.0) {
+        // Spread logic: Alternate L/R or spread evenly?
+        // Alternating L/R is common for poly synths.
+        // Map idx to [-1, 1].
+        // Simple alternating: odd=left, even=right?
+        // Voice allocator reuses slots, so this might not be consistent per
+        // note. But it's better than mono.
+
+        // Let's use a spread based on voice ID (0-15) relative to max voices.
+        // Or just alternate: ((idx % 2) * 2 - 1) * spread.
+        // If spread=1.0: idx0 -> -1.0, idx1 -> 1.0.
+
+        // Better: Spread across field based on index?
+        // float pan = (static_cast<float>(idx) / kNumVoices) * 2.0f - 1.0f;
+
+        // Let's stick to alternating for now as it's effective for chords.
+        // Scale by StereoSpread.
+
+        double spread = mAllocator.GetStereoSpread();
+        // Alternate +/- spread
+        double pan = (idx % 2 == 0) ? -spread : spread;
+
+        // Maybe jitter slightly or use voice ID? Use voice ID for consistency.
+        // idx is the slot index.
+        pan = (idx % 2 == 0) ? -spread : spread;
+
+        // If we want more spread for higher voice counts, maybe:
+        // pan = spread * (((idx % 2) * 2) - 1) * (0.5 + 0.5 * (idx /
+        // (float)kMaxVoices));
+
+        // Simple +/- spread is safest for "Width".
+        info.panPosition = pan;
+      }
+
       if (info.detuneCents != 0.0) {
         mVoices[idx].ApplyDetuneCents(info.detuneCents);
       }

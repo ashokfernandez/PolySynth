@@ -52,9 +52,34 @@ This file captures cross-sprint review/retro feedback that should inform future 
 
 - _Add notes here during/after Sprint 3 review._
 
-## Sprint 4 (UI Integration) — Retro placeholders
+## Sprint 4 (UI Integration & Advanced Voice Management) — Retro
 
-- _Add notes here during/after Sprint 4 review._
+### Issues & Resolutions
+
+1. **Launch Crash due to Font Name Mismatches**
+   - **Problem:** Application crashed immediately on launch with an assertion failure in `IGraphicsNanoVG`.
+   - **Cause:** Fonts were loaded as "Regular" and "Bold", but UI controls (`PolySection`, `PolyKnob`, etc.) were hardcoded to request "Roboto-Regular" and "Roboto-Bold".
+   - **Action:** Standardize font resource names across the entire project and explicitly set font styles in the main `synthStyle` object.
+   - **Lesson:** Always use a centralized theme/style object for typography to avoid hardcoding strings in multiple UI classes.
+
+2. **Compilation Failure from Preprocessor Directives**
+   - **Problem:** Build failed with `#endif without #if`.
+   - **Cause:** Accidental insertion of `#endif` during rapid iteration on `PolySynth.cpp`.
+   - **Action:** Improved build hygiene and carefully audited the preprocessor stack.
+
+3. **UI Drawing Safety in Layout Code**
+   - **Problem:** Direct drawing calls (e.g., `g->FillRect`) within `OnLayout` can lead to crashes or undefined behavior in certain graphics backends.
+   - **Action:** Created a regression test script `scripts/check_ui_safety.py` to prevent direct drawing in layout functions.
+   - **Lesson:** Custom graphics should always be encapsulated in `IControl::Draw` methods, with `OnLayout` only handling attachment and positioning.
+
+4. **Voice Stealing "Crunch" Artifacts**
+   - **Problem:** Audible clicks when voices were stolen during polyphony limit reduction.
+   - **Action:** Increased the voice stealing crossfade/fade-out duration (2ms -> 20ms) in the DSP core.
+   - **Lesson:** UI-driven state changes (like polyphony limit) can require smoother ramping than real-time MIDI-driven voice stealing.
+
+5. **UI Layout Alignment & Polish**
+   - **Problem:** Preset selector and Save button alignment was inconsistent; version text was cluttering the footer.
+   - **Action:** Refined `BuildHeader` and `BuildFooter` with consistent centering logic and removed non-essential text elements.
 
 ---
 

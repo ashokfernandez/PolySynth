@@ -81,6 +81,8 @@ public:
     mUnisonSpread = spread;
   }
 
+  double GetUnisonSpread() const { return mUnisonSpread; }
+
   void SetStereoSpread(double spread) {
     if (spread < 0.0)
       spread = 0.0;
@@ -88,6 +90,8 @@ public:
       spread = 1.0;
     mStereoSpread = spread;
   }
+
+  double GetStereoSpread() const { return mStereoSpread; }
 
   // --- Allocation ---
   // Returns slot index or -1 if no free slot within polyphony limit

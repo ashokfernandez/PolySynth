@@ -138,6 +138,7 @@ private:
   void BuildChorus(IGraphics *g, const IRECT &bounds, const IVStyle &style);
   void BuildDelay(IGraphics *g, const IRECT &bounds, const IVStyle &style);
   void BuildMaster(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildFooter(IGraphics *g, const IRECT &bounds, const IVStyle &style);
 #endif
 
 #if IPLUG_DSP

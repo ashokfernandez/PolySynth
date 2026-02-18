@@ -5,17 +5,18 @@
 
 class PolySection : public IControl {
 public:
-  PolySection(const IRECT& bounds, const char* title)
+  PolySection(const IRECT &bounds, const char *title)
       : IControl(bounds), mTitle(title) {
     mIgnoreMouse = true;
   }
 
-  void Draw(IGraphics& g) override {
+  void Draw(IGraphics &g) override {
     if (!mCachedLayer) {
       g.StartLayer(this, mRECT);
 
       // Soft drop shadow + main panel shape
-      g.FillRoundRect(PolyTheme::ShadowLight, mRECT.GetTranslated(0.f, 2.f), 6.f);
+      g.FillRoundRect(PolyTheme::ShadowLight, mRECT.GetTranslated(0.f, 2.f),
+                      6.f);
       g.FillRoundRect(PolyTheme::PanelBG, mRECT, 5.f);
 
       // Subtle top sheen and scanline texture for a more premium surface
@@ -34,7 +35,8 @@ public:
 
       const IRECT titleRect(mRECT.L + 12.f, mRECT.T + 10.f, mRECT.R - 12.f,
                             mRECT.T + 32.f);
-      g.DrawText(IText(PolyTheme::FontSectionHead, PolyTheme::TextDark, "Roboto-Bold", EAlign::Near),
+      g.DrawText(IText(PolyTheme::FontSectionHead, PolyTheme::TextDark, "Bold",
+                       EAlign::Near),
                  mTitle.Get(), titleRect);
 
       mCachedLayer = g.EndLayer();

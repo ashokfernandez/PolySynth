@@ -6,11 +6,14 @@
 #if IPLUG_EDITOR
 #include "Envelope.h"
 #include "IControls.h"
+#include "LCDPanel.h"
 #include "PolyKnob.h"
 #include "PolySection.h"
 #include "PolyToggleButton.h"
+#include "SectionFrame.h"
 #endif
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <sea_util/sea_theory_engine.h>
 #include <vector>
@@ -20,34 +23,7 @@ static const double kToPercentage = 100.0;
 static const double kToMs = 1000.0;
 
 #if IPLUG_EDITOR
-class SectionFrame final : public IControl {
-public:
-  SectionFrame(const IRECT &bounds, const char *title,
-               const IColor &borderColor, const IColor &textColor,
-               const IColor &bgColor = COLOR_TRANSPARENT)
-      : IControl(bounds), mTitle(title), mBorderColor(borderColor),
-        mTextColor(textColor), mBgColor(bgColor) {
-    mIgnoreMouse = true;
-  }
-
-  void Draw(IGraphics &g) override {
-    if (mBgColor.A > 0)
-      g.FillRect(mBgColor, mRECT);
-    g.DrawRect(mBorderColor, mRECT, nullptr, 1.25f);
-    if (mTitle.GetLength()) {
-      // Larger, bolder section headers, well-offset from corners
-      g.DrawText(
-          IText(18.f, mTextColor, "Roboto-Bold", EAlign::Near), mTitle.Get(),
-          mRECT.GetPadded(-12.f).GetFromTop(24.f).GetTranslated(4.f, 4.f));
-    }
-  }
-
-private:
-  WDL_String mTitle;
-  IColor mBorderColor;
-  IColor mTextColor;
-  IColor mBgColor;
-};
+// LCDPanel and SectionFrame now in separate headers
 
 // Stacked control helper: label -> control -> value.
 void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
@@ -65,12 +41,12 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
   const float valueH = PolyTheme::ValueH;
 
   IText labelTextBold = IText(PolyTheme::FontLabel, style.labelText.mFGColor,
-                              "Roboto-Bold", EAlign::Center);
+                              "Bold", EAlign::Center);
   IRECT labelRect = IRECT(bounds.L, controlRect.T - labelH - 1.f, bounds.R,
                           controlRect.T - 1.f);
 
   IText valueTextBold = IText(PolyTheme::FontValue, style.valueText.mFGColor,
-                              "Roboto-Regular", EAlign::Center);
+                              "Regular", EAlign::Center);
   IRECT valueRect = IRECT(bounds.L, controlRect.B + 1.f, bounds.R,
                           controlRect.B + valueH + 1.f);
 
@@ -328,144 +304,195 @@ void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
 }
 
 void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
-  if (pGraphics->NControls())
+  printf("[DEBUG] OnLayout: Starting layout...\n");
+  IGraphics *g = pGraphics;
+  if (pGraphics->NControls()) {
+    printf("[DEBUG] OnLayout: Already has controls. Returning.\n");
     return;
+  }
 
-  pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN);
-  pGraphics->LoadFont("Roboto-Bold", ROBOTO_BOLD_FN);
+  printf("[DEBUG] OnLayout: Loading fonts...\n");
+  if (!pGraphics->LoadFont("Regular", ROBOTO_FN)) {
+    printf("[ERROR] Failed to load Regular font from %s\n", ROBOTO_FN);
+  } else {
+    printf("[DEBUG] Successfully loaded Regular font\n");
+  }
+  if (!pGraphics->LoadFont("Bold", ROBOTO_BOLD_FN)) {
+    printf("[ERROR] Failed to load Bold font from %s\n", ROBOTO_BOLD_FN);
+  } else {
+    printf("[DEBUG] Successfully loaded Bold font\n");
+  }
+
+  printf("[DEBUG] OnLayout: Attaching background...\n");
   pGraphics->AttachPanelBackground(PolyTheme::PanelBG);
 
   const IColor textDark = PolyTheme::TextDark;
   const IVStyle synthStyle =
-      DEFAULT_STYLE.WithRoundness(0.04f)
-          .WithShadowOffset(2.0f)
+      IVStyle()
+          .WithShowLabel(true)
           .WithShowValue(false)
-          .WithLabelText(IText(PolyTheme::FontStyleLabel, textDark,
-                               "Roboto-Regular", EAlign::Center))
-          .WithValueText(IText(PolyTheme::FontStyleValue, textDark,
-                               "Roboto-Regular", EAlign::Center))
+          .WithWidgetFrac(0.5f)
+          .WithDrawFrame(false)
           .WithColor(kBG, PolyTheme::ControlBG)
           .WithColor(kFG, PolyTheme::ControlFace)
-          .WithColor(kPR, PolyTheme::AccentRed)
-          .WithColor(kHL, PolyTheme::AccentCyan)
-          .WithColor(kFR, PolyTheme::SectionBorder);
+          //.WithColor(kPR, PolyTheme::AccentCyan) // Knob ring
+          .WithColor(kFR, PolyTheme::SectionBorder)
+          .WithLabelText(
+              IText(PolyTheme::FontStyleLabel, PolyTheme::TextDark, "Bold"))
+          .WithValueText(
+              IText(PolyTheme::FontStyleValue, PolyTheme::TextDark, "Regular"));
 
   IRECT bounds = pGraphics->GetBounds().GetPadded(-PolyTheme::Padding);
-  const IRECT header = bounds.GetFromTop(72.f);
-  const IRECT main = bounds.GetReducedFromTop(76.f);
-  float w = main.W();
+  // Layout Constants
+  const float headerHeight = 80.f;
+  const float footerHeight = 60.f;
 
-  IRECT topRow = main.GetFromTop(main.H() * 0.55f);
-  IRECT bottomRow = main.GetFromBottom(main.H() * 0.42f);
+  IRECT headerArea = bounds.GetFromTop(headerHeight);
+  IRECT footerArea = bounds.GetFromBottom(footerHeight);
+  IRECT contentArea =
+      bounds.GetReducedFromTop(headerHeight).GetReducedFromBottom(footerHeight);
 
-  BuildHeader(pGraphics, header, synthStyle);
-  BuildOscillators(pGraphics, topRow.GetFromLeft(w * 0.23f), synthStyle);
-  IRECT filterArea(topRow.L + w * 0.23f, topRow.T, topRow.L + w * 0.48f,
-                   topRow.B);
-  BuildFilter(pGraphics, filterArea, synthStyle);
-  BuildEnvelope(pGraphics, IRECT(filterArea.R, topRow.T, topRow.R, topRow.B),
-                synthStyle);
-  BuildLFO(pGraphics, bottomRow.GetFromLeft(w * 0.15f), synthStyle);
-  IRECT polyModArea(bottomRow.L + w * 0.15f, bottomRow.T,
-                    bottomRow.L + w * 0.35f, bottomRow.B);
-  BuildPolyMod(pGraphics, polyModArea, synthStyle);
-  IRECT chorusArea(polyModArea.R, bottomRow.T, polyModArea.R + w * 0.20f,
-                   bottomRow.B);
-  BuildChorus(pGraphics, chorusArea, synthStyle);
-  IRECT delayArea(chorusArea.R, bottomRow.T, chorusArea.R + w * 0.20f,
-                  bottomRow.B);
-  BuildDelay(pGraphics, delayArea, synthStyle);
-  BuildMaster(pGraphics,
-              IRECT(delayArea.R, bottomRow.T, bottomRow.R, bottomRow.B),
+  // Background
+  // g->FillRect(PolyTheme::PanelBG, bounds); // Removed: Use
+  // AttachPanelBackground
+
+  // Build Sections
+  printf("[DEBUG] OnLayout: Building Header...\n");
+  BuildHeader(g, headerArea, synthStyle);
+  printf("[DEBUG] OnLayout: Building Footer...\n");
+  BuildFooter(g, footerArea, synthStyle);
+
+  // Content Layout
+  // 3 Rows:
+  // 1. Oscillators | Filter | Envelope
+  // 2. LFO | Poly Mod | Chorus | Delay | Master
+
+  const float topRowHeight = contentArea.H() * 0.55f;
+  IRECT topRow =
+      contentArea.GetFromTop(topRowHeight).GetPadded(-PolyTheme::Padding);
+  IRECT bottomRow = contentArea.GetFromBottom(contentArea.H() - topRowHeight)
+                        .GetPadded(-PolyTheme::Padding);
+
+  // Top Row: Osc (30%), Filter (30%), Env (40%)
+  printf("[DEBUG] OnLayout: Building Top Row...\n");
+  BuildOscillators(g, topRow.GetFromLeft(topRow.W() * 0.30f).GetPadded(-4.f),
+                   synthStyle);
+  BuildFilter(g,
+              topRow.GetFromLeft(topRow.W() * 0.30f)
+                  .GetTranslated(topRow.W() * 0.30f, 0)
+                  .GetPadded(-4.f),
               synthStyle);
+  BuildEnvelope(g, topRow.GetFromRight(topRow.W() * 0.40f).GetPadded(-4.f),
+                synthStyle);
+
+  // Bottom Row
+  // LFO(15%), PolyMod(20%), Chorus(20%), Delay(20%), Master(25%)
+  float x = 0;
+  float w = bottomRow.W();
+
+  printf("[DEBUG] OnLayout: Building Bottom Row...\n");
+  BuildLFO(g, bottomRow.GetFromLeft(w * 0.15f).GetPadded(-4.f), synthStyle);
+  x += w * 0.15f;
+
+  BuildPolyMod(
+      g, bottomRow.GetFromLeft(w * 0.20f).GetTranslated(x, 0).GetPadded(-4.f),
+      synthStyle);
+  x += w * 0.20f;
+
+  BuildChorus(
+      g, bottomRow.GetFromLeft(w * 0.20f).GetTranslated(x, 0).GetPadded(-4.f),
+      synthStyle);
+  x += w * 0.20f;
+
+  BuildDelay(
+      g, bottomRow.GetFromLeft(w * 0.20f).GetTranslated(x, 0).GetPadded(-4.f),
+      synthStyle);
+  x += w * 0.20f;
+
+  BuildMaster(
+      g, bottomRow.GetFromLeft(w * 0.25f).GetTranslated(x, 0).GetPadded(-4.f),
+      synthStyle);
+
+  printf("[DEBUG] OnLayout: Finished.\n");
 }
 
 void PolySynthPlugin::BuildHeader(IGraphics *g, const IRECT &bounds,
                                   const IVStyle &style) {
-  const IColor textDark = PolyTheme::TextDark;
+  printf("[DEBUG] BuildHeader: Starting.\n");
   g->AttachControl(new SectionFrame(bounds, "", PolyTheme::SectionBorder,
-                                    textDark, PolyTheme::HeaderBG));
-  g->AttachControl(new ITextControl(
-      bounds.GetPadded(-18.f).GetFromTop(40.f), "PolySynth",
-      IText(PolyTheme::FontTitle, textDark, "Roboto-Bold", EAlign::Near)));
+                                    PolyTheme::TextDark, PolyTheme::HeaderBG));
 
-  const IRECT presetArea = bounds.GetFromRight(280.f)
-                               .GetCentredInside(260.f, 44.f)
-                               .GetTranslated(-10.f, 0.f);
-  g->AttachControl(new IVMenuButtonControl(presetArea.GetFromLeft(160.f),
-                                           kParamPresetSelect, "Select Patch",
-                                           style),
-                   kCtrlTagPresetSelect);
+  IRECT inner = bounds.GetPadded(-PolyTheme::Padding);
 
-  IVStyle saveStyle =
-      style.WithColor(kBG, PolyTheme::AccentRed).WithColor(kFG, COLOR_WHITE);
-  saveStyle.labelText.WithFont("Roboto-Bold").WithSize(18.f);
-  g->AttachControl(new IVButtonControl(
-                       presetArea.GetFromRight(70.f),
-                       [&](IControl *pCaller) {
-                         mIsDirty = false;
-                         OnMessage(kMsgTagSavePreset,
-                                   (int)GetParam(kParamPresetSelect)->Value(),
-                                   0, nullptr);
-                         pCaller->SetDirty(false);
-                       },
-                       "SAVE", saveStyle),
-                   kCtrlTagSaveBtn);
+  // 1. Voice Controls (Left)
+  // 1x6 Grid: POLY | UNI | ALLOC | STEAL | DETUNE | WIDTH
+  IRECT voiceArea = inner.GetFromLeft(420.f).GetCentredInside(420.f, 60.f);
 
-  const IRECT demoArea = bounds.GetFromRight(bounds.W() * 0.45f)
-                             .GetFromLeft(180.f)
-                             .GetCentredInside(180.f, 30.f)
-                             .GetTranslated(-20.f, 0.f);
-  g->AttachControl(
-      new PolyToggleButton(demoArea.GetGridCell(0, 0, 1, 3).GetPadded(-2.f),
-                           kParamDemoMono, "MONO"));
-  g->AttachControl(
-      new PolyToggleButton(demoArea.GetGridCell(0, 1, 1, 3).GetPadded(-2.f),
-                           kParamDemoPoly, "POLY"));
-  g->AttachControl(new PolyToggleButton(
-      demoArea.GetGridCell(0, 2, 1, 3).GetPadded(-2.f), kParamDemoFX, "FX"));
-
-  // Add Voice Manager Controls
-  // Bound to voiceArea (x=160 to x=400)
-
-  // Info Displays (Voices, Chord)
-  // Place them to the right of controls
-
-  // This might overlap with preset area...
-  // Let's use a safer layout relative to existing logic.
-
-  // Existing:
-  // Title: Left-aligned.
-  // Preset: GetFromRight(280)
-  // Demo: GetFromRight(45%).GetFromLeft(180) -> This is effectively "Left part
-  // of Right Half".
-
-  // Let's put our controls around 200px from Left.
-  IRECT voiceArea =
-      bounds.GetFromLeft(400.f).GetFromRight(240.f); // x=160 to x=400
-
-  AttachStackedControl(g, voiceArea.GetGridCell(0, 0, 1, 3),
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 0, 1, 6),
                        kParamPolyphonyLimit, "POLY", style);
-  AttachStackedControl(g, voiceArea.GetGridCell(0, 1, 1, 3), kParamUnisonCount,
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 1, 1, 6), kParamUnisonCount,
                        "UNI", style);
-  AttachStackedControl(g, voiceArea.GetGridCell(0, 2, 1, 3), kParamStereoSpread,
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 2, 1, 6),
+                       kParamAllocationMode, "ALLOC", style);
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 3, 1, 6),
+                       kParamStealPriority, "STEAL", style);
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 4, 1, 6), kParamUnisonSpread,
+                       "DETUNE", style);
+  AttachStackedControl(g, voiceArea.GetGridCell(0, 5, 1, 6), kParamStereoSpread,
                        "WIDTH", style);
 
-  // Text displays
-  // Place to the right of voice controls, but left of preset selector
-  // Voice area ends at x=400. Preset starts at ~W-280.
-  // We have space between 400 and W-280.
-  // Let's bind it explicitly to be safe.
+  // 2. LCD Display (Center)
+  // Displays Active Voices and Chord Name
+  IRECT lcdArea =
+      inner.GetFromLeft(200.f).GetTranslated(440.f, 0).GetCentredInside(180.f,
+                                                                        50.f);
 
-  IRECT textArea =
-      IRECT(voiceArea.R + 10.f, voiceArea.T, bounds.R - 290.f, voiceArea.B);
+  // LCD Background
+  g->AttachControl(new LCDPanel(lcdArea, PolyTheme::LCDBackground));
+
+  // Active Voices (Top Left of LCD)
+  IRECT voicesText = lcdArea.GetPadded(-4.f).GetFromTop(16.f);
+  g->AttachControl(
+      new ITextControl(voicesText, "0/0",
+                       IText(14.f, PolyTheme::LCDText, "Bold", EAlign::Near)),
+      kCtrlTagActiveVoices);
+
+  // Chord Name (Bottom Center of LCD)
+  IRECT chordText = lcdArea.GetPadded(-4.f).GetFromBottom(24.f);
+  g->AttachControl(
+      new ITextControl(chordText, "--",
+                       IText(20.f, PolyTheme::LCDText, "Bold", EAlign::Center)),
+      kCtrlTagChordName);
+
+  // 3. Patch Management (Right)
+  IRECT presetArea = inner.GetFromRight(260.f).GetCentredInside(260.f, 40.f);
+
+  // Preset Selector (Left side of area)
+  // Use a consistent height for both controls to ensure alignment
+  float controlH = 24.f;
+
+  // Preset Display
+  g->AttachControl(new ICaptionControl(
+      presetArea.GetFromLeft(180.f).GetCentredInside(180.f, controlH),
+      kParamPresetSelect, IText(14.f, PolyTheme::TextDark, "Regular"), true));
+
+  // Save Button
+  IVStyle saveStyle =
+      style.WithColor(kBG, PolyTheme::AccentRed).WithColor(kFG, COLOR_WHITE);
+  saveStyle.labelText.WithFont("Bold").WithSize(
+      13.f); // Simply font size slightly
 
   g->AttachControl(
-      new ITextControl(textArea.GetFromTop(15.f), "", IText(12.f, textDark)),
-      kCtrlTagActiveVoices);
-  g->AttachControl(new ITextControl(textArea.GetFromBottom(25.f), "",
-                                    IText(15.f, textDark, "Roboto-Bold")),
-                   kCtrlTagChordName);
+      new IVButtonControl(
+          presetArea.GetFromRight(60.f).GetCentredInside(60.f, controlH),
+          [&](IControl *pCaller) {
+            mIsDirty = false;
+            OnMessage(kMsgTagSavePreset,
+                      (int)GetParam(kParamPresetSelect)->Value(), 0, nullptr);
+            pCaller->SetDirty(false);
+          },
+          "SAVE", saveStyle),
+      kCtrlTagSaveBtn);
 }
 
 void PolySynthPlugin::BuildOscillators(IGraphics *g, const IRECT &bounds,
@@ -491,10 +518,10 @@ void PolySynthPlugin::BuildFilter(IGraphics *g, const IRECT &bounds,
                           .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
 
   IRECT modelArea = inner.GetFromBottom(40.f).GetPadded(-4.f);
-  const IVStyle tabStyle = style.WithColor(kFG, PolyTheme::TabInactiveBG)
-                               .WithColor(kPR, PolyTheme::AccentRed)
-                               .WithValueText(IText(PolyTheme::FontTabSwitch,
-                                                    textDark, "Roboto-Bold"));
+  const IVStyle tabStyle =
+      style.WithColor(kFG, PolyTheme::TabInactiveBG)
+          .WithColor(kPR, PolyTheme::AccentRed)
+          .WithValueText(IText(PolyTheme::FontTabSwitch, textDark, "Bold"));
   g->AttachControl(new IVTabSwitchControl(
       modelArea, kParamFilterModel, {"LP", "BP", "HP", "NT"}, "", tabStyle));
 
@@ -509,8 +536,7 @@ void PolySynthPlugin::BuildFilter(IGraphics *g, const IRECT &bounds,
                         cutoffArea.B + 18.f);
   g->AttachControl(new ICaptionControl(
       cutoffValueArea, kParamFilterCutoff,
-      IText(PolyTheme::FontValue, textDark, "Roboto-Bold", EAlign::Center),
-      false));
+      IText(PolyTheme::FontValue, textDark, "Bold", EAlign::Center), false));
 
   IRECT secondaryArea(inner.L, cutoffValueArea.B, inner.R, modelArea.T);
   AttachStackedControl(g, secondaryArea.GetGridCell(0, 0, 1, 2),
@@ -621,6 +647,37 @@ void PolySynthPlugin::BuildMaster(IGraphics *g, const IRECT &bounds,
                        style);
   AttachStackedControl(g, inner.GetGridCell(1, 0, 2, 1), kParamLimiterThreshold,
                        "LIMIT", style);
+}
+
+void PolySynthPlugin::BuildFooter(IGraphics *g, const IRECT &bounds,
+                                  const IVStyle &style) {
+  g->AttachControl(new SectionFrame(bounds, "", PolyTheme::SectionBorder,
+                                    PolyTheme::TextDark, PolyTheme::HeaderBG));
+
+  const IRECT inner = bounds.GetPadded(-10.f);
+
+  // 1. Demo Controls (Left)
+  g->AttachControl(
+      new ITextControl(inner.GetFromLeft(50.f).GetMidVPadded(10.f), "DEMO",
+                       IText(14.f, PolyTheme::TextDark, "Bold", EAlign::Near)));
+
+  IRECT demoArea =
+      inner.GetFromLeft(200.f).GetTranslated(50.f, 0).GetCentredInside(180.f,
+                                                                       30.f);
+  g->AttachControl(
+      new PolyToggleButton(demoArea.GetGridCell(0, 0, 1, 3).GetPadded(-2.f),
+                           kParamDemoMono, "MONO"));
+  g->AttachControl(
+      new PolyToggleButton(demoArea.GetGridCell(0, 1, 1, 3).GetPadded(-2.f),
+                           kParamDemoPoly, "POLY"));
+  g->AttachControl(new PolyToggleButton(
+      demoArea.GetGridCell(0, 2, 1, 3).GetPadded(-2.f), kParamDemoFX, "FX"));
+
+  // 2. Logo (Right)
+  IRECT logoArea = inner.GetFromRight(200.f);
+  g->AttachControl(
+      new ITextControl(logoArea.GetCentredInside(200.f, 32.f), "PolySynth",
+                       IText(26.f, PolyTheme::TextDark, "Bold", EAlign::Far)));
 }
 #endif
 
