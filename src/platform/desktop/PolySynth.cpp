@@ -10,6 +10,7 @@
 #include "PolyKnob.h"
 #include "PolySection.h"
 #include "PolyToggleButton.h"
+#include "PresetSaveButton.h"
 #include "SectionFrame.h"
 #endif
 #include <algorithm>
@@ -31,11 +32,11 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
                           bool isSlider = false) {
   float knobSize = std::min(bounds.W(), bounds.H() * 0.7f) * 0.82f;
   if (isSlider)
-    knobSize = std::min(bounds.W() * 0.75f, bounds.H() * 0.75f);
+    knobSize = std::min(bounds.W() * 0.75f, bounds.H() * 0.9f);
 
   IRECT controlRect = bounds.GetCentredInside(knobSize);
   if (isSlider)
-    controlRect = bounds.GetCentredInside(bounds.W() * 0.7f, bounds.H() * 0.7f);
+    controlRect = bounds.GetCentredInside(bounds.W() * 0.7f, bounds.H() * 0.9f);
 
   const float labelH = PolyTheme::LabelH;
   const float valueH = PolyTheme::ValueH;
@@ -52,9 +53,9 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
 
   pGraphics->AttachControl(new ITextControl(labelRect, label, labelTextBold));
   if (isSlider) {
-    pGraphics->AttachControl(
-        new IVSliderControl(controlRect, paramIdx, "",
-                            style.WithShowLabel(false).WithShowValue(false)));
+    pGraphics->AttachControl(new IVSliderControl(
+        controlRect, paramIdx, "",
+        style.WithShowLabel(false).WithShowValue(false).WithWidgetFrac(0.3f)));
   } else {
     auto *knob = new PolyKnob(controlRect, paramIdx, "");
     knob->WithShowLabel(false).WithShowValue(false);
@@ -475,26 +476,28 @@ void PolySynthPlugin::BuildHeader(IGraphics *g, const IRECT &bounds,
   float controlH = 24.f;
 
   // Preset Display
-  g->AttachControl(new ICaptionControl(
-      presetArea.GetFromLeft(180.f).GetCentredInside(180.f, controlH),
-      kParamPresetSelect, IText(14.f, PolyTheme::TextDark, "Regular"), true));
+  // Preset Display
+  IRECT dropdownRect =
+      presetArea.GetFromLeft(180.f).GetCentredInside(180.f, controlH);
+  g->AttachControl(
+      new IPanelControl(dropdownRect, PolyTheme::ControlFace)); // Background
+  // Actually, IPanelControl doesn't draw border by default. Let's use a lambda
+  // or just a background. Better: specialized control or just Panel with
+  // border.
+  g->AttachControl(
+      new ICaptionControl(dropdownRect, kParamPresetSelect,
+                          IText(14.f, PolyTheme::TextDark, "Regular"), true));
 
   // Save Button
-  IVStyle saveStyle =
-      style.WithColor(kBG, PolyTheme::AccentRed).WithColor(kFG, COLOR_WHITE);
-  saveStyle.labelText.WithFont("Bold").WithSize(
-      13.f); // Simply font size slightly
-
   g->AttachControl(
-      new IVButtonControl(
+      new PresetSaveButton(
           presetArea.GetFromRight(60.f).GetCentredInside(60.f, controlH),
           [&](IControl *pCaller) {
-            mIsDirty = false;
+            // Action only triggers if dirty (logic in control), but here we
+            // handle the save
             OnMessage(kMsgTagSavePreset,
                       (int)GetParam(kParamPresetSelect)->Value(), 0, nullptr);
-            pCaller->SetDirty(false);
-          },
-          "SAVE", saveStyle),
+          }),
       kCtrlTagSaveBtn);
 }
 
@@ -739,6 +742,15 @@ void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
 void PolySynthPlugin::OnParamChange(int paramIdx) {
   if (mIsUpdatingUI)
     return;
+
+  // Mark as dirty and update save button
+  mIsDirty = true;
+  if (auto *pUI = GetUI()) {
+    if (auto *pBtn = pUI->GetControlWithTag(kCtrlTagSaveBtn)) {
+      ((PresetSaveButton *)pBtn)->SetHasUnsavedChanges(true);
+    }
+  }
+
   double value = GetParam(paramIdx)->Value();
   switch (paramIdx) {
   case kParamGain:
@@ -951,7 +963,12 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     DesktopPath(path);
     path.AppendFormatted(512, "/PolySynth_Preset_%d.json", ctrlTag);
     bool success = PolySynthCore::PresetManager::SaveToFile(mState, path.Get());
-    mIsDirty = !success;
+    mIsDirty = !success; // Remains dirty if save failed
+    if (GetUI()) {
+      if (auto *pBtn = GetUI()->GetControlWithTag(kCtrlTagSaveBtn)) {
+        ((PresetSaveButton *)pBtn)->SetHasUnsavedChanges(mIsDirty);
+      }
+    }
     if (success)
       PopulatePresetMenu();
     return true;
@@ -963,7 +980,13 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     if (PolySynthCore::PresetManager::LoadFromFile(path.Get(), loaded)) {
       mState = loaded;
       SyncUIState();
+      SyncUIState();
       mIsDirty = false;
+      if (GetUI()) {
+        if (auto *pBtn = GetUI()->GetControlWithTag(kCtrlTagSaveBtn)) {
+          ((PresetSaveButton *)pBtn)->SetHasUnsavedChanges(false);
+        }
+      }
       return true;
     }
     return false;

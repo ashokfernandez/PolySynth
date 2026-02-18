@@ -53,7 +53,8 @@ static constexpr float FontValue = 14.f;       // Value readouts / captions
 static constexpr float FontControl = 12.f;     // Knob labels, toggle text
 static constexpr float FontStyleLabel = 13.f;  // IVStyle label text
 static constexpr float FontStyleValue = 11.f;  // IVStyle value text
-static constexpr float FontTabSwitch = 12.f;   // Tab switch / model selector
+static constexpr float FontTabSwitch =
+    15.f; // Tab switch / model selector (Increased from 12.f)
 
 // ── Layout constants ────────────────────────────────────────────
 static constexpr float Padding = 12.f;       // Outer panel padding
