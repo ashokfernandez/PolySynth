@@ -9,10 +9,16 @@ public:
   }
 
   void Draw(IGraphics &g) override {
-    // Fill background
-    g.FillRect(mBgColor, mRECT);
-    // Inner shadow style border
-    g.DrawRect(IColor(50, 0, 0, 0), mRECT, nullptr, 2.f);
+    // Fill background with theme color
+    g.FillRoundRect(PolyTheme::LCDBackground, mRECT, PolyTheme::RoundingButton);
+
+    // Bezel effect: Inner shadow for depth
+    g.DrawRoundRect(IColor(80, 0, 0, 0), mRECT, PolyTheme::RoundingButton,
+                    nullptr, 2.f);
+
+    // Soft outer highlights for a glassy feel
+    g.DrawRoundRect(PolyTheme::InnerBorder, mRECT.GetPadded(-1.f),
+                    PolyTheme::RoundingButton - 1.f, nullptr, 1.f);
   }
 
 private:

@@ -10,7 +10,7 @@ public:
 
   void Draw(IGraphics &g) override {
     const bool active = GetValue() > 0.5;
-    const float rounding = mRECT.H() * 0.3f;
+    const float rounding = PolyTheme::RoundingButton;
 
     const IColor bg =
         active ? PolyTheme::ToggleActiveBG : PolyTheme::ToggleInactiveBG;

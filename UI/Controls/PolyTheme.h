@@ -41,9 +41,8 @@ static const IColor ToggleActiveFG = IColor(255, 255, 255, 255);
 static const IColor ToggleInactiveBG = IColor(0, 0, 0, 0);
 
 // ── LCD colors ──────────────────────────────────────────────────
-static const IColor LCDBackground =
-    IColor(255, 20, 25, 20); // Very dark greenish-black
-static const IColor LCDText = IColor(255, 50, 255, 60); // Bright retro green
+static const IColor LCDBackground = IColor(255, 30, 32, 35); // Sleek off-black
+static const IColor LCDText = AccentCyan; // Use AccentCyan for consistency
 
 // ── Typography constants ────────────────────────────────────────
 // Font family: "Roboto-Bold" for labels/titles, "Roboto-Regular" for values
@@ -63,4 +62,6 @@ static constexpr float SectionTitleH =
     36.f;                             // Height reserved for section title
 static constexpr float LabelH = 18.f; // Stacked control label height
 static constexpr float ValueH = 16.f; // Stacked control value height
+static constexpr float RoundingSection = 5.f; // Section panel rounding
+static constexpr float RoundingButton = 4.f;  // Button rounding
 } // namespace PolyTheme

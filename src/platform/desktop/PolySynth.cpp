@@ -414,6 +414,9 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       synthStyle);
 
   printf("[DEBUG] OnLayout: Finished.\n");
+  if (std::getenv("POLYSYNTH_TEST_UI")) {
+    OnMessage(kMsgTagTestLoaded, 0, 0, nullptr);
+  }
 }
 
 void PolySynthPlugin::BuildHeader(IGraphics *g, const IRECT &bounds,
