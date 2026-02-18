@@ -523,17 +523,16 @@ void PolySynthPlugin::BuildFilter(IGraphics *g, const IRECT &bounds,
   const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
                           .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
 
-  IRECT modelArea = inner.GetFromBottom(40.f).GetPadded(-4.f);
-  const IVStyle tabStyle =
-      style.WithColor(kFG, PolyTheme::TabInactiveBG)
-          .WithColor(kPR, PolyTheme::AccentRed)
-          .WithValueText(IText(PolyTheme::FontTabSwitch, textDark, "Bold"));
+  IRECT modelArea = inner.GetFromBottom(60.f).GetPadded(-4.f);
+  const IVStyle tabStyle = style.WithColor(kFG, PolyTheme::TabInactiveBG)
+                               .WithColor(kPR, PolyTheme::AccentRed)
+                               .WithValueText(IText(14.f, textDark, "Bold"));
   g->AttachControl(new IVTabSwitchControl(
       modelArea, kParamFilterModel, {"LP", "BP", "HP", "NT"}, "", tabStyle));
 
-  IRECT topFilter = inner.GetFromTop(inner.H() - 50.f);
+  IRECT topFilter = inner.GetFromTop(inner.H() - 70.f);
   IRECT cutoffArea =
-      topFilter.GetFromTop(topFilter.H() * 0.65f).GetCentredInside(90.f);
+      topFilter.GetFromTop(topFilter.H() * 0.55f).GetCentredInside(90.f);
   auto *cutoffKnob = new PolyKnob(cutoffArea, kParamFilterCutoff, "Cutoff");
   cutoffKnob->WithShowValue(false);
   g->AttachControl(cutoffKnob);
@@ -569,14 +568,49 @@ void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
                        PolyTheme::AccentCyan.WithOpacity(0.15f));
   g->AttachControl(pEnvelope, kCtrlTagEnvelope);
 
-  AttachStackedControl(g, sliderArea.GetGridCell(0, 0, 1, 4), kParamAttack, "A",
-                       style, true);
-  AttachStackedControl(g, sliderArea.GetGridCell(0, 1, 1, 4), kParamDecay, "D",
-                       style, true);
-  AttachStackedControl(g, sliderArea.GetGridCell(0, 2, 1, 4), kParamSustain,
-                       "S", style, true);
-  AttachStackedControl(g, sliderArea.GetGridCell(0, 3, 1, 4), kParamRelease,
-                       "R", style, true);
+  g->AttachControl(pEnvelope, kCtrlTagEnvelope);
+
+  // Manual ADSR Layout for maximum slider length
+  const int nParams = 4;
+  int params[4] = {kParamAttack, kParamDecay, kParamSustain, kParamRelease};
+  const char *labels[4] = {"A", "D", "S", "R"};
+
+  for (int i = 0; i < nParams; i++) {
+    IRECT cell = sliderArea.GetGridCell(0, i, 1, nParams);
+
+    // Calculate specific rects to maximize slider travel
+    const float labelH = PolyTheme::LabelH;
+    const float valueH = PolyTheme::ValueH;
+
+    IRECT labelRect = cell.GetFromTop(labelH);
+    IRECT valueRect = cell.GetFromBottom(valueH);
+    // Slider fills the space between label and value, with minimal padding
+    IRECT sliderRect = cell.GetReducedFromTop(labelH)
+                           .GetReducedFromBottom(valueH)
+                           .GetMidHPadded(10.f);
+
+    // Label
+    g->AttachControl(
+        new ITextControl(labelRect, labels[i],
+                         IText(PolyTheme::FontLabel, style.labelText.mFGColor,
+                               "Bold", EAlign::Center)));
+
+    // Slider
+    g->AttachControl(new IVSliderControl(
+        sliderRect, params[i], "",
+        style.WithShowLabel(false).WithShowValue(false).WithWidgetFrac(
+            0.6f))); // Larger widget frac since we are stretched? No, handle
+                     // size is relative to length? WidgetFrac in IVSlider
+                     // usually affects handle thickness. Let's use 0.4f for a
+                     // nice handle.
+
+    // Value
+    g->AttachControl(new ICaptionControl(valueRect, params[i],
+                                         IText(PolyTheme::FontValue,
+                                               style.valueText.mFGColor,
+                                               "Regular", EAlign::Center),
+                                         false));
+  }
 }
 
 void PolySynthPlugin::BuildLFO(IGraphics *g, const IRECT &bounds,
