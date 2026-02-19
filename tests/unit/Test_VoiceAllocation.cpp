@@ -25,8 +25,8 @@ TEST_CASE("Polyphony limit reduction kills excess", "[VoiceAllocation]") {
 
   // Reduce limit to 4 — excess voices should be killed
   vm.SetPolyphonyLimit(4);
-  // Process a few samples to let stolen voices fade out
-  for (int i = 0; i < 200; i++)
+  // Steal fade is 20ms at 48kHz = 960 samples; process 1200 to be safe.
+  for (int i = 0; i < 1200; i++)
     vm.Process();
 
   REQUIRE(vm.GetActiveVoiceCount() <= 4);

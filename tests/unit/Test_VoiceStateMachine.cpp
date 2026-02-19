@@ -46,7 +46,9 @@ TEST_CASE("Voice StartSteal triggers Stolen state with fade-out", "[VoiceStateMa
     REQUIRE(voice.GetVoiceState() == PolySynthCore::VoiceState::Stolen);
 }
 
-TEST_CASE("Stolen voice completes fade in ~2ms", "[VoiceStateMachine]") {
+TEST_CASE("Stolen voice completes fade in ~20ms", "[VoiceStateMachine]") {
+    // Steal fade is 20ms at 48kHz = 960 samples (increased from 2ms to prevent
+    // audible clicks when polyphony is reduced mid-note).
     PolySynthCore::Voice voice;
     voice.Init(48000.0, 0);
     voice.NoteOn(60, 100, 1);
@@ -54,13 +56,15 @@ TEST_CASE("Stolen voice completes fade in ~2ms", "[VoiceStateMachine]") {
 
     voice.StartSteal();
     int samples = 0;
-    while (voice.GetVoiceState() == PolySynthCore::VoiceState::Stolen && samples < 200) {
+    const int kMaxSamples = 2000; // well beyond 960 to avoid infinite loop
+    while (voice.GetVoiceState() == PolySynthCore::VoiceState::Stolen && samples < kMaxSamples) {
         voice.Process();
         samples++;
     }
     REQUIRE(voice.GetVoiceState() == PolySynthCore::VoiceState::Idle);
-    REQUIRE(samples <= 100);
-    REQUIRE(samples >= 90);
+    // At 48kHz, 20ms = 960 samples; allow a small margin
+    REQUIRE(samples <= 1000);
+    REQUIRE(samples >= 950);
 }
 
 TEST_CASE("Re-trigger: NoteOn during Attack transitions back to Attack", "[VoiceStateMachine]") {
