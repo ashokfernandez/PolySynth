@@ -2,6 +2,7 @@
 
 #include "IControl.h"
 #include "IGraphics.h"
+#include "PolyTheme.h"
 
 using namespace iplug;
 using namespace igraphics;
