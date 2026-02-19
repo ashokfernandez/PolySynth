@@ -203,10 +203,10 @@ All controls are tested in the ComponentGallery visual test harness with Storybo
 
 ```bash
 # Build all component galleries
-./build_gallery.sh
+just gallery-build
 
 # View in Storybook (interactive testing)
-./view_gallery.sh
+just gallery-view
 # Opens http://localhost:6006
 ```
 

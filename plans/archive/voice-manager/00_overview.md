@@ -129,5 +129,5 @@ python3 scripts/golden_master.py --verify
 - **Existing Tests**: `tests/unit/Test_VoiceManager_Poly.cpp`, `tests/unit/Test_SynthState.cpp`
 - **SEA_DSP pattern to follow**: `libs/SEA_DSP/CMakeLists.txt` (INTERFACE library)
 - **Platform abstraction**: `libs/SEA_DSP/include/sea_dsp/sea_platform.h` (`sea::Real`, `SEA_INLINE`)
-- **Testing Strategy**: `plans/04_testing_strategy.md`
-- **Agentic Workflow**: `plans/03_agentic_workflow.md`
+- **Testing Strategy**: `plans/active/04_testing_strategy.md`
+- **Agentic Workflow**: `plans/active/03_agentic_workflow.md`

@@ -1,11 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ComponentGallery View Script
 # Launches Storybook and opens the ComponentGallery story.
 
-set -e
+set -euo pipefail
 
-# Ensure we are in the project root
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${ROOT_DIR}"
 
 PORT=${1:-6006}
 BUILD_INDEX="ComponentGallery/build-web/index.html"
@@ -15,7 +16,7 @@ URL="http://localhost:${PORT}${STORY_PATH}"
 
 if [ ! -f "$BUILD_INDEX" ]; then
   echo "Gallery build output not found. Running build first..."
-  ./build_gallery.sh
+  ./scripts/tasks/build_gallery.sh
 fi
 
 if [ ! -d "${VISUAL_DIR}/node_modules" ]; then

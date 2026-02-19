@@ -9,7 +9,7 @@ We employ a 3-tiered testing strategy to ensure audio quality and prevent regres
     - Every new DSP class MUST have a corresponding unit test.
     - Tests should cover edge cases (e.g., zero frequencies, invalid gain levels).
     - Ensure DSP math is accurate (e.g., frequency to MIDI conversions).
-- **Execution**: `./scripts/run_tests.sh`.
+- **Execution**: `just test`.
 
 ## Tier 2: Golden Master Verification (Regression)
 - **Tool**: `scripts/golden_master.py` + `scripts/analyze_audio.py`.
@@ -26,6 +26,11 @@ We employ a 3-tiered testing strategy to ensure audio quality and prevent regres
 - **Windows/VST3**: Use the VST3 `validator` tool.
 
 ## E2E Validation Workflow
-1.  Run `./scripts/run_tests.sh` (Unit Tests).
+1.  Run `just test` (Unit Tests).
 2.  Run `./scripts/run_audio_tests.sh` (Artifact Verification).
-3.  Perform manual verification by launching the app: `open build_desktop/out/PolySynth.app`.
+3.  Perform manual verification by launching the app: `just desktop-run`.
+
+## Failure Diagnostics
+- Commands executed via `just` write full logs to `.artifacts/logs/<run-id>/`.
+- Use `just logs-latest` to inspect summary + log paths after a failure.
+- Use `POLYSYNTH_VERBOSE=1 just <task>` when you need full live output.

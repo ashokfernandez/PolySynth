@@ -25,6 +25,7 @@ obj/
 
 # Logs
 debug_logs/
+.artifacts/
 *.log
 build_log.txt
 crash_log.txt

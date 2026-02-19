@@ -1,11 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ComponentGallery Visual Test Script
 # Builds gallery assets, runs Storybook+Vitest checks, then Playwright snapshots.
 
-set -e
-cd "$(dirname "$0")"
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${ROOT_DIR}"
 
-./build_gallery.sh
+./scripts/tasks/build_gallery.sh
 
 if [ -s "$HOME/.nvm/nvm.sh" ]; then
   # shellcheck disable=SC1090

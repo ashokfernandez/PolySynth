@@ -10,7 +10,7 @@ def test_ui_render():
     
     if not os.path.exists(app_path):
         print(f"Error: App not found at {app_path}")
-        print("Please build the desktop app first using ./rebuild_and_run.sh")
+        print("Please build the desktop app first using 'just desktop-rebuild'")
         sys.exit(1)
 
     env = os.environ.copy()

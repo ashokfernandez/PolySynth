@@ -98,8 +98,8 @@ jobs:
 
     - name: Run component gallery visual test pipeline
       run: |
-        chmod +x test_gallery_visual.sh
-        ./test_gallery_visual.sh
+        chmod +x scripts/tasks/test_gallery_visual.sh
+        ./scripts/tasks/test_gallery_visual.sh
 
 
     - name: Build PolySynth WAM web demo
