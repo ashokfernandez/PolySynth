@@ -1,57 +1,17 @@
-# tools/suppressions.txt
-# Cppcheck suppression list for the PolySynth project.
-#
-# Syntax:  [error-id]:[file-pattern]:[line]
-#          [error-id]                       (global, use sparingly)
-#
-# Philosophy: suppress ONLY what has been reviewed and confirmed to be either:
-#   (a) a false positive in specific 3rd-party or generated code, or
-#   (b) a known accepted risk documented here.
-#
-# Do NOT suppress entire categories globally – that defeats the purpose.
-# Re-evaluate entries every release cycle.
-#
-# To find the error-id for an issue:
-#   cppcheck --template="{file}:{line}: [{id}] {message}" <file>
-#
-# -----------------------------------------------------------------------------
-# 3rd-party / external code suppressions
-# -----------------------------------------------------------------------------
-
-# Catch2 single-header: lots of internal macros that look like bad practice.
+# Cppcheck suppressions for PolySynth.
+# Format: [error-id]:[file-glob]  or  [error-id]
+# Lines starting with # are comments. No blank lines between entries.
+# 3rd-party code – not our responsibility to fix
 *:*/external/catch2/*
-
-# nlohmann JSON: template-heavy code generates many style and performance hints.
 *:*/nlohmann/*
-
-# DaisySP: third-party embedded DSP library, not our code to fix.
 *:*/external/daisysp/*
 *:*/daisysp/*
-
-# iPlug2: third-party plugin framework.
 *:*/iPlug2/*
 *:*/external/iPlug2/*
-
-# -----------------------------------------------------------------------------
-# Project-specific accepted risks (each entry MUST have a justification comment)
-# -----------------------------------------------------------------------------
-
-# missingIncludeSystem: cppcheck warns when it can't find <cmath> etc.
-# This is expected when not running with full sysroot; compile_commands.json
-# helps but doesn't fully solve this for system headers.
+# System-header noise when running without full sysroot
 missingIncludeSystem
-
-# unmatchedSuppression: suppress the "you have a suppression that matched
-# nothing" warning so the CI doesn't fail after we remove code that had a
-# suppression entry. Clean up stale entries quarterly.
+# Prevents CI failure after removing code that had a suppression entry
 unmatchedSuppression
-
-# -----------------------------------------------------------------------------
-# Template / DSP-specific patterns
-# -----------------------------------------------------------------------------
-
-# DSP code frequently uses float arithmetic that looks "lossy" to Cppcheck
-# but is intentional (e.g., accumulating audio samples).
-# Suppress only in known DSP header files:
+# DSP float arithmetic is intentionally lossy in these files
 floatConversion:*/sea_dsp/*
 floatConversion:*/SEA_DSP/*

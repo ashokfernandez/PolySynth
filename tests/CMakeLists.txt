@@ -96,22 +96,8 @@ if(POLYSYNTH_ENABLE_STATIC_ANALYSIS)
     polysynth_enable_clang_tidy(run_tests)
 endif()
 
-# ---------------------------------------------------------------------------
-# Sanitizer runtime environment variables
-# Propagated to ctest so tests inherit the correct ASAN/TSAN options.
-# ---------------------------------------------------------------------------
-if(USE_SANITIZER STREQUAL "Address")
-    set_tests_properties(run_tests PROPERTIES
-        ENVIRONMENT
-        "ASAN_OPTIONS=detect_leaks=1:halt_on_error=1:print_stacktrace=1;\
-UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1"
-    )
-elseif(USE_SANITIZER STREQUAL "Thread")
-    set_tests_properties(run_tests PROPERTIES
-        ENVIRONMENT
-        "TSAN_OPTIONS=halt_on_error=1:print_stacktrace=1"
-    )
-endif()
+# Sanitizer env vars are set directly in the CI yaml (and dev.sh) on the
+# run_tests invocation line, so no ctest property needed here.
 
 # ---------------------------------------------------------------------------
 # Demo executables

@@ -53,13 +53,16 @@ function(polysynth_enable_cppcheck target)
         set(_suppressions_file "${CMAKE_SOURCE_DIR}/tools/suppressions.txt")
     endif()
 
+    # NOTE: When CMake drives cppcheck via CXX_CPPCHECK it passes each source
+    # file individually on the command line. This is incompatible with
+    # --project=compile_commands.json (which tells cppcheck to find its own
+    # files). We therefore omit --project here; include paths are picked up
+    # from the compile_commands.json by run_analysis.py when run standalone.
     set(_cppcheck_args
         # Show these categories beyond pure errors
         "--enable=warning,performance,portability,style"
         # Report potential bugs even without 100% certainty – prefer false alarms
         "--inconclusive"
-        # Use project compile database for accurate include paths
-        "--project=${CMAKE_BINARY_DIR}/compile_commands.json"
         # Compiler error-style output: parsable by IDEs and the LLM
         "--template={file}:{line}: [{id}] {message}"
         # CI gate: non-zero exit on any issue
