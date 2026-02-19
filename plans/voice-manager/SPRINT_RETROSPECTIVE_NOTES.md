@@ -170,6 +170,11 @@ This file captures cross-sprint review/retro feedback that should inform future 
    - **Problem:** Preset selector and Save button alignment was inconsistent; version text was cluttering the footer.
    - **Action:** Refined `BuildHeader` and `BuildFooter` with consistent centering logic and removed non-essential text elements.
 
+11. **Thread Safety in UI Visualization (Active Voice Count & Held Notes)**
+    - **Problem:** `OnIdle()` (UI thread) was reading `GetActiveVoiceCount()` and `GetHeldNotes()` directly from the DSP object, iterating over voices that are modified by the Audio thread. This is a race condition.
+    - **Action:** Implemented atomic caching in `PolySynthDSP`. The Audio thread updates `std::atomic` variables (`mVisualActiveVoiceCount` and bitmasks for `mVisualHeldNotes`) at the end of `ProcessBlock`. The UI thread reads these atomics.
+    - **Lesson:** Never iterate non-atomic DSP structures (like `VoiceManager::mVoices`) directly from the UI thread. Use atomic mirrors or lock-free queues for visual data.
+
 ### CI Stabilization (post-implementation review by separate agent)
 
 A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 implementation agent had finished. Three CI jobs were failing: Build Gallery WAM, Build PolySynth WAM Demo, and Build Component Gallery Storybook. The fixes required four commits across five files. Below is what was found and what could have been done better.

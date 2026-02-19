@@ -10,6 +10,8 @@
 
 using namespace iplug;
 
+#include <atomic>
+
 class PolySynthDSP {
 public:
   PolySynthDSP(int nVoices) {
@@ -115,6 +117,24 @@ public:
       if (nOutputs > 1)
         outputs[1][s] = static_cast<sample>(right);
     }
+
+    // Update visualization state (thread-safe for UI)
+    mVisualActiveVoiceCount.store(mVoiceManager.GetActiveVoiceCount(),
+                                  std::memory_order_relaxed);
+
+    std::array<int, PolySynthCore::kMaxVoices> notes{};
+    int count = mVoiceManager.GetHeldNotes(notes);
+    uint64_t low = 0;
+    uint64_t high = 0;
+    for (int i = 0; i < count; ++i) {
+      int note = notes[i];
+      if (note >= 0 && note < 64)
+        low |= (1ULL << note);
+      else if (note >= 64 && note < 128)
+        high |= (1ULL << (note - 64));
+    }
+    mVisualHeldNotesLow.store(low, std::memory_order_relaxed);
+    mVisualHeldNotesHigh.store(high, std::memory_order_relaxed);
   }
 
   void ProcessMidiMsg(const IMidiMsg &msg) {
@@ -132,11 +152,27 @@ public:
   }
 
   int GetActiveVoiceCount() const {
-    return mVoiceManager.GetActiveVoiceCount();
+    return mVisualActiveVoiceCount.load(std::memory_order_relaxed);
   }
 
   int GetHeldNotes(std::array<int, PolySynthCore::kMaxVoices> &buf) const {
-    return mVoiceManager.GetHeldNotes(buf);
+    uint64_t low = mVisualHeldNotesLow.load(std::memory_order_relaxed);
+    uint64_t high = mVisualHeldNotesHigh.load(std::memory_order_relaxed);
+    int count = 0;
+
+    for (int i = 0; i < 64; ++i) {
+      if ((low >> i) & 1) {
+        if (count < PolySynthCore::kMaxVoices)
+          buf[count++] = i;
+      }
+    }
+    for (int i = 0; i < 64; ++i) {
+      if ((high >> i) & 1) {
+        if (count < PolySynthCore::kMaxVoices)
+          buf[count++] = i + 64;
+      }
+    }
+    return count;
   }
 
   void SetParam(int paramIdx, double value) {
@@ -150,4 +186,9 @@ public:
 
 private:
   double mGain = 1.0;
+
+  // Visualization state (written by Audio thread, read by UI thread)
+  std::atomic<int> mVisualActiveVoiceCount{0};
+  std::atomic<uint64_t> mVisualHeldNotesLow{0};
+  std::atomic<uint64_t> mVisualHeldNotesHigh{0};
 };
