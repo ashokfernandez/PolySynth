@@ -282,7 +282,6 @@ public:
     rs.velocity = static_cast<int>(mVelocity * 127.0);
     rs.currentPitch = mCurrentPitch;
     rs.panPosition = mPanPosition;
-    rs.panPosition = mPanPosition;
     rs.amplitude = mLastAmpEnvVal;
     return rs;
   }
@@ -449,36 +448,9 @@ public:
       // to spread voices across the stereo field.
       if (mAllocator.GetUnisonCount() <= 1 &&
           mAllocator.GetStereoSpread() > 0.0) {
-        // Spread logic: Alternate L/R or spread evenly?
-        // Alternating L/R is common for poly synths.
-        // Map idx to [-1, 1].
-        // Simple alternating: odd=left, even=right?
-        // Voice allocator reuses slots, so this might not be consistent per
-        // note. But it's better than mono.
-
-        // Let's use a spread based on voice ID (0-15) relative to max voices.
-        // Or just alternate: ((idx % 2) * 2 - 1) * spread.
-        // If spread=1.0: idx0 -> -1.0, idx1 -> 1.0.
-
-        // Better: Spread across field based on index?
-        // float pan = (static_cast<float>(idx) / kNumVoices) * 2.0f - 1.0f;
-
-        // Let's stick to alternating for now as it's effective for chords.
-        // Scale by StereoSpread.
-
         double spread = mAllocator.GetStereoSpread();
-        // Alternate +/- spread
+        // Alternate L/R panning per voice slot
         double pan = (idx % 2 == 0) ? -spread : spread;
-
-        // Maybe jitter slightly or use voice ID? Use voice ID for consistency.
-        // idx is the slot index.
-        pan = (idx % 2 == 0) ? -spread : spread;
-
-        // If we want more spread for higher voice counts, maybe:
-        // pan = spread * (((idx % 2) * 2) - 1) * (0.5 + 0.5 * (idx /
-        // (float)kMaxVoices));
-
-        // Simple +/- spread is safest for "Width".
         info.panPosition = pan;
       }
 
@@ -547,14 +519,6 @@ public:
   inline void ProcessStereo(double &outLeft, double &outRight) {
     outLeft = 0.0;
     outRight = 0.0;
-    // kPi is not defined in this scope, usually it's in a math header or we can
-    // use M_PI or define it. PolySynth usually uses <cmath>. M_PI is standard.
-    // Plan used kPi. I'll use 3.14159265358979323846 or M_PI if available.
-    // C++17 has std::numbers::pi but need <numbers>.
-    // Let's check if kPi is defined in types.h?
-    // It's likely M_PI. Plan said kPi.
-    // I'll use 3.14159265358979323846 directly to be safe, or M_PI.
-    const double kPi = 3.14159265358979323846;
 
     for (auto &voice : mVoices) {
       sample_t mono = voice.Process();
