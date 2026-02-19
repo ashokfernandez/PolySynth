@@ -222,6 +222,9 @@ public:
       ampMod = std::clamp(ampMod, 0.0, 2.0);
     }
 
+    // Cache the LFO value for pan modulation access later
+    mLastLfoVal = static_cast<float>(lfoVal);
+
     mAge++;
 
     if (!mAmpEnv.IsActive() && !mFilterEnv.IsActive()) {
@@ -264,7 +267,12 @@ public:
   uint8_t GetVoiceID() const { return mVoiceID; }
   uint32_t GetTimestamp() const { return mTimestamp; }
   float GetPitch() const { return mCurrentPitch; }
-  float GetPanPosition() const { return mPanPosition; }
+
+  float GetPanPosition() const {
+    float modulatedPan = mPanPosition + (mLastLfoVal * mLfoPanDepth);
+    return std::clamp(modulatedPan, -1.0f, 1.0f);
+  }
+
   void SetPanPosition(float pan) {
     mPanPosition = std::clamp(pan, -1.0f, 1.0f);
   }
@@ -330,10 +338,12 @@ public:
     mLfo.SetDepth(depth);
   }
 
-  void SetLFORouting(sample_t pitch, sample_t filter, sample_t amp) {
+  void SetLFORouting(sample_t pitch, sample_t filter, sample_t amp,
+                     sample_t pan = 0.0) {
     mLfoPitchDepth = pitch;
     mLfoFilterDepth = filter;
     mLfoAmpDepth = amp;
+    mLfoPanDepth = pan;
   }
 
   void SetPolyModOscBToFreqA(sample_t amount) { mPolyModOscBToFreqA = amount; }
@@ -381,6 +391,7 @@ private:
   sample_t mLfoPitchDepth = 0.0;
   sample_t mLfoFilterDepth = 0.0;
   sample_t mLfoAmpDepth = 0.0;
+  sample_t mLfoPanDepth = 0.0;
 
   sample_t mPolyModOscBToFreqA = 0.0;
   sample_t mPolyModOscBToPWM = 0.0;
@@ -394,6 +405,7 @@ private:
   uint32_t mTimestamp = 0;
   float mCurrentPitch = 0.0f;
   float mPanPosition = 0.0f;
+  float mLastLfoVal = 0.0f;
   float mStolenFadeGain = 0.0f;
   sample_t mStolenFadeDelta = 0.0;
   float mLastAmpEnvVal = 0.0f;
@@ -522,9 +534,9 @@ public:
       if (mono == 0.0)
         continue;
 
-      float pan = voice.GetPanPosition();
+      float pan = std::clamp(voice.GetPanPosition(), -1.0f, 1.0f);
       // Constant-power panning: theta maps [-1,+1] to [0, pi/2]
-      double theta = (static_cast<double>(pan) + 1.0) * kPi * 0.25;
+      double theta = (static_cast<double>(pan) + 1.0) * (kPi / 4.0);
       outLeft += mono * std::cos(theta);
       outRight += mono * std::sin(theta);
     }
@@ -614,9 +626,10 @@ public:
     }
   }
 
-  void SetLFORouting(sample_t pitch, sample_t filter, sample_t amp) {
+  void SetLFORouting(sample_t pitch, sample_t filter, sample_t amp,
+                     sample_t pan = 0.0) {
     for (auto &voice : mVoices) {
-      voice.SetLFORouting(pitch, filter, amp);
+      voice.SetLFORouting(pitch, filter, amp, pan);
     }
   }
 

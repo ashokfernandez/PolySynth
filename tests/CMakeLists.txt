@@ -59,6 +59,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_UI_Components.cpp
     unit/Test_Engine_Basic.cpp
     unit/Test_Engine_Audio.cpp
+    unit/Test_Engine_Modulation.cpp
     unit/Test_VoiceManager_Poly.cpp
     unit/Test_SPSCRingBuffer.cpp
     unit/Test_VoiceStateMachine.cpp

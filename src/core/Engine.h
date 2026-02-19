@@ -73,8 +73,9 @@ public:
   void SetLFO(int type, double rate, double depth) {
     mVoiceManager.SetLFO(type, rate, depth);
   }
-  void SetLFORouting(double pitch, double filter, double amp) {
-    mVoiceManager.SetLFORouting(pitch, filter, amp);
+  void SetLFORouting(double pitch, double filter, double amp,
+                     double pan = 0.0) {
+    mVoiceManager.SetLFORouting(pitch, filter, amp, pan);
   }
 
   void SetPolyModOscBToFreqA(double amount) {
@@ -120,9 +121,10 @@ public:
 
   // --- Audio Processing ---
   void Process(sample_t &left, sample_t &right) {
-    sample_t out = mVoiceManager.Process();
-    left = out;
-    right = out;
+    double l, r;
+    mVoiceManager.ProcessStereo(l, r);
+    left = static_cast<sample_t>(l);
+    right = static_cast<sample_t>(r);
 
     sample_t fxL, fxR;
     mChorus.Process(left, right, &fxL, &fxR);
@@ -135,9 +137,10 @@ public:
 
   void Process(sample_t **inputs, sample_t **outputs, int nFrames, int nChans) {
     for (int i = 0; i < nFrames; ++i) {
-      sample_t out = mVoiceManager.Process();
-      sample_t left = out;
-      sample_t right = out;
+      double l, r;
+      mVoiceManager.ProcessStereo(l, r);
+      sample_t left = static_cast<sample_t>(l);
+      sample_t right = static_cast<sample_t>(r);
 
       sample_t fxL, fxR;
       mChorus.Process(left, right, &fxL, &fxR);
