@@ -38,7 +38,7 @@ public:
 
   void OnNoteOff(int note) { mVoiceManager.OnNoteOff(note); }
 
-  void SetParameter(int paramNum, double value) {
+  void SetParameter(int /*paramNum*/, double /*value*/) {
     // Basic param dispatch could go here
   }
 
@@ -135,7 +135,8 @@ public:
     right = fxR;
   }
 
-  void Process(sample_t **inputs, sample_t **outputs, int nFrames, int nChans) {
+  void Process(sample_t ** /*inputs*/, sample_t **outputs, int nFrames,
+               int nChans) {
     for (int i = 0; i < nFrames; ++i) {
       double l, r;
       mVoiceManager.ProcessStereo(l, r);
