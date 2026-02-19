@@ -175,9 +175,8 @@ bool PresetManager::Deserialize(const std::string &jsonStr,
     DESERIALIZE(j, outState, fxLimiterThreshold);
 
     return true;
-  } catch (const std::exception &e) {
+  } catch (const std::exception & /*e*/) {
     // TODO: Logging
-    std::cerr << "JSON Parse Error: " << e.what() << std::endl;
     return false;
   }
 }

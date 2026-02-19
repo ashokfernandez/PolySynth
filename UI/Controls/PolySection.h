@@ -6,7 +6,7 @@
 class PolySection : public IControl {
 public:
   PolySection(const IRECT &bounds, const char *title)
-      : IControl(bounds), mTitle(title) {
+      : IControl(bounds), mTitle(title), mCachedLayer(nullptr) {
     mIgnoreMouse = true;
   }
 

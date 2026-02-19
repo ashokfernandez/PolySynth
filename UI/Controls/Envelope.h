@@ -19,7 +19,7 @@ using namespace igraphics;
  */
 class Envelope : public IControl {
 public:
-  Envelope(const IRECT &bounds, const IVStyle &style = DEFAULT_STYLE)
+  explicit Envelope(const IRECT &bounds, const IVStyle &style = DEFAULT_STYLE)
       : IControl(bounds), mAttack(0.2f), mDecay(0.3f), mSustain(0.7f),
         mRelease(0.4f), mStrokeColor(COLOR_BLUE),
         mFillColor(COLOR_BLUE.WithOpacity(0.2f)) {
