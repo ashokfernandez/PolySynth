@@ -216,6 +216,13 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
 - **Multiple build systems require parallel maintenance.** This project has CMake (for native tests), Xcode (for desktop plugin), and Makefiles (for WAM web builds). Adding a dependency or header in one build system does not propagate to the others. Future sprint plans should include a checklist item: "Update all build targets: CMake, Xcode, WAM makefiles."
 - **`#if IPLUG_EDITOR` guards are a recurring source of WAM build failures.** Sprint 4's retro item #2 already noted a preprocessor issue. A pre-commit check that scans for unguarded `GetUI()` calls (similar to the existing `check_ui_safety.py`) would prevent this class of error entirely.
 
+### Embedded Portability Refactor (Sprint 4 Follow-up)
+
+13. **Hardcoded `double` and `uint64_t` types hindered embedded porting**
+    - **Problem:** `VoiceManager` and `sea_voice_allocator` used `double` for audio/control signals and `uint64_t` for timestamps. This is suboptimal for embedded platforms (e.g. Cortex-M7) where `float` is native and `double` is software-emulated or slower, and 64-bit atomics are expensive.
+    - **Action:** Refactored the entire voice architecture to use `sample_t` (configurable via `types.h`) for signals and `uint32_t` for timestamps. Updated `sea::VoiceAllocator` to use `float` for control parameters (spread, detune) as extreme precision isn't needed there.
+    - **Lesson:** When designing a DSP library for both desktop and embedded (`SEA_DSP`/`SEA_Util`), strict type discipline is required. Use `sample_t` alias everywhere. Avoid `uint64_t` for sample counters unless the wrap-around time (< 24 hours at 48kHz for uint32) is a genuine problem. (Here, `uint32_t` voice ages/timestamps are relative and short-lived, so wrap-around is manageable or irrelevant).
+
 ---
 
 ## Resolved notes
