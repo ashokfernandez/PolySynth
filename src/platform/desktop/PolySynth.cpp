@@ -726,13 +726,6 @@ void PolySynthPlugin::BuildFooter(IGraphics *g, const IRECT &bounds,
 #if IPLUG_DSP
 void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
                                    int nFrames) {
-  static int blockCounter = 0;
-  if (blockCounter++ % 100 == 0) {
-    // Log every 100 blocks (~2 seconds)
-    printf("[DSP] ProcessBlock: Mode=%d, SampleRate=%.1f\n",
-           (int)mDemoSequencer.GetMode(), GetSampleRate());
-  }
-
   mDemoSequencer.Process(nFrames, GetSampleRate(), mDSP);
   mDSP.UpdateState(mState);
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
