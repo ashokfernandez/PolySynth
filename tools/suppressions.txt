@@ -15,3 +15,25 @@ unmatchedSuppression
 # DSP float arithmetic is intentionally lossy in these files
 floatConversion:*/sea_dsp/*
 floatConversion:*/SEA_DSP/*
+# --- Pre-existing issues baselined on hardening-pipeline PR ---
+# src/core: pre-existing style issues in Engine.h and VoiceManager.h
+functionStatic:*/src/core/Engine.h
+redundantAssignment:*/src/core/VoiceManager.h
+redundantInitialization:*/src/core/VoiceManager.h
+shadowVariable:*/src/core/VoiceManager.h
+useStlAlgorithm:*/src/core/VoiceManager.h
+# libs/SEA_Util: functionConst on template instantiations of VoiceAllocator
+functionConst:*/libs/SEA_Util/*
+# tests/mocks: intentional mock stubs
+noExplicitConstructor:*/tests/mocks/*
+functionStatic:*/tests/mocks/*
+# tests/unit: pre-existing issues across test files
+unreadVariable:*/tests/unit/*
+variableScope:*/tests/unit/*
+constVariable:*/tests/unit/*
+constVariable:*/tests/demos/*
+comparisonOfFuncReturningBoolError:*/tests/unit/*
+useStlAlgorithm:*/tests/unit/*
+truncLongCastAssignment:*/tests/unit/*
+# tests/utils: intentional C-style casts in WAV writer for binary serialisation
+cstyleCast:*/tests/utils/*
