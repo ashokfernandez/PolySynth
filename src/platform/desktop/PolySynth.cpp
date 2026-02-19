@@ -555,10 +555,12 @@ void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
   g->AttachControl(new PolySection(bounds, "AMP ENVELOPE"));
   const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
                           .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
+  // Increase envelope visualizer height (40%)
   const IRECT vizArea =
-      inner.GetFromTop(inner.H() * 0.35f).GetPadded(-8.f).GetTranslated(0, 6.f);
-  // Increase slider area to match taller top row proportion
-  const IRECT sliderArea = inner.GetFromBottom(inner.H() * 0.65f);
+      inner.GetFromTop(inner.H() * 0.40f).GetPadded(-8.f).GetTranslated(0, 6.f);
+
+  // Decrease slider area slightly (60%) but optimize layout
+  const IRECT sliderArea = inner.GetFromBottom(inner.H() * 0.60f);
 
   Envelope *pEnvelope = new Envelope(vizArea, style);
   pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
@@ -586,10 +588,11 @@ void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
     IRECT valueRect = cell.GetFromBottom(valueH);
 
     // Slider fills the space between label and value
-    // Remove GetMidHPadded(20.f) to allow full width for chunkier look
-    IRECT sliderRect = cell.GetReducedFromTop(labelH)
-                           .GetReducedFromBottom(valueH)
-                           .GetMidHPadded(2.f);
+    // Changed from GetMidHPadded (which made it 2px wide) to GetHPadded(2.f)
+    // for full width minus small padding
+    IRECT sliderRect =
+        cell.GetReducedFromTop(labelH).GetReducedFromBottom(valueH).GetHPadded(
+            2.f);
 
     // Label
     g->AttachControl(
