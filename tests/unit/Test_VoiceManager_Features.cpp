@@ -100,13 +100,13 @@ TEST_CASE("VoiceManager Stereo Spread", "[VoiceManager]") {
 
     auto states = vm.GetVoiceStates();
     int active = 0;
-    float panningSum = 0.0f;
+    // float panningSum = 0.0f;
     float absPanningSum = 0.0f;
 
     for (const auto &s : states) {
       if (s.state != VoiceState::Idle) {
         active++;
-        panningSum += s.panPosition;
+        // panningSum += s.panPosition;
         absPanningSum += std::abs(s.panPosition);
       }
     }

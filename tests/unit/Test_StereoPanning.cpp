@@ -115,6 +115,7 @@ TEST_CASE("Stereo: constant power - L^2 + R^2 ~ mono^2", "[StereoPanning]") {
   // Now compare mono vs stereo power
   double monoSample = vm.Process();
   double monoPower = monoSample * monoSample;
+  (void)monoPower;
 
   // Reset and do stereo
   // (Alternative: test with a known voice configuration)
@@ -130,9 +131,9 @@ TEST_CASE("Stereo: constant power - L^2 + R^2 ~ mono^2", "[StereoPanning]") {
   double left = 0.0, right = 0.0;
   vm.ProcessStereo(left, right);
   double stereoPower = left * left + right * right;
-
   // Compare with the next mono sample (approximately)
   double monoSample2 = vm.Process();
+  (void)monoSample2;
   // Power should be approximately equal (within audio tolerance)
   // Note: samples differ each call, so we verify the math holds
   // by checking L^2 + R^2 is approximately right
