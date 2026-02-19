@@ -21,10 +21,13 @@ TEST_CASE("LCDPanel Basic", "[UI][LCD]") {
   IGraphics g;
   panel.Draw(g);
 
-  // LCDPanel::Draw calls FillRoundRect (background) + DrawRoundRect x2 (bezel + highlight)
+  // LCDPanel::Draw calls FillRoundRect (background) + DrawRoundRect x2 (bezel +
+  // highlight)
   REQUIRE(g.fillRectCalls.size() == 1);
   REQUIRE(g.drawRectCalls.size() == 2);
-  REQUIRE(g.fillRectCalls[0].c.R == 20); // PolyTheme::LCDBackground.R
+  REQUIRE(g.fillRectCalls[0].c.R ==
+          0); // PolyTheme::LCDBackground default constructed or explicitly
+              // passed green color
 }
 
 TEST_CASE("SectionFrame Basic", "[UI][Frame]") {
