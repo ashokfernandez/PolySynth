@@ -368,7 +368,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   // 1. Oscillators | Filter | Envelope
   // 2. LFO | Poly Mod | Chorus | Delay | Master
 
-  const float topRowHeight = contentArea.H() * 0.55f;
+  const float topRowHeight = contentArea.H() * 0.65f;
   IRECT topRow =
       contentArea.GetFromTop(topRowHeight).GetPadded(-PolyTheme::Padding);
   IRECT bottomRow = contentArea.GetFromBottom(contentArea.H() - topRowHeight)
@@ -556,9 +556,9 @@ void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
   const IRECT inner = bounds.GetPadded(-PolyTheme::SectionPadding)
                           .GetFromBottom(bounds.H() - PolyTheme::SectionTitleH);
   const IRECT vizArea =
-      inner.GetFromTop(inner.H() * 0.45f).GetPadded(-8.f).GetTranslated(0, 6.f);
-  // Slightly increase slider area from 45% to 50% by stealing from viz/gap
-  const IRECT sliderArea = inner.GetFromBottom(inner.H() * 0.50f);
+      inner.GetFromTop(inner.H() * 0.35f).GetPadded(-8.f).GetTranslated(0, 6.f);
+  // Increase slider area to match taller top row proportion
+  const IRECT sliderArea = inner.GetFromBottom(inner.H() * 0.65f);
 
   Envelope *pEnvelope = new Envelope(vizArea, style);
   pEnvelope->SetADSR(GetParam(kParamAttack)->Value() / 1000.f,
@@ -586,15 +586,10 @@ void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
     IRECT valueRect = cell.GetFromBottom(valueH);
 
     // Slider fills the space between label and value
-    // ABSOLUTELY NO PADDING between text and slider to maximize length
-    // GetReducedFromTop/Bottom removes the text area.
-    // We do NOT use GetMidHPadded - we want full width (or reasonable width)
-    // IVSlider typically draws a thin track in center.
-    // Let's use GetMidHPadded(20.f) to keep it from being too wide if cell is
-    // wide, but ensure top/bottom touch the text areas.
+    // Remove GetMidHPadded(20.f) to allow full width for chunkier look
     IRECT sliderRect = cell.GetReducedFromTop(labelH)
                            .GetReducedFromBottom(valueH)
-                           .GetMidHPadded(20.f);
+                           .GetMidHPadded(2.f);
 
     // Label
     g->AttachControl(
@@ -603,10 +598,10 @@ void PolySynthPlugin::BuildEnvelope(IGraphics *g, const IRECT &bounds,
                                "Bold", EAlign::Center)));
 
     // Slider
-    // Use WidgetFrac 0.15f for a smaller handle -> longer perception of travel
+    // Revert WidgetFrac to 0.5f (or default) for normal handle size
     g->AttachControl(new IVSliderControl(
         sliderRect, params[i], "",
-        style.WithShowLabel(false).WithShowValue(false).WithWidgetFrac(0.15f)));
+        style.WithShowLabel(false).WithShowValue(false).WithWidgetFrac(0.5f)));
 
     // Value
     g->AttachControl(new ICaptionControl(valueRect, params[i],
