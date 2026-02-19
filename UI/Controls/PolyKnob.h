@@ -61,16 +61,11 @@ public:
 
     if (mShowValue) {
       WDL_String valStr;
-      if (GetParam())
-        GetParam()->GetDisplay(valStr);
+      GetParam()->GetDisplay(valStr);
       g.DrawText(IText(PolyTheme::FontControl, PolyTheme::TextDark,
                        "Roboto-Regular", EAlign::Center),
                  valStr.Get(), mValueRect);
     }
-  }
-
-  void OnMouseDown(float x, float y, const IMouseMod &mod) override {
-    IKnobControlBase::OnMouseDown(x, y, mod);
   }
 
   void OnResize() override { UpdateLayout(); }

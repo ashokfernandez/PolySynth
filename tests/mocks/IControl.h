@@ -1,6 +1,7 @@
 #pragma once
 #include "IGraphicsStructs.h"
 #include <functional>
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -77,7 +78,7 @@ public:
   }
   void *EndLayer() {
     endLayerCalls++;
-    return (void *)1;
+    return reinterpret_cast<void *>(static_cast<uintptr_t>(1));
   } // non-null sentinel
   void DrawLayer(void * /*layer*/, const void * /*blend*/ = nullptr) {
     drawLayerCalls++;
@@ -125,7 +126,7 @@ class IKnobControlBase : public IControl {
 public:
   IKnobControlBase(const IRECT &bounds, int paramIdx = -1)
       : IControl(bounds, paramIdx) {}
-  virtual ~IKnobControlBase() {}
+  ~IKnobControlBase() override {}
 
   double GetValue() const { return mValue; }
   void SetValue(double value) { mValue = value; }
@@ -147,7 +148,7 @@ public:
   ISwitchControlBase(const IRECT &bounds, int paramIdx,
                      void * /*actionFunc*/ = nullptr, int /*numStates*/ = 2)
       : IControl(bounds, paramIdx) {}
-  virtual ~ISwitchControlBase() {}
+  ~ISwitchControlBase() override {}
   double GetValue() const { return mValue; }
   void SetValue(double v) { mValue = v; }
 

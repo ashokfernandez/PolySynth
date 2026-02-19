@@ -97,7 +97,7 @@ TEST_CASE("Envelope Bounds & Draw", "[UI][Envelope]") {
   // Paths are cleared and rebuilt twice
   REQUIRE(g.currentPath.size() == 5); // 1 MoveTo + 4 LineTo's for stroke
 
-  auto &stroke = g.pathStrokes[0];
+  const auto &stroke = g.pathStrokes[0];
   // Verify coordinates of the stroke path vertices
   // Padded bounds: 10px all sides -> w = 180, h = 80, left = 10, top = 10
   // Attack (0.25) -> ax = 180 * (0.25 * 0.25) = 11.25
