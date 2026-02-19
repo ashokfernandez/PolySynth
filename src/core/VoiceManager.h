@@ -73,15 +73,17 @@ public:
   }
 
   void NoteOn(int note, int velocity, uint64_t timestamp = 0) {
-    double newFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
-    mTargetFreq = newFreq;
+    double baseFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
+    double detuneFactor = std::pow(2.0, mUnisonDetuneCents / 1200.0);
+    double detunedFreq = baseFreq * detuneFactor;
+    mTargetFreq = detunedFreq;
 
     if (mGlideTime > 0.0 && mActive) {
       // Legato glide: keep current frequency, glide to target
       // Don't reset oscillators — smooth transition
     } else {
       // Normal retrigger: jump to frequency immediately
-      mFreq = newFreq;
+      mFreq = detunedFreq;
       mOscA.SetFrequency(mFreq);
       mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
       mOscA.Reset();
@@ -106,12 +108,21 @@ public:
     mVoiceState = VoiceState::Release;
   }
 
-  void ApplyDetuneCents(double cents) {
-    double factor = std::pow(2.0, cents / 1200.0);
-    mFreq *= factor;
-    mCurrentPitch = static_cast<float>(mFreq);
-    mOscA.SetFrequency(mFreq);
-    mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
+  void SetUnisonDetuneCents(double cents) {
+    double oldFactor = std::pow(2.0, mUnisonDetuneCents / 1200.0);
+    double newFactor = std::pow(2.0, cents / 1200.0);
+
+    if (mActive && oldFactor > 0.0) {
+      // Rebase current and target pitch to the undetuned base before applying
+      // updated unison detune. This avoids compounding detune during legato.
+      mFreq = (mFreq / oldFactor) * newFactor;
+      mTargetFreq = (mTargetFreq / oldFactor) * newFactor;
+      mCurrentPitch = static_cast<float>(mFreq);
+      mOscA.SetFrequency(mFreq);
+      mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
+    }
+
+    mUnisonDetuneCents = cents;
   }
 
   inline sample_t Process() {
@@ -403,6 +414,7 @@ private:
 
   double mTargetFreq = 440.0;
   double mGlideTime = 0.0;
+  double mUnisonDetuneCents = 0.0;
 
   double mSampleRate = 48000.0;
 };
@@ -439,10 +451,13 @@ public:
       if (idx < 0)
         break; // No voice available
 
+      // Apply unison detune before NoteOn so target pitch includes the detune,
+      // and legato re-triggers can rebase cleanly.
+      auto info = mAllocator.GetUnisonVoiceInfo(u);
+      mVoices[idx].SetUnisonDetuneCents(info.detuneCents);
       mVoices[idx].NoteOn(note, velocity, ++mGlobalTimestamp);
 
-      // Apply unison detune and pan
-      auto info = mAllocator.GetUnisonVoiceInfo(u);
+      // Apply unison pan
 
       // If we are in non-unison mode, apply stereo spread based on voice index
       // to spread voices across the stereo field.
@@ -454,9 +469,6 @@ public:
         info.panPosition = pan;
       }
 
-      if (info.detuneCents != 0.0) {
-        mVoices[idx].ApplyDetuneCents(info.detuneCents);
-      }
       mVoices[idx].SetPanPosition(static_cast<float>(info.panPosition));
     }
   }

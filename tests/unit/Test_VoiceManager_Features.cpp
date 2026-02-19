@@ -1,5 +1,8 @@
 #include "VoiceManager.h"
 #include <catch.hpp>
+#include <cmath>
+#include <fstream>
+#include <sstream>
 
 using namespace PolySynthCore;
 
@@ -119,4 +122,67 @@ TEST_CASE("VoiceManager Stereo Spread", "[VoiceManager]") {
     // We WANT it to be > 0.0.
     CHECK(absPanningSum > 0.1f);
   }
+}
+
+TEST_CASE("Voice legato retrigger does not compound unison detune",
+          "[VoiceManager][Portamento][Unison]") {
+  Voice v;
+  v.Init(48000.0);
+  v.SetGlideTime(0.1); // Ensure legato path is active while note is held
+
+  const double detuneCents = 100.0;
+  const double detuneFactor = std::pow(2.0, detuneCents / 1200.0);
+  const double expected = 440.0 * std::pow(2.0, (60.0 - 69.0) / 12.0) *
+                          detuneFactor;
+
+  v.SetUnisonDetuneCents(detuneCents);
+  v.NoteOn(60, 100);
+
+  // Re-trigger legato several times with same detune. Prior behavior multiplied
+  // current frequency repeatedly on each retrigger.
+  for (int i = 0; i < 5; ++i) {
+    for (int s = 0; s < 256; ++s)
+      v.Process();
+    v.SetUnisonDetuneCents(detuneCents);
+    v.NoteOn(60, 100);
+  }
+
+  for (int s = 0; s < 1024; ++s)
+    v.Process();
+
+  CHECK(v.GetCurrentPitch() == Approx(expected).margin(0.5f));
+}
+
+TEST_CASE("Desktop ProcessBlock contains no printf logging",
+          "[Desktop][Realtime]") {
+  const char *candidates[] = {
+      "src/platform/desktop/PolySynth.cpp",
+      "../src/platform/desktop/PolySynth.cpp",
+      "../../src/platform/desktop/PolySynth.cpp",
+  };
+
+  std::string source;
+  for (const char *path : candidates) {
+    std::ifstream in(path);
+    if (!in.good())
+      continue;
+    std::ostringstream ss;
+    ss << in.rdbuf();
+    source = ss.str();
+    break;
+  }
+
+  REQUIRE_FALSE(source.empty());
+
+  const std::string beginSig = "void PolySynthPlugin::ProcessBlock";
+  const std::string endSig = "void PolySynthPlugin::OnIdle";
+  const auto begin = source.find(beginSig);
+  const auto end = source.find(endSig);
+
+  REQUIRE(begin != std::string::npos);
+  REQUIRE(end != std::string::npos);
+  REQUIRE(end > begin);
+
+  const std::string processBlock = source.substr(begin, end - begin);
+  CHECK(processBlock.find("printf(") == std::string::npos);
 }
