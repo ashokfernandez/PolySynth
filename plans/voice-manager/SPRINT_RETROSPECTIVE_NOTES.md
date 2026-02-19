@@ -170,6 +170,47 @@ This file captures cross-sprint review/retro feedback that should inform future 
    - **Problem:** Preset selector and Save button alignment was inconsistent; version text was cluttering the footer.
    - **Action:** Refined `BuildHeader` and `BuildFooter` with consistent centering logic and removed non-essential text elements.
 
+### CI Stabilization (post-implementation review by separate agent)
+
+A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 implementation agent had finished. Three CI jobs were failing: Build Gallery WAM, Build PolySynth WAM Demo, and Build Component Gallery Storybook. The fixes required four commits across five files. Below is what was found and what could have been done better.
+
+#### Issues found
+
+6. **Missing `#include "PolyTheme.h"` in `Envelope.h`**
+   - **Problem:** `Envelope.h` referenced `PolyTheme::ControlBG`, `PolyTheme::AccentCyan`, etc. but never included the header. The desktop Xcode build happened to pull it in transitively, but the WAM web builds (Gallery and Storybook) compiled `Envelope.h` in a different include order where the transitive path didn't exist.
+   - **Action:** Added `#include "PolyTheme.h"` to `Envelope.h`.
+   - **Lesson:** Every header should include what it uses directly. Never rely on transitive includes — they break when compilation order or include paths change between build targets.
+
+7. **Missing `SEA_Util` include path in WAM build makefiles**
+   - **Problem:** `VoiceManager.h` (added in Sprint 2) includes `<sea_util/sea_voice_allocator.h>`, but `PolySynth-web.mk` only had `SEA_DSP` in its `WAM_CFLAGS` and `WEB_CFLAGS`. The WAM processor build couldn't find the header.
+   - **Action:** Added `SEA_UTIL_INCLUDE` variable and appended `-I$(SEA_UTIL_INCLUDE)` to both `WAM_CFLAGS` and `WEB_CFLAGS`.
+   - **Lesson:** When a new library dependency is added to the core (Sprint 2 added `SEA_Util`), *all* build targets that compile core headers must be updated — not just CMake/native builds. The WAM makefile-based builds are a separate build system that must be maintained in parallel. This was noted as working well in Sprint 2's retro ("Demo targets gaining `SEA_Util` linkage was caught proactively"), but the WAM web makefiles were missed.
+
+8. **Unguarded `GetUI()` calls in `PolySynth.cpp` for WAM processor build**
+   - **Problem:** `OnIdle()` and `OnParamChange()` called `GetUI()` and cast to `PresetSaveButton*` without `#if IPLUG_EDITOR` guards. The WAM processor build defines `IPLUG_DSP=1` with `NO_IGRAPHICS`, so `GetUI()` doesn't exist and `PresetSaveButton` is not included.
+   - **Action:** Wrapped the editor-only blocks in `#if IPLUG_EDITOR` / `#endif`.
+   - **Lesson:** iPlug2 compiles the same `.cpp` file in multiple configurations (editor+DSP for controller, DSP-only for processor). Any code that touches UI must be guarded. The Sprint 4 agent should have audited all `GetUI()` calls against the preprocessor stack before committing.
+
+9. **Dead code and copy-paste artifacts in `VoiceManager.h`**
+   - **Problem:** Three issues were being hidden by cppcheck suppressions added during the CI hardening pipeline:
+     - Duplicate `rs.panPosition = mPanPosition;` line (copy-paste)
+     - `pan` variable computed then immediately re-assigned the same expression, surrounded by 20+ lines of "thinking out loud" comments
+     - Local `const double kPi` shadowing the identical `kPi` from `types.h`, with 7 lines of stream-of-consciousness comments debating which constant to use
+   - **Action:** Removed dead code, removed rambling comments, removed 3 unnecessary suppressions (`redundantAssignment`, `redundantInitialization`, `shadowVariable`).
+   - **Lesson:** LLM-generated "thinking out loud" comments (e.g., "Let's check if kPi is defined in types.h? It's likely M_PI. Plan said kPi.") must never be committed to production source. These are reasoning traces, not documentation. The implementing agent should have cleaned up its draft comments before finalizing the PR. Similarly, duplicate lines should have been caught by a self-review pass or by running cppcheck locally before pushing.
+
+10. **New cppcheck 2.19 checks not covered by suppressions**
+    - **Problem:** `suspiciousFloatingPointCast` (test code) and `dangerousTypeCast` (WAV writer) are new checks in cppcheck 2.19 that weren't in the CI's older version. They would break CI on a future cppcheck upgrade.
+    - **Action:** Added targeted suppressions for both in test/utility code only.
+    - **Lesson:** When adding a CI static analysis gate, pin the tool version or periodically run with the latest version locally to catch new checks before they surprise CI.
+
+#### Process observations
+
+- **The implementing agent never ran the WAM web build.** The CI had three distinct web build jobs (Gallery WAM, PolySynth WAM Demo, Component Gallery Storybook) and all three failed. A local `emmake` build or even a dry-run syntax check with `clang++ -fsyntax-only` using the WAM build flags would have caught issues 6, 7, and 8 before pushing.
+- **The implementing agent never ran cppcheck locally.** The dead code (issue 9) was already flagged by the static analysis pipeline, but instead of fixing the issues, suppressions were added to baseline them. This is appropriate for pre-existing issues in code you don't own, but not for code you just wrote in the same PR.
+- **Multiple build systems require parallel maintenance.** This project has CMake (for native tests), Xcode (for desktop plugin), and Makefiles (for WAM web builds). Adding a dependency or header in one build system does not propagate to the others. Future sprint plans should include a checklist item: "Update all build targets: CMake, Xcode, WAM makefiles."
+- **`#if IPLUG_EDITOR` guards are a recurring source of WAM build failures.** Sprint 4's retro item #2 already noted a preprocessor issue. A pre-commit check that scans for unguarded `GetUI()` calls (similar to the existing `check_ui_safety.py`) would prevent this class of error entirely.
+
 ---
 
 ## Resolved notes
