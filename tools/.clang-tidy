@@ -1,0 +1,110 @@
+---
+# tools/.clang-tidy
+# Clang-Tidy configuration for the PolySynth project.
+#
+# Design philosophy:
+#   - Enable broad check groups, then disable individual checks that generate
+#     unavoidable noise in audio/DSP code (e.g., magic-number thresholds for
+#     sample rates, heavy template metaprogramming in header-only libraries).
+#   - Use // NOLINT(check-name) in source for isolated, justified exceptions.
+#   - Promote ALL warnings to errors (--warnings-as-errors=* in CMake).
+#
+# Check groups enabled:
+#   bugprone-*          : Undefined-behavior triggers, use-after-move, etc.
+#   cert-*              : SEI CERT Secure Coding Standards.
+#   cppcoreguidelines-* : Modern C++ resource ownership and lifetime rules.
+#   performance-*       : Inefficient patterns (pass-by-value on heavy types).
+#   readability-*       : Code clarity (limited subset – avoids churn).
+#   modernize-*         : C++17 upgrades.
+#
+# Groups intentionally excluded:
+#   google-*            : Google style is not this project's convention.
+#   llvm-*              : LLVM internal style rules.
+#   fuchsia-*           : Overly restrictive for audio plugin code.
+#   android-*           : Platform-specific.
+#   objc-*              : Objective-C only.
+#   abseil-*            : Requires Abseil library.
+#   boost-*             : Requires Boost library.
+#   hicpp-*             : Largely duplicates cert-* with different naming.
+#
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-implicit-widening-of-multiplication-result,
+  cert-*,
+  -cert-err58-cpp,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  performance-*,
+  readability-identifier-naming,
+  readability-redundant-member-init,
+  readability-const-return-type,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-default-member-init,
+  modernize-loop-convert,
+  modernize-use-emplace
+
+# Promote all findings to errors so the build gate fires.
+WarningsAsErrors: '*'
+
+# Point to the compile database so clang-tidy resolves include paths correctly.
+# cmake/StaticAnalysis.cmake also passes --project but this is the config-file default.
+HeaderFilterRegex: '(src|libs)/.*\.(h|hpp)$'
+
+# Do not analyse 3rd-party or generated files.
+ExcludeHeaderFilterRegex: >
+  .*(external|iPlug2|daisysp|catch2|nlohmann|build)/.*
+
+CheckOptions:
+  # --- readability-identifier-naming: enforce consistent naming conventions ---
+  # Types (classes, structs, enums, typedefs) use PascalCase.
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypedefCase
+    value: CamelCase
+  # Member variables: mPascalCase (iPlug2 convention used in this codebase).
+  - key: readability-identifier-naming.MemberCase
+    value: CamelCase
+  - key: readability-identifier-naming.MemberPrefix
+    value: 'm'
+  # Static member variables: sPascalCase.
+  - key: readability-identifier-naming.ClassMemberCase
+    value: CamelCase
+  # Local variables and parameters: camelCase.
+  - key: readability-identifier-naming.LocalVariableCase
+    value: camelCase
+  - key: readability-identifier-naming.ParameterCase
+    value: camelCase
+  # Functions / methods: PascalCase (iPlug2 convention).
+  - key: readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.MethodCase
+    value: CamelCase
+  # Constants and enum values: kPascalCase.
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantPrefix
+    value: 'k'
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: CamelCase
+  - key: readability-identifier-naming.ConstexprVariablePrefix
+    value: 'k'
+
+  # --- performance ---
+  # Flag objects larger than this (bytes) passed by value.
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: ''
+
+  # --- modernize ---
+  - key: modernize-loop-convert.MinConfidence
+    value: reasonable
+...

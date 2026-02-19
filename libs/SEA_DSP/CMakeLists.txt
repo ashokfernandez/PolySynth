@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 project(SEA_DSP)
 
+# Export compile commands so Cppcheck / Clang-Tidy can analyse this library
+# when it is built as a standalone project (e.g. cmake -S libs/SEA_DSP ...).
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_library(SEA_DSP INTERFACE)
 
 target_include_directories(SEA_DSP INTERFACE
@@ -86,8 +90,21 @@ if(SEA_DSP_NEEDS_DAISYSP)
     target_link_libraries(SEA_DSP INTERFACE DaisySP)
 endif()
 
+# ---------------------------------------------------------------------------
 # Tests
+# ---------------------------------------------------------------------------
 option(SEA_BUILD_TESTS "Build SEA_DSP unit tests" OFF)
 if(SEA_BUILD_TESTS)
+    # Load sanitizer support when building tests standalone.
+    # When SEA_DSP is consumed as a sub-project the parent already loaded this.
+    if(NOT COMMAND polysynth_apply_sanitizers)
+        set(_sea_cmake_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
+        if(EXISTS "${_sea_cmake_dir}/Sanitizers.cmake")
+            list(APPEND CMAKE_MODULE_PATH "${_sea_cmake_dir}")
+            include(Sanitizers)
+        endif()
+        unset(_sea_cmake_dir)
+    endif()
+
     add_subdirectory(tests)
 endif()
