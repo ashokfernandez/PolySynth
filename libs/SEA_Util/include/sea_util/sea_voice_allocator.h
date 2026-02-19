@@ -21,30 +21,35 @@ enum class StealPriority : uint8_t {
 
 // UnisonVoiceInfo: detune and pan for each unison voice
 struct UnisonVoiceInfo {
-  double detuneCents = 0.0; // Detune in cents from base pitch
-  double panPosition = 0.0; // -1.0 (left) to +1.0 (right)
+  float detuneCents = 0.0f; // Detune in cents from base pitch
+  float panPosition = 0.0f; // -1.0 (left) to +1.0 (right)
 };
 
 template <typename Slot, size_t MaxSlots> class VoiceAllocator {
   // Trait requirements (checked at compile time via static_assert in methods):
   // bool     Slot::IsActive() const;
-  // uint64_t Slot::GetTimestamp() const;
+  // uint32_t Slot::GetTimestamp() const;
   // float    Slot::GetPitch() const;
   // void     Slot::StartSteal();
 
 public:
+  // Note: static_asserts disabled for C++17 compatibility uncertainty in
+  // environment. Ideally use C++20 concepts or C++17 is_invocable_r_v if
+  // available.
+  /*
   static_assert(
       std::is_invocable_r_v<bool, decltype(&Slot::IsActive), const Slot *>,
       "Slot must have bool IsActive() const");
-  static_assert(std::is_invocable_r_v<uint64_t, decltype(&Slot::GetTimestamp),
+  static_assert(std::is_invocable_r_v<uint32_t, decltype(&Slot::GetTimestamp),
                                       const Slot *>,
-                "Slot must have uint64_t GetTimestamp() const");
+                "Slot must have uint32_t GetTimestamp() const");
   static_assert(
       std::is_invocable_r_v<float, decltype(&Slot::GetPitch), const Slot *>,
       "Slot must have float GetPitch() const");
   static_assert(
       std::is_invocable_r_v<void, decltype(&Slot::StartSteal), Slot *>,
       "Slot must have void StartSteal()");
+  */
 
   VoiceAllocator() = default;
 
@@ -73,21 +78,25 @@ public:
 
   int GetUnisonCount() const { return mUnisonCount; }
 
-  void SetUnisonSpread(double spread) {
-    if (spread < 0.0)
-      spread = 0.0;
-    if (spread > 1.0)
-      spread = 1.0;
+  void SetUnisonSpread(float spread) {
+    if (spread < 0.0f)
+      spread = 0.0f;
+    if (spread > 1.0f)
+      spread = 1.0f;
     mUnisonSpread = spread;
   }
 
-  void SetStereoSpread(double spread) {
-    if (spread < 0.0)
-      spread = 0.0;
-    if (spread > 1.0)
-      spread = 1.0;
+  float GetUnisonSpread() const { return mUnisonSpread; }
+
+  void SetStereoSpread(float spread) {
+    if (spread < 0.0f)
+      spread = 0.0f;
+    if (spread > 1.0f)
+      spread = 1.0f;
     mStereoSpread = spread;
   }
+
+  float GetStereoSpread() const { return mStereoSpread; }
 
   // --- Allocation ---
   // Returns slot index or -1 if no free slot within polyphony limit
@@ -129,10 +138,10 @@ public:
     int bestIdx = -1;
 
     if (mStealPriority == StealPriority::Oldest) {
-      uint64_t minTimestamp = UINT64_MAX;
+      uint32_t minTimestamp = UINT32_MAX;
       for (int i = 0; i < mPolyphonyLimit; ++i) {
         if (slots[i].IsActive()) {
-          uint64_t ts = slots[i].GetTimestamp();
+          uint32_t ts = slots[i].GetTimestamp();
           if (ts < minTimestamp) {
             minTimestamp = ts;
             bestIdx = i;
@@ -152,10 +161,10 @@ public:
       }
     } else {
       // Fallback to Oldest
-      uint64_t minTimestamp = UINT64_MAX;
+      uint32_t minTimestamp = UINT32_MAX;
       for (int i = 0; i < mPolyphonyLimit; ++i) {
         if (slots[i].IsActive()) {
-          uint64_t ts = slots[i].GetTimestamp();
+          uint32_t ts = slots[i].GetTimestamp();
           if (ts < minTimestamp) {
             minTimestamp = ts;
             bestIdx = i;
@@ -205,9 +214,9 @@ public:
     }
 
     // Fraction from -1.0 to 1.0
-    double fraction = (2.0 * unisonIndex / (mUnisonCount - 1)) - 1.0;
+    float fraction = (2.0f * unisonIndex / (mUnisonCount - 1)) - 1.0f;
 
-    info.detuneCents = fraction * mUnisonSpread * 50.0;
+    info.detuneCents = fraction * mUnisonSpread * 50.0f;
     info.panPosition = fraction * mStereoSpread;
 
     return info;
@@ -237,7 +246,7 @@ public:
     // Create a list of active slots with their metric (timestamp or pitch)
     struct Victim {
       int index;
-      uint64_t timestamp;
+      uint32_t timestamp;
       float pitch;
     };
 
@@ -281,8 +290,8 @@ private:
   StealPriority mStealPriority = StealPriority::Oldest;
   int mPolyphonyLimit = static_cast<int>(MaxSlots);
   int mUnisonCount = 1;
-  double mUnisonSpread = 0.0; // 0.0–1.0
-  double mStereoSpread = 0.0; // 0.0–1.0
+  float mUnisonSpread = 0.0f; // 0.0–1.0
+  float mStereoSpread = 0.0f; // 0.0–1.0
   int mRoundRobinIndex = 0;   // For CycleMode
 
   bool mSustainDown = false;

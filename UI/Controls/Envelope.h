@@ -2,12 +2,14 @@
 
 #include "IControl.h"
 #include "IGraphics.h"
+#include "PolyTheme.h"
 
 using namespace iplug;
 using namespace igraphics;
 
 /**
- * @brief ADSR Envelope visualizer matching the React Envelope.jsx implementation
+ * @brief ADSR Envelope visualizer matching the React Envelope.jsx
+ * implementation
  *
  * Features:
  * - Visual representation of Attack, Decay, Sustain, Release
@@ -15,67 +17,61 @@ using namespace igraphics;
  * - Stroked outline
  * - Non-interactive (display only)
  */
-class Envelope : public IControl
-{
+class Envelope : public IControl {
 public:
-  Envelope(const IRECT& bounds, const IVStyle& style = DEFAULT_STYLE)
-    : IControl(bounds)
-    , mAttack(0.2f)
-    , mDecay(0.3f)
-    , mSustain(0.7f)
-    , mRelease(0.4f)
-    , mStrokeColor(COLOR_BLUE)
-    , mFillColor(COLOR_BLUE.WithOpacity(0.2f))
-  {
+  Envelope(const IRECT &bounds, const IVStyle &style = DEFAULT_STYLE)
+      : IControl(bounds), mAttack(0.2f), mDecay(0.3f), mSustain(0.7f),
+        mRelease(0.4f), mStrokeColor(COLOR_BLUE),
+        mFillColor(COLOR_BLUE.WithOpacity(0.2f)) {
     mIgnoreMouse = true; // This is a display-only control
   }
 
-  void Draw(IGraphics& g) override
-  {
-    // Get drawing area
-    float w = mRECT.W();
-    float h = mRECT.H();
-    float left = mRECT.L;
-    float top = mRECT.T;
+  void Draw(IGraphics &g) override {
+    // Draw background panel for the envelope area
+    g.FillRoundRect(PolyTheme::ControlBG, mRECT, PolyTheme::RoundingSection);
+    g.DrawRoundRect(PolyTheme::SectionBorder, mRECT, PolyTheme::RoundingSection,
+                    nullptr, 1.f);
 
-    // Ensure minimum values for visibility (matching React code)
+    // Get drawing area (padded slightly)
+    IRECT drawRect = mRECT.GetPadded(-10.f);
+    float w = drawRect.W();
+    float h = drawRect.H();
+    float left = drawRect.L;
+    float top = drawRect.T;
+
+    // Ensure minimum values for visibility
     float a = std::max(0.01f, mAttack);
     float d = std::max(0.01f, mDecay);
     float s = mSustain;
     float r = std::max(0.01f, mRelease);
 
-    // Calculate X positions (matching React logic)
-    // Each parameter gets ~25% of width
+    // Calculate X positions
     float attackX = w * (a * 0.25f);
     float decayX = attackX + (w * (d * 0.25f));
     float releaseX = w - (w * (r * 0.25f));
-
-    // Ensure release starts after decay with some sustain section
     float sustainEndX = std::max(decayX, releaseX - (w * 0.1f));
 
-    // Calculate Y position for sustain level (inverted: 0 = top, 1 = bottom)
+    // Calculate Y position for sustain level
     float sustainLevel = h - (s * h);
 
-    // Build the envelope path
-    g.PathClear();
-    g.PathMoveTo(left, top + h);              // Start at bottom-left
-    g.PathLineTo(left + attackX, top);        // Attack: rise to peak
-    g.PathLineTo(left + decayX, top + sustainLevel);  // Decay: fall to sustain
-    g.PathLineTo(left + sustainEndX, top + sustainLevel); // Sustain: hold level
-    g.PathLineTo(left + w, top + h);          // Release: fall to zero
-
-    // Stroke the outline
-    g.PathStroke(mStrokeColor, 2.0f);
-
-    // Fill the area
+    // Path for the fill (matching PolyTheme accents)
     g.PathClear();
     g.PathMoveTo(left, top + h);
     g.PathLineTo(left + attackX, top);
     g.PathLineTo(left + decayX, top + sustainLevel);
     g.PathLineTo(left + sustainEndX, top + sustainLevel);
     g.PathLineTo(left + w, top + h);
-    g.PathLineTo(left, top + h); // Close the path
+    g.PathLineTo(left, top + h);
     g.PathFill(mFillColor);
+
+    // Path for the stroke
+    g.PathClear();
+    g.PathMoveTo(left, top + h);
+    g.PathLineTo(left + attackX, top);
+    g.PathLineTo(left + decayX, top + sustainLevel);
+    g.PathLineTo(left + sustainEndX, top + sustainLevel);
+    g.PathLineTo(left + w, top + h);
+    g.PathStroke(mStrokeColor, 2.0f);
   }
 
   /**
@@ -85,8 +81,7 @@ public:
    * @param sustain Sustain level (0.0 to 1.0)
    * @param release Release time (0.0 to 1.0)
    */
-  void SetADSR(float attack, float decay, float sustain, float release)
-  {
+  void SetADSR(float attack, float decay, float sustain, float release) {
     mAttack = std::max(0.0f, std::min(1.0f, attack));
     mDecay = std::max(0.0f, std::min(1.0f, decay));
     mSustain = std::max(0.0f, std::min(1.0f, sustain));
@@ -94,8 +89,7 @@ public:
     SetDirty(false);
   }
 
-  void SetColors(const IColor& stroke, const IColor& fill)
-  {
+  void SetColors(const IColor &stroke, const IColor &fill) {
     mStrokeColor = stroke;
     mFillColor = fill;
     SetDirty(false);

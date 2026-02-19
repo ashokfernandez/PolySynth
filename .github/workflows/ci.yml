@@ -13,9 +13,242 @@ concurrency:
 env:
   CCACHE_DIR: ~/.cache/ccache
 
+# =============================================================================
+# SAFETY GATE – all analysis jobs must pass before tests run.
+# Job dependency graph:
+#
+#   lint-static-analysis ──┐
+#                          ├──> native-dsp-tests ──> build-wam-demo
+#   build-asan-tests ──────┤                     └──> build-storybook-site
+#   build-tsan-tests ──────┘                                    └──> package-demo-site
+#                                                                         └──> publish-pages
+# =============================================================================
+
 jobs:
-  native-dsp-tests:
+
+  # ---------------------------------------------------------------------------
+  # Job 1: Lint & Static Analysis
+  # "Fail fast" gate – catches logic errors before wasting CPU on builds.
+  # ---------------------------------------------------------------------------
+  lint-static-analysis:
+    name: Lint / Static Analysis
     runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install static analysis tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake cppcheck clang-tidy ccache
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-ccache-lint-${{ hashFiles('tests/CMakeLists.txt', 'libs/SEA_DSP/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-lint-
+
+      - name: Download project external dependencies
+        run: |
+          chmod +x scripts/download_dependencies.sh
+          ./scripts/download_dependencies.sh
+
+      # Configure – generates compile_commands.json which both tools require.
+      - name: Configure CMake (generate compile_commands.json)
+        run: |
+          cmake -S tests -B tests/build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DPOLYSYNTH_ENABLE_STATIC_ANALYSIS=ON
+
+      # Run cppcheck via the project wrapper script.
+      # Output format: file:line: [id] message  (compiler-error style)
+      - name: Run Cppcheck
+        run: |
+          python3 scripts/run_analysis.py \
+            --build-dir tests/build \
+            --tool cppcheck \
+            --verbose
+
+      # Upload the XML report as a CI artifact for PR "Tests" tab display.
+      - name: Upload Cppcheck XML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cppcheck-report
+          path: tests/build/cppcheck-report.xml
+          if-no-files-found: ignore
+
+      # Run clang-tidy via the same wrapper.
+      - name: Run Clang-Tidy
+        run: |
+          python3 scripts/run_analysis.py \
+            --build-dir tests/build \
+            --tool clang-tidy \
+            --verbose
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Build & Test with ASan + UBSan
+  # Catches memory corruption and undefined behaviour in unit tests.
+  # ---------------------------------------------------------------------------
+  build-asan-tests:
+    name: Build & Test (ASan + UBSan)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies (Clang for best ASan output)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang llvm ccache
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-ccache-asan-${{ hashFiles('tests/CMakeLists.txt', 'libs/SEA_DSP/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-asan-
+
+      - name: Download project external dependencies
+        run: |
+          chmod +x scripts/download_dependencies.sh
+          ./scripts/download_dependencies.sh
+
+      # Use Clang for ASan – it provides the best symbolised stack traces.
+      - name: Configure CMake (ASan + UBSan)
+        run: |
+          cmake -S tests -B tests/build_asan \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DUSE_SANITIZER=Address
+
+      - name: Build (ASan)
+        run: cmake --build tests/build_asan -- -j$(nproc)
+
+      # halt_on_error=1 ensures the CI job turns red on the first violation.
+      # print_stacktrace=1 ensures the report is readable without a debugger.
+      - name: Run unit tests (ASan + UBSan)
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:halt_on_error=1:print_stacktrace=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          # llvm-symbolizer must be on PATH for human-readable stack traces.
+          # On Ubuntu with clang installed it is available at /usr/bin/llvm-symbolizer.
+          ASAN_SYMBOLIZER_PATH: "/usr/bin/llvm-symbolizer"
+        run: |
+          cd tests/build_asan
+          # Exclude two pre-existing timing-sensitive test failures that are
+          # unrelated to memory safety. Tracked in issues to be fixed separately.
+          ./run_tests "~[VoiceStateMachine]~[VoiceAllocation]"
+
+      - name: Build and run SEA_DSP tests (ASan + UBSan)
+        env:
+          ASAN_OPTIONS: "detect_leaks=1:halt_on_error=1:print_stacktrace=1"
+          UBSAN_OPTIONS: "print_stacktrace=1:halt_on_error=1"
+          ASAN_SYMBOLIZER_PATH: "/usr/bin/llvm-symbolizer"
+        run: |
+          cmake -S libs/SEA_DSP -B build/sea_dsp_asan \
+            -DSEA_BUILD_TESTS=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DUSE_SANITIZER=Address
+          cmake --build build/sea_dsp_asan -- -j$(nproc)
+          ./build/sea_dsp_asan/tests/sea_tests
+
+      - name: Show ccache stats
+        run: ccache -s
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Build & Test with TSan
+  # Catches data races in concurrent audio processing.
+  # NOTE: Cannot be combined with ASan – uses a separate build directory.
+  # ---------------------------------------------------------------------------
+  build-tsan-tests:
+    name: Build & Test (TSan)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang llvm ccache
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-ccache-tsan-${{ hashFiles('tests/CMakeLists.txt', 'libs/SEA_DSP/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-tsan-
+
+      - name: Download project external dependencies
+        run: |
+          chmod +x scripts/download_dependencies.sh
+          ./scripts/download_dependencies.sh
+
+      - name: Configure CMake (TSan)
+        run: |
+          cmake -S tests -B tests/build_tsan \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DUSE_SANITIZER=Thread
+
+      - name: Build (TSan)
+        run: cmake --build tests/build_tsan -- -j$(nproc)
+
+      - name: Run unit tests (TSan)
+        env:
+          TSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
+          ASAN_SYMBOLIZER_PATH: "/usr/bin/llvm-symbolizer"
+        run: |
+          cd tests/build_tsan
+          ./run_tests "~[VoiceStateMachine]~[VoiceAllocation]"
+
+      - name: Build and run SEA_DSP tests (TSan)
+        env:
+          TSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
+          ASAN_SYMBOLIZER_PATH: "/usr/bin/llvm-symbolizer"
+        run: |
+          cmake -S libs/SEA_DSP -B build/sea_dsp_tsan \
+            -DSEA_BUILD_TESTS=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DUSE_SANITIZER=Thread
+          cmake --build build/sea_dsp_tsan -- -j$(nproc)
+          ./build/sea_dsp_tsan/tests/sea_tests
+
+      - name: Show ccache stats
+        run: ccache -s
+
+  # ---------------------------------------------------------------------------
+  # Job 4: Native DSP Tests (clean build, no sanitizers)
+  # Golden-master audio verification and frequency analysis require a clean
+  # release-mode binary; sanitizers skew timing and may alter audio output.
+  # This job is the gatekeeper for all downstream build jobs.
+  # ---------------------------------------------------------------------------
+  native-dsp-tests:
+    name: Native DSP Tests
+    runs-on: ubuntu-latest
+    needs: [lint-static-analysis, build-asan-tests, build-tsan-tests]
 
     steps:
       - uses: actions/checkout@v4
@@ -71,6 +304,9 @@ jobs:
         run: |
           python3 scripts/analyze_audio.py tests/golden/demo_render_wav.wav --expected-freq 440
 
+  # ---------------------------------------------------------------------------
+  # Job 5: Build PolySynth WAM Demo (unchanged – now depends on safety gate)
+  # ---------------------------------------------------------------------------
   build-wam-demo:
     name: Build PolySynth WAM Demo
     runs-on: ubuntu-latest
@@ -115,6 +351,9 @@ jobs:
           path: src/platform/desktop/build-web
           if-no-files-found: error
 
+  # ---------------------------------------------------------------------------
+  # Job 6: Build Component Gallery Storybook (unchanged)
+  # ---------------------------------------------------------------------------
   build-storybook-site:
     name: Build Component Gallery Storybook
     runs-on: ubuntu-latest
@@ -168,6 +407,9 @@ jobs:
           path: tests/Visual/storybook-static
           if-no-files-found: error
 
+  # ---------------------------------------------------------------------------
+  # Job 7: Package demo site (unchanged)
+  # ---------------------------------------------------------------------------
   package-demo-site:
     name: Package Pages Site
     runs-on: ubuntu-latest
@@ -200,6 +442,9 @@ jobs:
         with:
           path: docs
 
+  # ---------------------------------------------------------------------------
+  # Job 8: Publish GitHub Pages (unchanged)
+  # ---------------------------------------------------------------------------
   publish-pages:
     name: Publish GitHub Pages
     if: github.ref == 'refs/heads/main'

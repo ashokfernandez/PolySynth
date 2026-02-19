@@ -20,11 +20,14 @@ public:
 
   Voice() = default;
 
-  void Init(double sampleRate, uint8_t voiceID = 0) {
+  void Init(sample_t sampleRate, uint8_t voiceID = 0) {
     mOscA.Init(sampleRate);
     mOscB.Init(sampleRate);
     mOscA.SetFrequency(440.0);
     mOscB.SetFrequency(440.0 * std::pow(2.0, mDetuneB / 1200.0));
+    mTargetFreq = 440.0;
+    mGlideTime = 0.0;
+
     mBasePulseWidthA = 0.5;
     mBasePulseWidthB = 0.5;
     mOscA.SetPulseWidth(mBasePulseWidthA);
@@ -69,12 +72,21 @@ public:
     mFilterModel = FilterModel::Ladder;
   }
 
-  void NoteOn(int note, int velocity, uint64_t timestamp = 0) {
-    mFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
-    mOscA.SetFrequency(mFreq);
-    mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
-    mOscA.Reset();
-    mOscB.Reset();
+  void NoteOn(int note, int velocity, uint32_t timestamp = 0) {
+    sample_t newFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
+    mTargetFreq = newFreq;
+
+    if (mGlideTime > 0.0 && mActive) {
+      // Legato glide: keep current frequency, glide to target
+      // Don't reset oscillators — smooth transition
+    } else {
+      // Normal retrigger: jump to frequency immediately
+      mFreq = newFreq;
+      mOscA.SetFrequency(mFreq);
+      mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
+      mOscA.Reset();
+      mOscB.Reset();
+    }
 
     mVelocity = velocity / 127.0;
 
@@ -94,8 +106,8 @@ public:
     mVoiceState = VoiceState::Release;
   }
 
-  void ApplyDetuneCents(double cents) {
-    double factor = std::pow(2.0, cents / 1200.0);
+  void ApplyDetuneCents(sample_t cents) {
+    sample_t factor = std::pow(2.0, cents / 1200.0);
     mFreq *= factor;
     mCurrentPitch = static_cast<float>(mFreq);
     mOscA.SetFrequency(mFreq);
@@ -118,12 +130,26 @@ public:
     sample_t lfoVal = mLfo.Process();
     sample_t filterEnvVal = mFilterEnv.Process();
 
+    // Portamento: glide toward target frequency
+    if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > 0.01) {
+      sample_t alpha = 1.0 - std::exp(-3.0 / (mGlideTime * mSampleRate));
+      mFreq += (mTargetFreq - mFreq) * alpha;
+      // Snap to target when close enough
+      if (std::abs(mFreq - mTargetFreq) < 0.01) {
+        mFreq = mTargetFreq;
+      }
+      mCurrentPitch = static_cast<float>(mFreq);
+      // Update oscillator base frequencies (will be modulated below)
+      // Note: We don't set mOscA/B immediate here because they get set below
+      // with modulation
+    }
+
     // Pitch Modulation (Vibrato)
-    double modFreqA = mFreq;
-    double modFreqB = mFreq * std::pow(2.0, mDetuneB / 1200.0);
+    sample_t modFreqA = mFreq;
+    sample_t modFreqB = mFreq * std::pow(2.0, mDetuneB / 1200.0);
 
     if (mLfoPitchDepth > 0.0) {
-      double modMult = (1.0 + lfoVal * mLfoPitchDepth * 0.05);
+      sample_t modMult = (1.0 + lfoVal * mLfoPitchDepth * 0.05);
       modFreqA *= modMult;
       modFreqB *= modMult;
     }
@@ -132,18 +158,18 @@ public:
     sample_t oscB = mOscB.Process();
 
     if (mPolyModOscBToFreqA != 0.0 || mPolyModFilterEnvToFreqA != 0.0) {
-      double freqMod = (oscB * mPolyModOscBToFreqA) +
-                       (filterEnvVal * mPolyModFilterEnvToFreqA);
+      sample_t freqMod = (oscB * mPolyModOscBToFreqA) +
+                         (filterEnvVal * mPolyModFilterEnvToFreqA);
       modFreqA *= (1.0 + freqMod);
-      modFreqA = std::max(1.0, modFreqA);
+      modFreqA = std::max(1.0, static_cast<double>(modFreqA));
     }
 
     mOscA.SetFrequency(modFreqA);
 
     if (mPolyModOscBToPWM != 0.0 || mPolyModFilterEnvToPWM != 0.0) {
-      double pwmMod =
+      sample_t pwmMod =
           (oscB * mPolyModOscBToPWM) + (filterEnvVal * mPolyModFilterEnvToPWM);
-      double pwmA = mBasePulseWidthA + (pwmMod * 0.5);
+      sample_t pwmA = mBasePulseWidthA + (pwmMod * 0.5);
       mOscA.SetPulseWidth(std::clamp(pwmA, 0.01, 0.99));
     } else {
       mOscA.SetPulseWidth(mBasePulseWidthA);
@@ -153,7 +179,7 @@ public:
     sample_t mixed = (oscA * mMixA) + (oscB * mMixB);
 
     // Filter Modulation: Base + Keyboard + Env + LFO
-    double cutoff = mBaseCutoff;
+    sample_t cutoff = mBaseCutoff;
     cutoff +=
         filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) * 10000.0;
     if (mPolyModOscBToFilter != 0.0) {
@@ -189,12 +215,8 @@ public:
     sample_t ampEnvVal = mAmpEnv.Process();
     mLastAmpEnvVal = static_cast<float>(ampEnvVal);
 
-    // Sprint 1 note: Attack→Sustain transition is intentionally deferred.
-    // State-based sustain tracking will be introduced with richer envelope
-    // phase info.
-
     // Amp Modulation (Tremolo)
-    double ampMod = 1.0;
+    sample_t ampMod = 1.0;
     if (mLfoAmpDepth > 0.0) {
       ampMod = 1.0 + lfoVal * mLfoAmpDepth;
       ampMod = std::clamp(ampMod, 0.0, 2.0);
@@ -228,19 +250,19 @@ public:
 
   bool IsActive() const { return mActive; }
   int GetNote() const { return mNote; }
-  uint64_t GetAge() const { return mAge; }
+  uint32_t GetAge() const { return mAge; }
 
   void StartSteal() {
     mStolenFadeGain = 1.0f;
-    const double fadeSamples = std::max(1.0, 0.002 * mSampleRate);
+    // Increase fade to 20ms to prevent clicks/crunch when reducing polyphony
+    const sample_t fadeSamples = std::max(1.0, 0.020 * mSampleRate);
     mStolenFadeDelta = 1.0 / fadeSamples;
     mVoiceState = VoiceState::Stolen;
   }
 
   VoiceState GetVoiceState() const { return mVoiceState; }
   uint8_t GetVoiceID() const { return mVoiceID; }
-  uint64_t GetTimestamp() const { return mTimestamp; }
-  float GetCurrentPitch() const { return mCurrentPitch; }
+  uint32_t GetTimestamp() const { return mTimestamp; }
   float GetPitch() const { return mCurrentPitch; }
   float GetPanPosition() const { return mPanPosition; }
   void SetPanPosition(float pan) {
@@ -259,15 +281,17 @@ public:
     return rs;
   }
 
-  void SetADSR(double a, double d, double s, double r) {
+  void SetGlideTime(sample_t seconds) { mGlideTime = std::max(0.0, seconds); }
+
+  void SetADSR(sample_t a, sample_t d, sample_t s, sample_t r) {
     mAmpEnv.SetParams(a, d, s, r);
   }
 
-  void SetFilterEnv(double a, double d, double s, double r) {
+  void SetFilterEnv(sample_t a, sample_t d, sample_t s, sample_t r) {
     mFilterEnv.SetParams(a, d, s, r);
   }
 
-  void SetFilter(double cutoff, double res, double envAmount) {
+  void SetFilter(sample_t cutoff, sample_t res, sample_t envAmount) {
     mBaseCutoff = cutoff;
     // Map 0-1 resonance to 0.5-20.5 Q for the biquad filter
     mBaseRes = 0.5 + (res * res * 20.0);
@@ -284,44 +308,46 @@ public:
     mOscB.SetWaveform(type);
   }
 
-  void SetPulseWidth(double pw) { SetPulseWidthA(pw); }
-  void SetPulseWidthA(double pw) {
+  void SetPulseWidth(sample_t pw) { SetPulseWidthA(pw); }
+  void SetPulseWidthA(sample_t pw) {
     mBasePulseWidthA = std::clamp(pw, 0.01, 0.99);
     mOscA.SetPulseWidth(mBasePulseWidthA);
   }
-  void SetPulseWidthB(double pw) {
+  void SetPulseWidthB(sample_t pw) {
     mBasePulseWidthB = std::clamp(pw, 0.01, 0.99);
     mOscB.SetPulseWidth(mBasePulseWidthB);
   }
 
-  void SetMixer(double mixA, double mixB, double detuneB) {
+  void SetMixer(sample_t mixA, sample_t mixB, sample_t detuneB) {
     mMixA = std::clamp(mixA, 0.0, 1.0);
     mMixB = std::clamp(mixB, 0.0, 1.0);
     mDetuneB = detuneB;
   }
 
-  void SetLFO(int type, double rate, double depth) {
+  void SetLFO(int type, sample_t rate, sample_t depth) {
     mLfo.SetWaveform(type);
     mLfo.SetRate(rate);
     mLfo.SetDepth(depth);
   }
 
-  void SetLFORouting(double pitch, double filter, double amp) {
+  void SetLFORouting(sample_t pitch, sample_t filter, sample_t amp) {
     mLfoPitchDepth = pitch;
     mLfoFilterDepth = filter;
     mLfoAmpDepth = amp;
   }
 
-  void SetPolyModOscBToFreqA(double amount) { mPolyModOscBToFreqA = amount; }
-  void SetPolyModOscBToPWM(double amount) { mPolyModOscBToPWM = amount; }
-  void SetPolyModOscBToFilter(double amount) { mPolyModOscBToFilter = amount; }
-  void SetPolyModFilterEnvToFreqA(double amount) {
+  void SetPolyModOscBToFreqA(sample_t amount) { mPolyModOscBToFreqA = amount; }
+  void SetPolyModOscBToPWM(sample_t amount) { mPolyModOscBToPWM = amount; }
+  void SetPolyModOscBToFilter(sample_t amount) {
+    mPolyModOscBToFilter = amount;
+  }
+  void SetPolyModFilterEnvToFreqA(sample_t amount) {
     mPolyModFilterEnvToFreqA = amount;
   }
-  void SetPolyModFilterEnvToPWM(double amount) {
+  void SetPolyModFilterEnvToPWM(sample_t amount) {
     mPolyModFilterEnvToPWM = amount;
   }
-  void SetPolyModFilterEnvToFilter(double amount) {
+  void SetPolyModFilterEnvToFilter(sample_t amount) {
     mPolyModFilterEnvToFilter = amount;
   }
 
@@ -336,42 +362,46 @@ private:
   sea::LFO mLfo;
 
   bool mActive = false;
-  double mVelocity = 0.0;
+  sample_t mVelocity = 0.0;
   int mNote = -1;
-  uint64_t mAge = 0;
+  uint32_t mAge = 0;
 
-  double mFreq = 440.0;
-  double mBaseCutoff = 2000.0;
-  double mBaseRes = 0.707;
-  double mFilterEnvAmount = 0.0;
+  sample_t mFreq = 440.0;
+  sample_t mBaseCutoff = 2000.0;
+  sample_t mBaseRes = 0.707;
+  sample_t mFilterEnvAmount = 0.0;
   FilterModel mFilterModel = FilterModel::Classic;
 
-  double mMixA = 1.0;
-  double mMixB = 0.0;
-  double mDetuneB = 0.0;
-  double mBasePulseWidthA = 0.5;
-  double mBasePulseWidthB = 0.5;
+  sample_t mMixA = 1.0;
+  sample_t mMixB = 0.0;
+  sample_t mDetuneB = 0.0;
+  sample_t mBasePulseWidthA = 0.5;
+  sample_t mBasePulseWidthB = 0.5;
 
-  double mLfoPitchDepth = 0.0;
-  double mLfoFilterDepth = 0.0;
-  double mLfoAmpDepth = 0.0;
+  sample_t mLfoPitchDepth = 0.0;
+  sample_t mLfoFilterDepth = 0.0;
+  sample_t mLfoAmpDepth = 0.0;
 
-  double mPolyModOscBToFreqA = 0.0;
-  double mPolyModOscBToPWM = 0.0;
-  double mPolyModOscBToFilter = 0.0;
-  double mPolyModFilterEnvToFreqA = 0.0;
-  double mPolyModFilterEnvToPWM = 0.0;
-  double mPolyModFilterEnvToFilter = 0.0;
+  sample_t mPolyModOscBToFreqA = 0.0;
+  sample_t mPolyModOscBToPWM = 0.0;
+  sample_t mPolyModOscBToFilter = 0.0;
+  sample_t mPolyModFilterEnvToFreqA = 0.0;
+  sample_t mPolyModFilterEnvToPWM = 0.0;
+  sample_t mPolyModFilterEnvToFilter = 0.0;
 
   uint8_t mVoiceID = 0;
   VoiceState mVoiceState = VoiceState::Idle;
-  uint64_t mTimestamp = 0;
+  uint32_t mTimestamp = 0;
   float mCurrentPitch = 0.0f;
   float mPanPosition = 0.0f;
   float mStolenFadeGain = 0.0f;
-  double mStolenFadeDelta = 0.0;
+  sample_t mStolenFadeDelta = 0.0;
   float mLastAmpEnvVal = 0.0f;
-  double mSampleRate = 48000.0;
+
+  sample_t mTargetFreq = 440.0;
+  sample_t mGlideTime = 0.0;
+
+  sample_t mSampleRate = 48000.0;
 };
 
 class VoiceManager {
@@ -380,7 +410,7 @@ public:
 
   VoiceManager() = default;
 
-  void Init(double sampleRate) {
+  void Init(sample_t sampleRate) {
     mSampleRate = sampleRate;
     mGlobalTimestamp = 0;
     for (int i = 0; i < kNumVoices; i++) {
@@ -392,7 +422,7 @@ public:
   void Reset() {
     mGlobalTimestamp = 0;
     for (int i = 0; i < kNumVoices; i++) {
-      mVoices[i].Init(44100.0, static_cast<uint8_t>(i));
+      mVoices[i].Init(mSampleRate, static_cast<uint8_t>(i));
     }
   }
 
@@ -410,6 +440,17 @@ public:
 
       // Apply unison detune and pan
       auto info = mAllocator.GetUnisonVoiceInfo(u);
+
+      // If we are in non-unison mode, apply stereo spread based on voice index
+      // to spread voices across the stereo field.
+      if (mAllocator.GetUnisonCount() <= 1 &&
+          mAllocator.GetStereoSpread() > 0.0) {
+        sample_t spread = mAllocator.GetStereoSpread();
+        // Alternate L/R panning per voice slot
+        sample_t pan = (idx % 2 == 0) ? -spread : spread;
+        info.panPosition = pan;
+      }
+
       if (info.detuneCents != 0.0) {
         mVoices[idx].ApplyDetuneCents(info.detuneCents);
       }
@@ -461,8 +502,8 @@ public:
     mAllocator.SetStealPriority(static_cast<sea::StealPriority>(priority));
   }
   void SetUnisonCount(int count) { mAllocator.SetUnisonCount(count); }
-  void SetUnisonSpread(double spread) { mAllocator.SetUnisonSpread(spread); }
-  void SetStereoSpread(double spread) { mAllocator.SetStereoSpread(spread); }
+  void SetUnisonSpread(sample_t spread) { mAllocator.SetUnisonSpread(spread); }
+  void SetStereoSpread(sample_t spread) { mAllocator.SetStereoSpread(spread); }
 
   inline sample_t Process() {
     sample_t sum = 0.0;
@@ -472,19 +513,46 @@ public:
     return sum * (1.0 / std::sqrt(static_cast<double>(kNumVoices)));
   }
 
-  void SetADSR(double a, double d, double s, double r) {
+  inline void ProcessStereo(double &outLeft, double &outRight) {
+    outLeft = 0.0;
+    outRight = 0.0;
+
+    for (auto &voice : mVoices) {
+      sample_t mono = voice.Process();
+      if (mono == 0.0)
+        continue;
+
+      float pan = voice.GetPanPosition();
+      // Constant-power panning: theta maps [-1,+1] to [0, pi/2]
+      double theta = (static_cast<double>(pan) + 1.0) * kPi * 0.25;
+      outLeft += mono * std::cos(theta);
+      outRight += mono * std::sin(theta);
+    }
+    // Headroom scaling
+    double scale = 1.0 / std::sqrt(static_cast<double>(kNumVoices));
+    outLeft *= scale;
+    outRight *= scale;
+  }
+
+  void SetGlideTime(sample_t seconds) {
+    for (auto &voice : mVoices) {
+      voice.SetGlideTime(seconds);
+    }
+  }
+
+  void SetADSR(sample_t a, sample_t d, sample_t s, sample_t r) {
     for (auto &voice : mVoices) {
       voice.SetADSR(a, d, s, r);
     }
   }
 
-  void SetFilterEnv(double a, double d, double s, double r) {
+  void SetFilterEnv(sample_t a, sample_t d, sample_t s, sample_t r) {
     for (auto &voice : mVoices) {
       voice.SetFilterEnv(a, d, s, r);
     }
   }
 
-  void SetFilter(double cutoff, double res, double envAmount) {
+  void SetFilter(sample_t cutoff, sample_t res, sample_t envAmount) {
     for (auto &voice : mVoices) {
       voice.SetFilter(cutoff, res, envAmount);
     }
@@ -516,73 +584,73 @@ public:
     }
   }
 
-  void SetPulseWidth(double pw) {
+  void SetPulseWidth(sample_t pw) {
     for (auto &voice : mVoices) {
       voice.SetPulseWidth(pw);
     }
   }
 
-  void SetPulseWidthA(double pw) {
+  void SetPulseWidthA(sample_t pw) {
     for (auto &voice : mVoices) {
       voice.SetPulseWidthA(pw);
     }
   }
 
-  void SetPulseWidthB(double pw) {
+  void SetPulseWidthB(sample_t pw) {
     for (auto &voice : mVoices) {
       voice.SetPulseWidthB(pw);
     }
   }
 
-  void SetMixer(double mixA, double mixB, double detuneB) {
+  void SetMixer(sample_t mixA, sample_t mixB, sample_t detuneB) {
     for (auto &voice : mVoices) {
       voice.SetMixer(mixA, mixB, detuneB);
     }
   }
 
-  void SetLFO(int type, double rate, double depth) {
+  void SetLFO(int type, sample_t rate, sample_t depth) {
     for (auto &voice : mVoices) {
       voice.SetLFO(type, rate, depth);
     }
   }
 
-  void SetLFORouting(double pitch, double filter, double amp) {
+  void SetLFORouting(sample_t pitch, sample_t filter, sample_t amp) {
     for (auto &voice : mVoices) {
       voice.SetLFORouting(pitch, filter, amp);
     }
   }
 
-  void SetPolyModOscBToFreqA(double amount) {
+  void SetPolyModOscBToFreqA(sample_t amount) {
     for (auto &voice : mVoices) {
       voice.SetPolyModOscBToFreqA(amount);
     }
   }
 
-  void SetPolyModOscBToPWM(double amount) {
+  void SetPolyModOscBToPWM(sample_t amount) {
     for (auto &voice : mVoices) {
       voice.SetPolyModOscBToPWM(amount);
     }
   }
 
-  void SetPolyModOscBToFilter(double amount) {
+  void SetPolyModOscBToFilter(sample_t amount) {
     for (auto &voice : mVoices) {
       voice.SetPolyModOscBToFilter(amount);
     }
   }
 
-  void SetPolyModFilterEnvToFreqA(double amount) {
+  void SetPolyModFilterEnvToFreqA(sample_t amount) {
     for (auto &voice : mVoices) {
       voice.SetPolyModFilterEnvToFreqA(amount);
     }
   }
 
-  void SetPolyModFilterEnvToPWM(double amount) {
+  void SetPolyModFilterEnvToPWM(sample_t amount) {
     for (auto &voice : mVoices) {
       voice.SetPolyModFilterEnvToPWM(amount);
     }
   }
 
-  void SetPolyModFilterEnvToFilter(double amount) {
+  void SetPolyModFilterEnvToFilter(sample_t amount) {
     for (auto &voice : mVoices) {
       voice.SetPolyModFilterEnvToFilter(amount);
     }
@@ -607,7 +675,7 @@ public:
     return false;
   }
 
-  uint64_t GetGlobalTimestamp() const { return mGlobalTimestamp; }
+  uint32_t GetGlobalTimestamp() const { return mGlobalTimestamp; }
 
   // --- Sprint 1: Voice state query helpers ---
   std::array<VoiceRenderState, kMaxVoices> GetVoiceStates() const {
@@ -641,8 +709,8 @@ public:
 private:
   std::array<Voice, kNumVoices> mVoices;
   sea::VoiceAllocator<Voice, kMaxVoices> mAllocator;
-  double mSampleRate = 44100.0;
-  uint64_t mGlobalTimestamp = 0;
+  sample_t mSampleRate = 44100.0;
+  uint32_t mGlobalTimestamp = 0;
 };
 
 } // namespace PolySynthCore

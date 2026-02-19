@@ -10,6 +10,8 @@
 
 using namespace iplug;
 
+#include <atomic>
+
 class PolySynthDSP {
 public:
   PolySynthDSP(int nVoices) {
@@ -57,6 +59,14 @@ public:
     mVoiceManager.SetPolyModFilterEnvToPWM(state.polyModFilterEnvToPWM);
     mVoiceManager.SetPolyModFilterEnvToFilter(state.polyModFilterEnvToFilter);
 
+    mVoiceManager.SetGlideTime(state.glideTime);
+    mVoiceManager.SetPolyphonyLimit(state.polyphony);
+    mVoiceManager.SetAllocationMode(state.allocationMode);
+    mVoiceManager.SetStealPriority(state.stealPriority);
+    mVoiceManager.SetUnisonCount(state.unisonCount);
+    mVoiceManager.SetUnisonSpread(state.unisonSpread);
+    mVoiceManager.SetStereoSpread(state.stereoSpread);
+
     // Chorus
     mChorus.SetRate(state.fxChorusRate);
     mChorus.SetDepth(state.fxChorusDepth * 5.0); // Map 0-1 to 0-5ms
@@ -81,13 +91,15 @@ public:
 
     // Process one sample at a time
     for (int s = 0; s < nFrames; s++) {
-      PolySynthCore::sample_t out = mVoiceManager.Process() * mGain;
+      double left = 0.0;
+      double right = 0.0;
+      mVoiceManager.ProcessStereo(left, right);
 
-      PolySynthCore::sample_t left = out;
-      PolySynthCore::sample_t right = out;
+      left *= mGain;
+      right *= mGain;
 
       // Process Chorus
-      PolySynthCore::sample_t cOutL, cOutR;
+      double cOutL, cOutR;
       mChorus.Process(left, right, &cOutL, &cOutR);
       left = cOutL;
       right = cOutR;
@@ -105,6 +117,24 @@ public:
       if (nOutputs > 1)
         outputs[1][s] = static_cast<sample>(right);
     }
+
+    // Update visualization state (thread-safe for UI)
+    mVisualActiveVoiceCount.store(mVoiceManager.GetActiveVoiceCount(),
+                                  std::memory_order_relaxed);
+
+    std::array<int, PolySynthCore::kMaxVoices> notes{};
+    int count = mVoiceManager.GetHeldNotes(notes);
+    uint64_t low = 0;
+    uint64_t high = 0;
+    for (int i = 0; i < count; ++i) {
+      int note = notes[i];
+      if (note >= 0 && note < 64)
+        low |= (1ULL << note);
+      else if (note >= 64 && note < 128)
+        high |= (1ULL << (note - 64));
+    }
+    mVisualHeldNotesLow.store(low, std::memory_order_relaxed);
+    mVisualHeldNotesHigh.store(high, std::memory_order_relaxed);
   }
 
   void ProcessMidiMsg(const IMidiMsg &msg) {
@@ -114,18 +144,47 @@ public:
       mVoiceManager.OnNoteOn(msg.NoteNumber(), msg.Velocity());
     } else if (status == IMidiMsg::kNoteOff) {
       mVoiceManager.OnNoteOff(msg.NoteNumber());
+    } else if (status == IMidiMsg::kControlChange) {
+      if (msg.mData1 == 64) { // Sustain Pedal
+        mVoiceManager.OnSustainPedal(msg.mData2 >= 64);
+      }
     }
   }
 
-  void SetParam(int paramIdx, double value) {
-    // Legacy
+  int GetActiveVoiceCount() const {
+    return mVisualActiveVoiceCount.load(std::memory_order_relaxed);
   }
 
+  int GetHeldNotes(std::array<int, PolySynthCore::kMaxVoices> &buf) const {
+    uint64_t low = mVisualHeldNotesLow.load(std::memory_order_relaxed);
+    uint64_t high = mVisualHeldNotesHigh.load(std::memory_order_relaxed);
+    int count = 0;
+
+    for (int i = 0; i < 64; ++i) {
+      if ((low >> i) & 1) {
+        if (count < PolySynthCore::kMaxVoices)
+          buf[count++] = i;
+      }
+    }
+    for (int i = 0; i < 64; ++i) {
+      if ((high >> i) & 1) {
+        if (count < PolySynthCore::kMaxVoices)
+          buf[count++] = i + 64;
+      }
+    }
+    return count;
+  }
+
+private:
   PolySynthCore::VoiceManager mVoiceManager;
   sea::VintageChorus<double> mChorus;
   sea::VintageDelay<double> mDelay;
   sea::LookaheadLimiter<double> mLimiter;
 
-private:
   double mGain = 1.0;
+
+  // Visualization state (written by Audio thread, read by UI thread)
+  std::atomic<int> mVisualActiveVoiceCount{0};
+  std::atomic<uint64_t> mVisualHeldNotesLow{0};
+  std::atomic<uint64_t> mVisualHeldNotesHigh{0};
 };

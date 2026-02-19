@@ -4,12 +4,12 @@
 // Minimal mock that satisfies VoiceAllocator trait requirements
 struct MockSlot {
   bool active = false;
-  uint64_t timestamp = 0;
+  uint32_t timestamp = 0;
   float pitch = 440.0f;
   bool stolen = false;
 
   bool IsActive() const { return active; }
-  uint64_t GetTimestamp() const { return timestamp; }
+  uint32_t GetTimestamp() const { return timestamp; }
   float GetPitch() const { return pitch; }
   void StartSteal() {
     stolen = true;

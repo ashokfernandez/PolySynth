@@ -26,6 +26,8 @@ obj/
 # Logs
 debug_logs/
 *.log
+build_log.txt
+crash_log.txt
 full_ci_log.txt
 
 # Dependencies (Managed by scripts)

@@ -72,6 +72,16 @@ add_executable(sea_tests ${TEST_SOURCES})
 # Link against the library
 target_link_libraries(sea_tests PRIVATE SEA_DSP)
 
+# Apply compiler warnings
+if(COMMAND polysynth_enable_compiler_warnings)
+    polysynth_enable_compiler_warnings(sea_tests)
+endif()
+
+# Apply runtime sanitizers when USE_SANITIZER is set
+if(COMMAND polysynth_apply_sanitizers)
+    polysynth_apply_sanitizers(sea_tests)
+endif()
+
 # Add compilation definitions if needed
 if(SEA_PLATFORM_EMBEDDED)
     target_compile_definitions(sea_tests PRIVATE SEA_PLATFORM_EMBEDDED)
