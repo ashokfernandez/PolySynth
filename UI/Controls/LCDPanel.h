@@ -10,7 +10,7 @@ public:
 
   void Draw(IGraphics &g) override {
     // Fill background with theme color
-    g.FillRoundRect(PolyTheme::LCDBackground, mRECT, PolyTheme::RoundingButton);
+    g.FillRoundRect(mBgColor, mRECT, PolyTheme::RoundingButton);
 
     // Bezel effect: Inner shadow for depth
     g.DrawRoundRect(IColor(80, 0, 0, 0), mRECT, PolyTheme::RoundingButton,

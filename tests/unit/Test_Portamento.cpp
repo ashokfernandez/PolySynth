@@ -11,7 +11,7 @@ TEST_CASE("Portamento: glideTime=0 is instant pitch jump", "[Portamento]") {
   voice.Process();
 
   double expectedFreq = 440.0 * std::pow(2.0, (60 - 69.0) / 12.0);
-  REQUIRE(voice.GetCurrentPitch() ==
+  REQUIRE(voice.GetPitch() ==
           Approx(static_cast<float>(expectedFreq)).margin(0.1));
 
   // Retrigger to different note — should jump instantly
@@ -19,8 +19,7 @@ TEST_CASE("Portamento: glideTime=0 is instant pitch jump", "[Portamento]") {
   voice.Process();
 
   double newFreq = 440.0 * std::pow(2.0, (72 - 69.0) / 12.0);
-  REQUIRE(voice.GetCurrentPitch() ==
-          Approx(static_cast<float>(newFreq)).margin(0.1));
+  REQUIRE(voice.GetPitch() == Approx(static_cast<float>(newFreq)).margin(0.1));
 }
 
 TEST_CASE("Portamento: glideTime>0 interpolates pitch", "[Portamento]") {
@@ -41,7 +40,7 @@ TEST_CASE("Portamento: glideTime>0 interpolates pitch", "[Portamento]") {
   voice.Process();
 
   // After 1 sample, pitch should be between start and end
-  float currentPitch = voice.GetCurrentPitch();
+  float currentPitch = voice.GetPitch();
   // Use Approx with margin for float comparisons
   REQUIRE(currentPitch > static_cast<float>(startFreq));
   // Should not have reached target yet
@@ -67,7 +66,7 @@ TEST_CASE("Portamento: reaches within 1% of target within 3x glideTime",
   for (int i = 0; i < samples; i++)
     voice.Process();
 
-  float currentPitch = voice.GetCurrentPitch();
+  float currentPitch = voice.GetPitch();
   double error = std::abs(currentPitch - targetFreq) / targetFreq;
   REQUIRE(error < 0.01); // Within 1%
 }
@@ -87,7 +86,7 @@ TEST_CASE("Portamento: no overshoot past target", "[Portamento]") {
   // Process many samples — pitch should never exceed target
   for (int i = 0; i < 48000; i++) {
     voice.Process();
-    float pitch = voice.GetCurrentPitch();
+    float pitch = voice.GetPitch();
     REQUIRE(pitch <= static_cast<float>(targetFreq) + 0.01f);
   }
 }

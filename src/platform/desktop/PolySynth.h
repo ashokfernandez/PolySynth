@@ -22,8 +22,7 @@ enum EParams {
   kParamRelease,
   kParamLFOShape,
   kParamLFORateHz,
-  kParamLFORateTempo,
-  kParamLFORateMode,
+
   kParamLFODepth,
   kParamFilterCutoff,
   kParamFilterResonance,
@@ -114,37 +113,54 @@ enum EControlTags {
   kNumCtrlTags
 };
 
-using namespace iplug;
-using namespace igraphics;
-
-class PolySynthPlugin final : public Plugin {
+class PolySynthPlugin final : public iplug::Plugin {
 public:
-  PolySynthPlugin(const InstanceInfo &info);
+  PolySynthPlugin(const iplug::InstanceInfo &info);
 
 #if IPLUG_EDITOR
   void OnUIOpen() override;
-  void OnParamChangeUI(int paramIdx, EParamSource source) override;
-  void OnLayout(IGraphics *pGraphics);
+  void OnParamChangeUI(int paramIdx, iplug::EParamSource source) override;
+  void OnLayout(iplug::igraphics::IGraphics *pGraphics);
   void PopulatePresetMenu();
 
 private:
-  void BuildHeader(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildOscillators(IGraphics *g, const IRECT &bounds,
-                        const IVStyle &style);
-  void BuildFilter(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildEnvelope(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildLFO(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildPolyMod(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildChorus(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildDelay(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildMaster(IGraphics *g, const IRECT &bounds, const IVStyle &style);
-  void BuildFooter(IGraphics *g, const IRECT &bounds, const IVStyle &style);
+  void BuildHeader(iplug::igraphics::IGraphics *g,
+                   const iplug::igraphics::IRECT &bounds,
+                   const iplug::igraphics::IVStyle &style);
+  void BuildOscillators(iplug::igraphics::IGraphics *g,
+                        const iplug::igraphics::IRECT &bounds,
+                        const iplug::igraphics::IVStyle &style);
+  void BuildFilter(iplug::igraphics::IGraphics *g,
+                   const iplug::igraphics::IRECT &bounds,
+                   const iplug::igraphics::IVStyle &style);
+  void BuildEnvelope(iplug::igraphics::IGraphics *g,
+                     const iplug::igraphics::IRECT &bounds,
+                     const iplug::igraphics::IVStyle &style);
+  void BuildLFO(iplug::igraphics::IGraphics *g,
+                const iplug::igraphics::IRECT &bounds,
+                const iplug::igraphics::IVStyle &style);
+  void BuildPolyMod(iplug::igraphics::IGraphics *g,
+                    const iplug::igraphics::IRECT &bounds,
+                    const iplug::igraphics::IVStyle &style);
+  void BuildChorus(iplug::igraphics::IGraphics *g,
+                   const iplug::igraphics::IRECT &bounds,
+                   const iplug::igraphics::IVStyle &style);
+  void BuildDelay(iplug::igraphics::IGraphics *g,
+                  const iplug::igraphics::IRECT &bounds,
+                  const iplug::igraphics::IVStyle &style);
+  void BuildMaster(iplug::igraphics::IGraphics *g,
+                   const iplug::igraphics::IRECT &bounds,
+                   const iplug::igraphics::IVStyle &style);
+  void BuildFooter(iplug::igraphics::IGraphics *g,
+                   const iplug::igraphics::IRECT &bounds,
+                   const iplug::igraphics::IVStyle &style);
 #endif
 
 #if IPLUG_DSP
 public:
-  void ProcessBlock(sample **inputs, sample **outputs, int nFrames) override;
-  void ProcessMidiMsg(const IMidiMsg &msg) override;
+  void ProcessBlock(iplug::sample **inputs, iplug::sample **outputs,
+                    int nFrames) override;
+  void ProcessMidiMsg(const iplug::IMidiMsg &msg) override;
   void OnReset() override;
   void OnParamChange(int paramIdx) override;
   void OnIdle() override;

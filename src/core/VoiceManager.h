@@ -215,10 +215,6 @@ public:
     sample_t ampEnvVal = mAmpEnv.Process();
     mLastAmpEnvVal = static_cast<float>(ampEnvVal);
 
-    // Sprint 1 note: Attack→Sustain transition is intentionally deferred.
-    // State-based sustain tracking will be introduced with richer envelope
-    // phase info.
-
     // Amp Modulation (Tremolo)
     sample_t ampMod = 1.0;
     if (mLfoAmpDepth > 0.0) {
@@ -267,7 +263,6 @@ public:
   VoiceState GetVoiceState() const { return mVoiceState; }
   uint8_t GetVoiceID() const { return mVoiceID; }
   uint32_t GetTimestamp() const { return mTimestamp; }
-  float GetCurrentPitch() const { return mCurrentPitch; }
   float GetPitch() const { return mCurrentPitch; }
   float GetPanPosition() const { return mPanPosition; }
   void SetPanPosition(float pan) {
@@ -427,7 +422,7 @@ public:
   void Reset() {
     mGlobalTimestamp = 0;
     for (int i = 0; i < kNumVoices; i++) {
-      mVoices[i].Init(44100.0, static_cast<uint8_t>(i));
+      mVoices[i].Init(mSampleRate, static_cast<uint8_t>(i));
     }
   }
 

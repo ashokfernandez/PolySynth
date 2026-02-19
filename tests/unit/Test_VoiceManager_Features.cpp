@@ -26,28 +26,8 @@ TEST_CASE("VoiceManager Polyphony Limiting and Stealing", "[VoiceManager]") {
     vm.SetPolyphonyLimit(1);
 
     // Should have 1 active (kept) and 3 stolen
-    // BUT GetActiveVoiceCount might verify 'active' flag.
-    // Stolen voices are still 'active' until they fade out?
-    // Let's check Voice::Process logic: if mVoiceState == Stolen, mActive is
-    // still true until mStolenFadeGain <= 0.
-
-    // We expect the voices to NOT be killed instantly (crunch).
-    // If they were killed instantly, Process() would return 0 for them or
-    // they'd be inactive immediately.
-
-    // Let's verify we still have 'active' voices processing the fade
-    // The allocator's EnforcePolyphonyLimit calls StartSteal()
-
-    // If fade is 2ms (default), at 44.1kHz that's ~88 samples.
-    // Let's process 10 samples and verify output is not 0 (because they are
-    // fading). Then process 200 samples and verify they represent
-    // silence/inactive.
-
     double l, r;
     vm.ProcessStereo(l, r);
-    // We can't easily isolate the stolen voice output here because Process
-    // relies on summation. But we can check internal state via GetVoiceStates
-    // (Sprint 1 helper).
 
     auto states = vm.GetVoiceStates();
     int stolenCount = 0;
@@ -62,10 +42,7 @@ TEST_CASE("VoiceManager Polyphony Limiting and Stealing", "[VoiceManager]") {
     CHECK(stolenCount == 3);
     CHECK(activeCount == 4); // 1 kept + 3 stolen
 
-    // Process for 500 samples (~11ms).
-    // If fade is 2ms, they should be dead by now.
-    // If fade is longer (which we want e.g. 20ms), they should still be
-    // fading/stolen.
+    // Process for 500 samples (~11ms) to verify voices are still fading out.
 
     for (int i = 0; i < 500; ++i)
       vm.Process();
@@ -77,10 +54,8 @@ TEST_CASE("VoiceManager Polyphony Limiting and Stealing", "[VoiceManager]") {
         stolenCount++;
     }
 
-    // With 2ms fade, they should be gone (stolenCount == 0, state -> Idle).
-    // With 20ms fade, they should still be Stolen.
-    // We WANT them to still be Stolen (longer fade).
-    // So this test expects >= 1 stolen voices remaining after 11ms.
+    // With 20ms fade, they should still be Stolen after 11ms.
+    // So this test expects >= 1 stolen voices remaining.
     CHECK(stolenCount > 0);
   }
 }
@@ -113,10 +88,7 @@ TEST_CASE("VoiceManager Stereo Spread", "[VoiceManager]") {
 
     REQUIRE(active == 2);
 
-    // Users expectation: Voices should be panned apart.
-    // Currently: OnNoteOn with Unison=1 sets pan to 0.0.
-    // So absPanningSum will be 0.0.
-    // We WANT it to be > 0.0.
+    // Voices should be panned apart.
     CHECK(absPanningSum > 0.1f);
   }
 }

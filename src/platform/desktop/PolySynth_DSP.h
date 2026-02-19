@@ -175,16 +175,12 @@ public:
     return count;
   }
 
-  void SetParam(int paramIdx, double value) {
-    // Legacy
-  }
-
+private:
   PolySynthCore::VoiceManager mVoiceManager;
   sea::VintageChorus<double> mChorus;
   sea::VintageDelay<double> mDelay;
   sea::LookaheadLimiter<double> mLimiter;
 
-private:
   double mGain = 1.0;
 
   // Visualization state (written by Audio thread, read by UI thread)

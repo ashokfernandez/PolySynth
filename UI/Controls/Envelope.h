@@ -62,7 +62,7 @@ public:
     g.PathLineTo(left + sustainEndX, top + sustainLevel);
     g.PathLineTo(left + w, top + h);
     g.PathLineTo(left, top + h);
-    g.PathFill(PolyTheme::AccentCyan.WithOpacity(0.3f));
+    g.PathFill(mFillColor);
 
     // Path for the stroke
     g.PathClear();
@@ -71,7 +71,7 @@ public:
     g.PathLineTo(left + decayX, top + sustainLevel);
     g.PathLineTo(left + sustainEndX, top + sustainLevel);
     g.PathLineTo(left + w, top + h);
-    g.PathStroke(PolyTheme::AccentCyan, 2.0f);
+    g.PathStroke(mStrokeColor, 2.0f);
   }
 
   /**

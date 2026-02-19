@@ -1,4 +1,7 @@
 #include "PolySynth.h"
+
+using namespace iplug;
+using namespace igraphics;
 #include "../../../UI/Controls/PolyTheme.h"
 #include "../../core/PresetManager.h"
 #include "IPlugPaths.h"
@@ -305,26 +308,14 @@ void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
 }
 
 void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
-  printf("[DEBUG] OnLayout: Starting layout...\n");
   IGraphics *g = pGraphics;
   if (pGraphics->NControls()) {
-    printf("[DEBUG] OnLayout: Already has controls. Returning.\n");
     return;
   }
 
-  printf("[DEBUG] OnLayout: Loading fonts...\n");
-  if (!pGraphics->LoadFont("Regular", ROBOTO_FN)) {
-    printf("[ERROR] Failed to load Regular font from %s\n", ROBOTO_FN);
-  } else {
-    printf("[DEBUG] Successfully loaded Regular font\n");
-  }
-  if (!pGraphics->LoadFont("Bold", ROBOTO_BOLD_FN)) {
-    printf("[ERROR] Failed to load Bold font from %s\n", ROBOTO_BOLD_FN);
-  } else {
-    printf("[DEBUG] Successfully loaded Bold font\n");
-  }
+  pGraphics->LoadFont("Regular", ROBOTO_FN);
+  pGraphics->LoadFont("Bold", ROBOTO_BOLD_FN);
 
-  printf("[DEBUG] OnLayout: Attaching background...\n");
   pGraphics->AttachPanelBackground(PolyTheme::PanelBG);
 
   const IColor textDark = PolyTheme::TextDark;
@@ -358,9 +349,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   // AttachPanelBackground
 
   // Build Sections
-  printf("[DEBUG] OnLayout: Building Header...\n");
   BuildHeader(g, headerArea, synthStyle);
-  printf("[DEBUG] OnLayout: Building Footer...\n");
   BuildFooter(g, footerArea, synthStyle);
 
   // Content Layout
@@ -375,7 +364,6 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
                         .GetPadded(-PolyTheme::Padding);
 
   // Top Row: Osc (30%), Filter (30%), Env (40%)
-  printf("[DEBUG] OnLayout: Building Top Row...\n");
   BuildOscillators(g, topRow.GetFromLeft(topRow.W() * 0.30f).GetPadded(-4.f),
                    synthStyle);
   BuildFilter(g,
@@ -391,7 +379,6 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   float x = 0;
   float w = bottomRow.W();
 
-  printf("[DEBUG] OnLayout: Building Bottom Row...\n");
   BuildLFO(g, bottomRow.GetFromLeft(w * 0.15f).GetPadded(-4.f), synthStyle);
   x += w * 0.15f;
 
@@ -414,7 +401,6 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       g, bottomRow.GetFromLeft(w * 0.25f).GetTranslated(x, 0).GetPadded(-4.f),
       synthStyle);
 
-  printf("[DEBUG] OnLayout: Finished.\n");
   if (std::getenv("POLYSYNTH_TEST_UI")) {
     OnMessage(kMsgTagTestLoaded, 0, 0, nullptr);
   }
@@ -422,7 +408,6 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
 
 void PolySynthPlugin::BuildHeader(IGraphics *g, const IRECT &bounds,
                                   const IVStyle &style) {
-  printf("[DEBUG] BuildHeader: Starting.\n");
   g->AttachControl(new SectionFrame(bounds, "", PolyTheme::SectionBorder,
                                     PolyTheme::TextDark, PolyTheme::HeaderBG));
 
@@ -528,7 +513,7 @@ void PolySynthPlugin::BuildFilter(IGraphics *g, const IRECT &bounds,
                                .WithColor(kPR, PolyTheme::AccentRed)
                                .WithValueText(IText(14.f, textDark, "Bold"));
   g->AttachControl(new IVTabSwitchControl(
-      modelArea, kParamFilterModel, {"LP", "BP", "HP", "NT"}, "", tabStyle));
+      modelArea, kParamFilterModel, {"CL", "LD", "P12", "P24"}, "", tabStyle));
 
   IRECT topFilter = inner.GetFromTop(inner.H() - 70.f);
   IRECT cutoffArea =
@@ -1012,7 +997,6 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     PolySynthCore::SynthState loaded;
     if (PolySynthCore::PresetManager::LoadFromFile(path.Get(), loaded)) {
       mState = loaded;
-      SyncUIState();
       SyncUIState();
       mIsDirty = false;
       if (GetUI()) {
