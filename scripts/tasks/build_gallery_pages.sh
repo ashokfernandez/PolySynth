@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Build ComponentGallery and publish static Storybook into docs/component-gallery.
 
-set -e
-cd "$(dirname "$0")"
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${ROOT_DIR}"
 
 ./scripts/build_all_galleries.sh
 
@@ -25,4 +27,4 @@ echo ""
 echo "Component gallery published locally to:"
 echo "  docs/component-gallery/index.html"
 echo "View it over HTTP (required for Storybook assets):"
-echo "  ./view_gallery_pages.sh"
+echo "  just gallery-pages-view"

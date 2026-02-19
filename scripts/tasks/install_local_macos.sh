@@ -1,11 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PolySynth Local macOS Installation Script
 # This script copies the built AU and VST3 plugins to the local macOS plug-in folders.
 
-set -e
+set -euo pipefail
 
-# Ensure we are in the project root
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${ROOT_DIR}"
 
 CONFIG=${1:-Debug}
 BUILD_DIR="build_desktop/out/$CONFIG"

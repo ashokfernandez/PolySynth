@@ -224,11 +224,11 @@ def ensure_gallery_entrypoint():
     <div class="card">
         <h1>Component Gallery Not Built Locally Yet</h1>
         <p>This path is populated by CI on GitHub Pages. For local viewing, run:</p>
-        <p><code>./build_gallery_pages.sh</code></p>
+        <p><code>just gallery-pages-build</code></p>
         <p>Then serve over HTTP (not <code>file://</code>, which browsers block for Storybook scripts):</p>
-        <p><code>./view_gallery_pages.sh</code></p>
+        <p><code>just gallery-pages-view</code></p>
         <p>Or use live interactive mode with:</p>
-        <p><code>./view_gallery.sh</code></p>
+        <p><code>just gallery-view</code></p>
         <p><a href="../index.html">← Back to PolySynth Audio Labs</a></p>
     </div>
 </body>

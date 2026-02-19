@@ -33,6 +33,17 @@ PolySynth is a classic-style virtual analog synthesizer designed for musicians, 
 
 ---
 
+## Documentation Map
+
+- Docs hub: [`docs/README.md`](docs/README.md)
+- Architecture docs: [`docs/architecture/`](docs/architecture)
+- Guides: [`docs/guides/README.md`](docs/guides/README.md)
+- Agent handbook: [`docs/agents/README.md`](docs/agents/README.md)
+- Agent policy: [`AGENTS.md`](AGENTS.md)
+- Planning index: [`plans/README.md`](plans/README.md)
+
+---
+
 ## Architecture
 
 PolySynth follows a **Hub & Spoke** architecture that cleanly separates concerns:
@@ -125,6 +136,17 @@ PolySynth/
 - **CMake** 3.14+
 - **Node.js** 16+ (for UI development)
 - **Xcode** (macOS) or **MSVC** (Windows)
+- **just** command runner (recommended)
+
+Install `just`:
+
+```bash
+# macOS
+brew install just
+
+# Ubuntu/Debian
+sudo apt install just
+```
 
 ### Quick Start
 
@@ -133,21 +155,51 @@ PolySynth/
 git clone --recursive https://github.com/ashokfernandez/PolySynth.git
 cd PolySynth
 
-# Download iPlug2 dependencies
-./scripts/download_dependencies.sh
+# Show available project commands
+just
+
+# Download dependencies
+just deps
 
 # Build and run tests
-cd tests && mkdir build && cd build
-cmake .. && make
-./run_tests
+just build
+just test
 
-# Build desktop app (macOS)
-cd ../../src/platform/desktop
-cmake -B build
-cmake --build build --target PolySynth-app
+# Static analysis
+just lint
 
-# Launch the app
-open ~/Applications/PolySynth.app
+# Desktop app build/run
+just desktop-build
+just desktop-run
+
+# Example: pass filter args through to Catch2
+just test -- --filter "[engine]"
+```
+
+### Quick Commands
+
+```bash
+just quick            # build + test
+just quick-pr         # lint + asan + tsan + test
+just quick-desktop    # rebuild + launch app
+just quick-ui         # build + open Storybook
+just quick-logs       # show latest run logs
+```
+
+### Command Logging
+
+`just` commands now run through a shared CLI wrapper:
+
+- Full stdout/stderr logs are always written to `.artifacts/logs/<run-id>/`
+- Terminal output stays compact (`PASS/FAIL`, duration)
+- On failure, you get a short issue excerpt plus the full log path
+
+```bash
+# Show the latest run summary and log paths
+just logs-latest
+
+# Stream full command output live (still writes logs)
+POLYSYNTH_VERBOSE=1 just test
 ```
 
 ### Component Gallery Quick Commands
@@ -157,25 +209,28 @@ If you use `nvm`, run `nvm use` from repo root (`.nvmrc` is set to Node 22.22.0)
 
 ```bash
 # Build gallery plugin output (WAM/web assets)
-./build_gallery.sh
+just gallery-build
 
 # Rebuild gallery (clean build)
-./rebuild_gallery.sh
+just gallery-rebuild
 
 # View gallery in Storybook (localhost:6006 by default)
-./view_gallery.sh
+just gallery-view
 
 # Rebuild + immediately view
-./rebuild_and_view_gallery.sh
+just gallery-rebuild-view
 
 # Build static gallery docs page (for docs/component-gallery/index.html)
-./build_gallery_pages.sh
+just gallery-pages-build
 
 # View static gallery docs over HTTP (required; file:// is blocked by browser CORS)
-./view_gallery_pages.sh
+just gallery-pages-view
 
 # Build + run visual regression tests
-./test_gallery_visual.sh
+just gallery-test
+
+# Inspect latest logs if a step fails
+just logs-latest
 
 # Run Storybook Vitest checks only
 cd tests/Visual && npm run test:stories
@@ -206,7 +261,11 @@ Run the test suite:
 
 ```bash
 # C++ unit tests
-./tests/build/run_tests
+just test
+
+# Sanitizer runs
+just asan
+just tsan
 
 # JavaScript tests
 cd src/platform/desktop/resources/web
@@ -230,10 +289,10 @@ npm test
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Write tests for your changes
-4. Ensure all tests pass (`./tests/build/run_tests`)
+4. Ensure checks pass (`just check`)
 5. Submit a pull request
 
-Please read the [Architecture documentation](.agent/rules/architecture.md) before contributing.
+Please read the [documentation hub](docs/README.md) and [architecture overview](docs/architecture/OVERVIEW.md) before contributing.
 
 ---
 

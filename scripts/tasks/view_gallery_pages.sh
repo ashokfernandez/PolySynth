@@ -1,15 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Serve docs/ over HTTP so the local Component Gallery Storybook works.
 
-set -e
-cd "$(dirname "$0")"
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${ROOT_DIR}"
 
 PORT=${1:-8092}
 URL="http://127.0.0.1:${PORT}/docs/component-gallery/index.html"
 
 if [ ! -f "docs/component-gallery/index.html" ]; then
   echo "Local gallery docs not found. Building them first..."
-  ./build_gallery_pages.sh
+  ./scripts/tasks/build_gallery_pages.sh
 fi
 
 echo "Serving docs at ${URL}"

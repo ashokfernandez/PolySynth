@@ -594,7 +594,7 @@ Execute tasks in this order:
 9. **4.8** — UI layout (knobs + displays)
 10. **4.9** — Implement OnIdle
 11. **4.10** — Golden master verification
-12. Build plugin: `./build_desktop.sh`
+12. Build plugin: `just desktop-build`
 13. Manual test: play MIDI, verify chord display, voice count, sustain pedal
 
 ## Definition of Done

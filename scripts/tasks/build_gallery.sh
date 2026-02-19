@@ -1,11 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ComponentGallery Build Script
 # Builds the WAM/web gallery output into ComponentGallery/build-web.
 
-set -e
+set -euo pipefail
 
-# Ensure we are in the project root
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${ROOT_DIR}"
 
 if [ ! -d "external/iPlug2" ]; then
   echo "Dependencies not found. Downloading iPlug2..."
@@ -41,4 +42,4 @@ fi
 
 echo ""
 echo "Build complete."
-echo "View it with: ./view_gallery.sh"
+echo "View it with: just gallery-view"

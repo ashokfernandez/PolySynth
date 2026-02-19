@@ -1,11 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # PolySynth Desktop Build Script
 # This script performs a clean build of the standalone desktop application.
 
-set -e
+set -euo pipefail
 
-# Ensure we are in the project root
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+cd "${ROOT_DIR}"
 
 # 1. Check for dependencies
 if [ ! -d "external/iPlug2" ]; then
@@ -30,4 +31,4 @@ cmake --build build_desktop --config "$CONFIG" --target PolySynth-app
 echo ""
 echo "✅ Build Complete!"
 echo "📍 Location: $(find build_desktop/out -name "PolySynth.app" -type d | head -n 1)"
-echo "🚀 Run './run_desktop.sh' to launch."
+echo "🚀 Run 'just desktop-run' to launch."

@@ -40,9 +40,7 @@ src/platform/desktop/resources/web/src/
 
 ```bash
 # Build desktop app
-cd src/platform/desktop
-cmake -B build
-cmake --build build --target PolySynth-app
+just desktop-build
 
 # Build React UI
 cd src/platform/desktop/resources/web
@@ -60,8 +58,8 @@ Write and run tests to verify correctness:
 ```bash
 # Add tests to tests/unit/Test_*.cpp
 # Build and run
-cd tests && cmake -B build && cmake --build build
-./build/run_tests
+just build
+just test
 ```
 
 ### JavaScript Tests
@@ -85,8 +83,8 @@ npm test
 Launch the app and demonstrate the feature to the user:
 
 ```bash
-# Open the built app
-open ~/Applications/PolySynth.app
+# Build + open the app
+just desktop-rebuild
 ```
 
 ### Demo Checklist
@@ -158,7 +156,7 @@ Edit `scripts/generate_test_report.py`, add to `DEMO_DESCRIPTIONS`:
 
 ```bash
 # Build demos
-cd tests/build && make
+just build
 
 # Generate report
 python3 scripts/generate_test_report.py
@@ -186,11 +184,11 @@ The demo page will update at: https://ashokfernandez.github.io/PolySynth/
 
 2. TEST
    - Add Test_NewFilter.cpp
-   - Run: ./tests/build/run_tests "[filter]"
+   - Run: just test -- --filter "[filter]"
    - Verify: all tests pass
 
 3. DEMO
-   - Open ~/Applications/PolySynth.app
+   - Run just desktop-rebuild
    - Show filter controls
    - Play notes while adjusting cutoff/resonance
    - User sees knobs move, hears filter change
