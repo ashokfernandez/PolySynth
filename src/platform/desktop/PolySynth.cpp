@@ -738,6 +738,7 @@ void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
 }
 void PolySynthPlugin::OnIdle() {
+#if IPLUG_EDITOR
   // Update active voice count display
   if (GetUI()) {
     if (auto *pControl = GetUI()->GetControlWithTag(kCtrlTagActiveVoices)) {
@@ -766,6 +767,7 @@ void PolySynthPlugin::OnIdle() {
       pControl->SetDirty(false);
     }
   }
+#endif
 }
 void PolySynthPlugin::OnReset() {
   mDSP.Reset(GetSampleRate(), GetBlockSize());
@@ -781,11 +783,13 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
 
   // Mark as dirty and update save button
   mIsDirty = true;
+#if IPLUG_EDITOR
   if (auto *pUI = GetUI()) {
     if (auto *pBtn = pUI->GetControlWithTag(kCtrlTagSaveBtn)) {
       ((PresetSaveButton *)pBtn)->SetHasUnsavedChanges(true);
     }
   }
+#endif
 
   double value = GetParam(paramIdx)->Value();
   switch (paramIdx) {
