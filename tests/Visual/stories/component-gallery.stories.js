@@ -36,40 +36,8 @@ export default {
   title: 'ComponentGallery/Components'
 };
 
-export const Knob = {
-  render: () => createGalleryFrame('knob')
-};
-
-export const Fader = {
-  render: () => createGalleryFrame('fader')
-};
-
 export const Envelope = {
   render: () => createGalleryFrame('envelope')
-};
-
-export const Button = {
-  render: () => createGalleryFrame('button')
-};
-
-export const Switch = {
-  render: () => createGalleryFrame('switch')
-};
-
-export const Toggle = {
-  render: () => createGalleryFrame('toggle')
-};
-
-export const SlideSwitch = {
-  render: () => createGalleryFrame('slideswitch')
-};
-
-export const TabSwitch = {
-  render: () => createGalleryFrame('tabswitch')
-};
-
-export const RadioButton = {
-  render: () => createGalleryFrame('radiobutton')
 };
 
 // --- Custom PolySynth controls ---
