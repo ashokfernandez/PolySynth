@@ -1,4 +1,4 @@
-# Voice Manager & Theory Engine — Sprint Retrospective Notes
+# PolySynth — Sprint Retrospective Notes
 
 This file captures cross-sprint review/retro feedback that should inform future implementation.
 

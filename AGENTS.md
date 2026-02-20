@@ -71,7 +71,7 @@ Your goal is to permanently immunize the repository against recurring failures. 
 * **Step 1 (Reproduce):** You MUST NOT write the fix first. You MUST first write a new Catch2 unit test in the appropriate `tests/unit/` file that reproduces the exact bug or regression.
 * **Step 2 (Verify Failure):** You MUST run `just test` to prove that the new test accurately catches the failure.
 * **Step 3 (Implement Fix):** You MUST implement the code fix until the newly written test passes.
-* **Step 4 (Document the Gap):** You MUST document the testing gap in `SPRINT_RETROSPECTIVE_NOTES.md` using the Problem/Action/Lesson format.
+* **Step 4 (Document the Gap):** You MUST document the testing gap in `plans/SPRINT_RETROSPECTIVE_NOTES.md` using the Problem/Action/Lesson format.
 * **For UI/Build specific regressions:** If Catch2 tests do not apply, you MUST update or write an automated script (like `scripts/check_ui_safety.py`) to catch the structural rule violation before compilation.
 
 ## 📝 8. CONTINUOUS LEARNING & KNOWLEDGE CAPTURE
@@ -79,7 +79,7 @@ Your goal is to permanently immunize the repository against recurring failures. 
 You MUST act as a steward of the project's institutional memory. 
 
 * **WHEN to document:** You MUST capture a learning whenever you resolve a build/UI failure, debug a complex DSP issue, receive an architectural correction, or apply the Bug Fixing Protocol (Section 7).
-* **WHERE to document:** You MUST append your learnings to `SPRINT_RETROSPECTIVE_NOTES.md` under the current sprint's "Retro" or "Issues & Resolutions" section. 
+* **WHERE to document:** You MUST append your learnings to `plans/SPRINT_RETROSPECTIVE_NOTES.md` under the current sprint's "Retro" or "Issues & Resolutions" section. 
 * **HOW to document:** You MUST use the exact three-part format:
   * **Problem:** A concise explanation of what failed or was ambiguous.
   * **Action:** What you changed, where, and why to fix it.

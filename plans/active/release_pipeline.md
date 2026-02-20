@@ -74,4 +74,4 @@ Ship a tag-driven GitHub Actions release pipeline that publishes:
 - 2026-02-20: S7 completed (download section + OS-aware release links in docs page source and generated template).
 - 2026-02-20: S8 completed (README release badge and installation guide updates).
 - 2026-02-20: S9 completed (syntax checks for shell/python/workflow + downloads JSON validation).
-- 2026-02-20: S10 completed (Problem/Action/Lesson appended to `plans/archive/voice-manager/SPRINT_RETROSPECTIVE_NOTES.md`).
+- 2026-02-20: S10 completed (Problem/Action/Lesson appended to `plans/SPRINT_RETROSPECTIVE_NOTES.md`).
