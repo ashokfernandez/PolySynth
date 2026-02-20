@@ -85,3 +85,15 @@ export const PolySection = {
 export const PolyToggle = {
   render: () => createGalleryFrame('polytoggle')
 };
+
+export const SectionFrame = {
+  render: () => createGalleryFrame('sectionframe')
+};
+
+export const LCDPanel = {
+  render: () => createGalleryFrame('lcdpanel')
+};
+
+export const PresetSaveButton = {
+  render: () => createGalleryFrame('presetsavebutton')
+};

@@ -1,5 +1,6 @@
 #pragma once
 #include "IControl.h"
+#include "PolyTheme.h"
 
 class LCDPanel final : public IControl {
 public:
