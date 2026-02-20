@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ main ]
 
@@ -18,9 +19,11 @@ env:
 # Job dependency graph:
 #
 #   lint-static-analysis ──┐
-#                          ├──> native-dsp-tests ──> build-wam-demo
-#   build-asan-tests ──────┤                     └──> build-storybook-site
-#   build-tsan-tests ──────┘                                    └──> package-demo-site
+#                          ├──> native-dsp-tests ──> build-macos ──┐
+#   build-asan-tests ──────┤                     ├──> build-windows ├──> publish-release
+#   build-tsan-tests ──────┘                     ├──> build-wam-demo
+#                                                └──> build-storybook-site
+#                                                               └──> package-demo-site
 #                                                                         └──> publish-pages
 # =============================================================================
 
@@ -314,7 +317,108 @@ jobs:
           python3 scripts/analyze_audio.py tests/golden/demo_render_wav.wav --expected-freq 440
 
   # ---------------------------------------------------------------------------
-  # Job 5: Build PolySynth WAM Demo (unchanged – now depends on safety gate)
+  # Job 5: Build macOS release artifacts on tag pushes.
+  # ---------------------------------------------------------------------------
+  build-macos:
+    name: Build Release (macOS)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    needs: native-dsp-tests
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - name: Download project external dependencies
+        run: just deps
+
+      - name: Build unsigned macOS release bundles
+        run: just plugin-release-mac
+
+      - name: Create macOS installer package
+        run: just plugin-package-mac
+
+      - name: Upload macOS release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polysynth-release-macos
+          path: .artifacts/releases/macos/PolySynth-*-macOS.pkg
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Job 6: Build Windows release artifacts on tag pushes.
+  # ---------------------------------------------------------------------------
+  build-windows:
+    name: Build Release (Windows)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    needs: native-dsp-tests
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - name: Download project external dependencies
+        shell: bash
+        run: just deps
+
+      - name: Build Windows release VST3 zip
+        shell: bash
+        run: just plugin-release-win
+
+      - name: Upload Windows release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polysynth-release-windows
+          path: .artifacts/releases/windows/PolySynth-windows-vst3.zip
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Job 7: Publish GitHub release from tag artifacts.
+  # ---------------------------------------------------------------------------
+  publish-release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: [build-macos, build-windows]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download macOS release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: polysynth-release-macos
+          path: release-assets/macos
+
+      - name: Download Windows release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: polysynth-release-windows
+          path: release-assets/windows
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          name: PolySynth ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release-assets/macos/PolySynth-*-macOS.pkg
+            release-assets/windows/PolySynth-windows-vst3.zip
+
+  # ---------------------------------------------------------------------------
+  # Job 8: Build PolySynth WAM Demo (unchanged – now depends on safety gate)
   # ---------------------------------------------------------------------------
   build-wam-demo:
     name: Build PolySynth WAM Demo
@@ -361,7 +465,7 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
-  # Job 6: Build Component Gallery Storybook (unchanged)
+  # Job 9: Build Component Gallery Storybook (unchanged)
   # ---------------------------------------------------------------------------
   build-storybook-site:
     name: Build Component Gallery Storybook
@@ -419,7 +523,7 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
-  # Job 7: Package demo site (unchanged)
+  # Job 10: Package demo site (unchanged)
   # ---------------------------------------------------------------------------
   package-demo-site:
     name: Package Pages Site
@@ -443,6 +547,14 @@ jobs:
           name: component-gallery-storybook-static
           path: docs/component-gallery
 
+      - name: Generate release download metadata
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/tasks/generate_downloads_json.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --output docs/downloads.json
+
       - name: Finalize docs for Pages
         run: |
           touch docs/.nojekyll
@@ -454,7 +566,7 @@ jobs:
           path: docs
 
   # ---------------------------------------------------------------------------
-  # Job 8: Publish GitHub Pages (unchanged)
+  # Job 11: Publish GitHub Pages (unchanged)
   # ---------------------------------------------------------------------------
   publish-pages:
     name: Publish GitHub Pages

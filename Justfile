@@ -122,6 +122,18 @@ install-local config="Debug":
 install-local-macos config="Debug":
     bash ./scripts/cli.sh run install-local-macos -- ./scripts/tasks/install_local_macos.sh {{config}}
 
+# Build unsigned release-ready macOS AU + VST3 bundles into .artifacts/releases/macos.
+plugin-release-mac:
+    bash ./scripts/cli.sh run plugin-release-mac -- ./scripts/tasks/plugin_release_mac.sh
+
+# Build release Windows VST3 bundle and zip into .artifacts/releases/windows.
+plugin-release-win:
+    bash ./scripts/cli.sh run plugin-release-win -- ./scripts/tasks/plugin_release_windows.sh
+
+# Create unsigned macOS installer pkg from staged release bundles.
+plugin-package-mac:
+    bash ./scripts/cli.sh run plugin-package-mac -- ./scripts/tasks/create_pkg.sh
+
 # PolySynth web demo workflow
 # Build and serve web demo locally (opens browser when possible).
 web-demo:
@@ -164,3 +176,7 @@ gallery-test:
 # Show latest run summary and log file locations.
 logs-latest:
     bash ./scripts/cli.sh latest
+
+# Set project version across VERSION + desktop platform metadata.
+set-version version:
+    bash ./scripts/cli.sh run set-version -- ./scripts/tasks/set_version.sh {{version}}
