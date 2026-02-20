@@ -1,8 +1,8 @@
 #include "ComponentGallery.h"
+#include "VRTCaptureHelper.h"
 #include "IPlug_include_in_plug_src.h"
 
 #if IPLUG_EDITOR
-// Custom controls from UI/Controls
 #include "Envelope.h"
 #include "LCDPanel.h"
 #include "PolyKnob.h"
@@ -12,16 +12,35 @@
 #include "SectionFrame.h"
 #endif
 
+#include <cstdlib>
 #include <cstring>
 
-ComponentGallery::ComponentGallery(const InstanceInfo &info)
+// Layout constants
+static constexpr float kSidebarW   = 180.f;
+static constexpr float kBottomBarH = 50.f;
+static constexpr float kPad        = 20.f;
+
+static const char* kComponentNames[kNumComponents] = {
+  "Envelope", "PolyKnob", "PolySection", "PolyToggle",
+  "SectionFrame", "LCDPanel", "PresetSaveButton"
+};
+
+ComponentGallery::ComponentGallery(const InstanceInfo& info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
   GetParam(kParamKnobPrimary)->InitDouble("Knob Primary", 0.5, 0., 1., 0.01);
-  GetParam(kParamKnobSecondary)
-      ->InitDouble("Knob Secondary", 0.5, 0., 1., 0.01);
+  GetParam(kParamKnobSecondary)->InitDouble("Knob Secondary", 0.5, 0., 1., 0.01);
   GetParam(kParamToggleMono)->InitBool("Toggle Mono", false);
   GetParam(kParamTogglePoly)->InitBool("Toggle Poly", false);
   GetParam(kParamToggleFX)->InitBool("Toggle FX", false);
+  GetParam(kParamStateSlider)->InitDouble("State", 0., 0., 1., 0.01);
+
+  // VRT capture mode: activated via environment variable for CLI/CI use.
+  const char* vrtMode = std::getenv("POLYSYNTH_VRT_MODE");
+  if (vrtMode && std::strcmp(vrtMode, "1") == 0) {
+    mVRTCaptureMode = true;
+    const char* outDir = std::getenv("POLYSYNTH_VRT_OUTPUT_DIR");
+    mVRTOutputDir = outDir ? outDir : "tests/Visual/current";
+  }
 
 #if IPLUG_EDITOR
   mMakeGraphicsFunc = [&]() {
@@ -29,155 +48,279 @@ ComponentGallery::ComponentGallery(const InstanceInfo &info)
                         GetScaleForScreen(PLUG_WIDTH, PLUG_HEIGHT));
   };
 
-  mLayoutFunc = [this](IGraphics *pGraphics) { OnLayout(pGraphics); };
+  mLayoutFunc = [this](IGraphics* pGraphics) { OnLayout(pGraphics); };
+#endif
+}
+
+void ComponentGallery::OnIdle() {
+#if IPLUG_EDITOR
+  if (!mVRTCaptureMode || mVRTCaptureStarted) return;
+
+  IGraphics* pGraphics = GetUI();
+  if (!pGraphics) return;  // Editor not yet open
+
+  // Accumulate warmup frames so all controls have rendered at least once
+  // before we attempt pixel readback.
+  if (mVRTWarmupFrames < 3) {
+    pGraphics->SetAllControlsDirty();
+    ++mVRTWarmupFrames;
+    return;
+  }
+
+  mVRTCaptureStarted = true;
+  RunVRTCapture();
 #endif
 }
 
 #if IPLUG_EDITOR
-void ComponentGallery::OnLayout(IGraphics *pGraphics) {
-  if (pGraphics->NControls())
-    return;
+
+void ComponentGallery::OnLayout(IGraphics* pGraphics) {
+  if (pGraphics->NControls()) return;
+
+  // Load bundled fonts (must precede any IText that references them).
+  pGraphics->LoadFont("Regular", ROBOTO_FN);
 
   pGraphics->AttachPanelBackground(COLOR_DARK_GRAY);
 
-  const float padding = 20.0f;
+  const IRECT sidebarBounds(0.f, 0.f, kSidebarW, PLUG_HEIGHT - kBottomBarH);
+  const IRECT mainBounds(kSidebarW, 0.f, PLUG_WIDTH, PLUG_HEIGHT - kBottomBarH);
+  const IRECT bottomBounds(0.f, PLUG_HEIGHT - kBottomBarH, PLUG_WIDTH, PLUG_HEIGHT);
 
-  // Build-time component selection via preprocessor defines
-#if defined(GALLERY_COMPONENT_ENVELOPE)
-  const float envelopeWidth = 400.0f;
-  const float envelopeHeight = 150.0f;
-  Envelope *pEnvelope = new Envelope(IRECT(
-      padding, padding, padding + envelopeWidth, padding + envelopeHeight));
-  pEnvelope->SetADSR(0.2f, 0.4f, 0.6f, 0.5f);
-  pGraphics->AttachControl(pEnvelope);
+  // ── Sidebar navigation buttons ───────────────────────────────────────────
+  const float btnH   = 36.f;
+  const float btnPad = 4.f;
 
-#elif defined(GALLERY_COMPONENT_POLYKNOB)
-  // PolyKnob: custom themed knob with arc indicator, label, and value readout
-  const float polyKnobSize = 80.0f;
-  const float polyKnobSpacing = 20.0f;
+  for (int i = 0; i < kNumComponents; ++i) {
+    const int idx = i;
+    IRECT btnRect(btnPad,
+                  btnPad + i * (btnH + btnPad),
+                  kSidebarW - btnPad,
+                  btnPad + i * (btnH + btnPad) + btnH);
 
-  // Default accent (red)
-  pGraphics->AttachControl(new PolyKnob(
-      IRECT(padding, padding, padding + polyKnobSize, padding + polyKnobSize + 36.f),
-      kParamKnobPrimary, "Cutoff"));
+    auto* btn = new IVButtonControl(btnRect,
+      [this, idx](IControl*) { ShowComponent(idx); },
+      kComponentNames[i]);
+    pGraphics->AttachControl(btn);
+    mSidebarButtons.push_back(btn);
+  }
 
-  // Cyan accent variant
-  auto* cyanKnob = new PolyKnob(
-      IRECT(padding + polyKnobSize + polyKnobSpacing, padding,
-            padding + 2.f * polyKnobSize + polyKnobSpacing,
-            padding + polyKnobSize + 36.f),
-      kParamKnobSecondary, "Reso");
-  cyanKnob->SetAccent(PolyTheme::AccentCyan);
-  pGraphics->AttachControl(cyanKnob);
+  // ── Main viewing area origin ─────────────────────────────────────────────
+  const float mx = mainBounds.L + kPad;
+  const float my = mainBounds.T + kPad;
 
-  // No-label/no-value variant (as used in stacked controls)
-  auto* bareKnob = new PolyKnob(
-      IRECT(padding + 2.f * (polyKnobSize + polyKnobSpacing), padding + 18.f,
-            padding + 2.f * (polyKnobSize + polyKnobSpacing) + polyKnobSize,
-            padding + 18.f + polyKnobSize),
-      kParamKnobPrimary, "");
-  bareKnob->WithShowLabel(false).WithShowValue(false);
-  pGraphics->AttachControl(bareKnob);
+  // ── Envelope (400 × 150) ─────────────────────────────────────────────────
+  {
+    const float ew = 400.f, eh = 150.f;
+    IRECT r(mx, my, mx + ew, my + eh);
+    mComponentBounds[kComponentEnvelope] = r;
+    auto* pEnv = new Envelope(r);
+    pEnv->SetADSR(0.2f, 0.4f, 0.6f, 0.5f);
+    pGraphics->AttachControl(pEnv);
+    mComponentControls[kComponentEnvelope].push_back(pEnv);
+  }
 
-#elif defined(GALLERY_COMPONENT_POLYSECTION)
-  // PolySection: cached panel with title, sheen, scanlines, and depth border
-  const float sectionWidth = 300.0f;
-  const float sectionHeight = 200.0f;
-  pGraphics->AttachControl(new PolySection(
-      IRECT(padding, padding, padding + sectionWidth, padding + sectionHeight),
-      "FILTER"));
+  // ── PolyKnob (3 variants) ─────────────────────────────────────────────────
+  {
+    const float ks = 80.f, kg = 20.f;
+    IRECT r(mx, my, mx + 3.f * ks + 2.f * kg, my + ks + 36.f);
+    mComponentBounds[kComponentPolyKnob] = r;
 
-  // Second section to show side-by-side appearance
-  pGraphics->AttachControl(new PolySection(
-      IRECT(padding + sectionWidth + 20.f, padding,
-            padding + 2.f * sectionWidth + 20.f, padding + sectionHeight),
-      "LFO"));
+    auto* k1 = new PolyKnob(IRECT(mx, my, mx + ks, my + ks + 36.f),
+                             kParamKnobPrimary, "Cutoff");
+    pGraphics->AttachControl(k1);
+    mComponentControls[kComponentPolyKnob].push_back(k1);
 
-#elif defined(GALLERY_COMPONENT_POLYTOGGLE)
-  // PolyToggleButton: latching toggle with themed active/inactive states
-  const float toggleWidth = 80.0f;
-  const float toggleHeight = 28.0f;
-  const float toggleGap = 10.0f;
+    auto* k2 = new PolyKnob(
+        IRECT(mx + ks + kg, my, mx + 2.f * ks + kg, my + ks + 36.f),
+        kParamKnobSecondary, "Reso");
+    k2->SetAccent(PolyTheme::AccentCyan);
+    pGraphics->AttachControl(k2);
+    mComponentControls[kComponentPolyKnob].push_back(k2);
 
-  // Inactive state (default value = 0)
-  pGraphics->AttachControl(new PolyToggleButton(
-      IRECT(padding, padding, padding + toggleWidth, padding + toggleHeight),
-      kParamToggleMono, "MONO"));
+    auto* k3 = new PolyKnob(
+        IRECT(mx + 2.f * (ks + kg), my + 18.f,
+              mx + 2.f * (ks + kg) + ks, my + 18.f + ks),
+        kParamKnobPrimary, "");
+    k3->WithShowLabel(false).WithShowValue(false);
+    pGraphics->AttachControl(k3);
+    mComponentControls[kComponentPolyKnob].push_back(k3);
+  }
 
-  // A second toggle wired to a different param to show both states simultaneously
-  pGraphics->AttachControl(new PolyToggleButton(
-      IRECT(padding + toggleWidth + toggleGap, padding,
-            padding + 2.f * toggleWidth + toggleGap, padding + toggleHeight),
-      kParamTogglePoly, "POLY"));
+  // ── PolySection (2 panels) ───────────────────────────────────────────────
+  {
+    const float sw = 300.f, sh = 200.f, sg = 20.f;
+    IRECT r(mx, my, mx + 2.f * sw + sg, my + sh);
+    mComponentBounds[kComponentPolySection] = r;
 
-  // A third toggle for the row layout
-  pGraphics->AttachControl(new PolyToggleButton(
-      IRECT(padding + 2.f * (toggleWidth + toggleGap), padding,
-            padding + 3.f * toggleWidth + 2.f * toggleGap, padding + toggleHeight),
-      kParamToggleFX, "FX"));
+    auto* s1 = new PolySection(IRECT(mx, my, mx + sw, my + sh), "FILTER");
+    pGraphics->AttachControl(s1);
+    mComponentControls[kComponentPolySection].push_back(s1);
 
-#elif defined(GALLERY_COMPONENT_SECTIONFRAME)
-  // SectionFrame: generic framed group container with optional background
-  const float frameWidth = 380.0f;
-  const float frameHeight = 220.0f;
-  pGraphics->AttachControl(new SectionFrame(
-      IRECT(padding, padding, padding + frameWidth, padding + frameHeight),
-      "MOD MATRIX", PolyTheme::SectionBorder, PolyTheme::TextDark,
-      PolyTheme::ControlBG));
+    auto* s2 = new PolySection(
+        IRECT(mx + sw + sg, my, mx + 2.f * sw + sg, my + sh), "LFO");
+    pGraphics->AttachControl(s2);
+    mComponentControls[kComponentPolySection].push_back(s2);
+  }
 
-#elif defined(GALLERY_COMPONENT_LCDPANEL)
-  // LCDPanel: dark "display" panel treatment used in the header preset area
-  const float panelWidth = 320.0f;
-  const float panelHeight = 72.0f;
-  const IRECT panelRect(padding, padding, padding + panelWidth,
-                        padding + panelHeight);
-  pGraphics->AttachControl(new LCDPanel(panelRect, PolyTheme::LCDBackground));
-  pGraphics->AttachControl(new ITextControl(
-      panelRect.GetPadded(-14.f), "PRESET: INIT",
-      IText(PolyTheme::FontControl + 1.f, PolyTheme::LCDText, "Bold",
-            EAlign::Center)));
+  // ── PolyToggle (3 buttons) ───────────────────────────────────────────────
+  {
+    const float tw = 80.f, th = 28.f, tg = 10.f;
+    IRECT r(mx, my, mx + 3.f * tw + 2.f * tg, my + th);
+    mComponentBounds[kComponentPolyToggle] = r;
 
-#elif defined(GALLERY_COMPONENT_PRESETSAVEBUTTON)
-  // PresetSaveButton: dirty/clean state variants side-by-side
-  const float buttonWidth = 120.0f;
-  const float buttonHeight = 34.0f;
-  const float buttonGap = 16.0f;
-  const float labelHeight = 18.0f;
+    auto* t1 = new PolyToggleButton(IRECT(mx, my, mx + tw, my + th),
+                                    kParamToggleMono, "MONO");
+    pGraphics->AttachControl(t1);
+    mComponentControls[kComponentPolyToggle].push_back(t1);
 
-  auto *dirty = new PresetSaveButton(
-      IRECT(padding, padding + labelHeight, padding + buttonWidth,
-            padding + labelHeight + buttonHeight),
-      [](IControl *ctrl) { (void)ctrl; });
-  dirty->SetHasUnsavedChanges(true);
-  pGraphics->AttachControl(dirty);
-  pGraphics->AttachControl(new ITextControl(
-      IRECT(padding, padding, padding + buttonWidth, padding + labelHeight),
-      "DIRTY", IText(PolyTheme::FontControl - 1.f, PolyTheme::TextDark,
-                     "Bold", EAlign::Center)));
+    auto* t2 = new PolyToggleButton(
+        IRECT(mx + tw + tg, my, mx + 2.f * tw + tg, my + th),
+        kParamTogglePoly, "POLY");
+    pGraphics->AttachControl(t2);
+    mComponentControls[kComponentPolyToggle].push_back(t2);
 
-  const float cleanX = padding + buttonWidth + buttonGap;
-  pGraphics->AttachControl(new PresetSaveButton(
-      IRECT(cleanX, padding + labelHeight, cleanX + buttonWidth,
-            padding + labelHeight + buttonHeight),
-      [](IControl *ctrl) { (void)ctrl; }));
-  pGraphics->AttachControl(new ITextControl(
-      IRECT(cleanX, padding, cleanX + buttonWidth, padding + labelHeight),
-      "CLEAN", IText(PolyTheme::FontControl - 1.f, PolyTheme::TextDark,
-                     "Bold", EAlign::Center)));
+    auto* t3 = new PolyToggleButton(
+        IRECT(mx + 2.f * (tw + tg), my, mx + 3.f * tw + 2.f * tg, my + th),
+        kParamToggleFX, "FX");
+    pGraphics->AttachControl(t3);
+    mComponentControls[kComponentPolyToggle].push_back(t3);
+  }
 
-#else
-  // Default: show PolyKnob (gallery focuses on PolySynth UI controls)
-  pGraphics->AttachControl(new PolyKnob(
-      IRECT(padding, padding, padding + 80.f, padding + 116.f),
-      kParamKnobPrimary, "Cutoff"));
-#endif
+  // ── SectionFrame (380 × 220) ─────────────────────────────────────────────
+  {
+    const float fw = 380.f, fh = 220.f;
+    IRECT r(mx, my, mx + fw, my + fh);
+    mComponentBounds[kComponentSectionFrame] = r;
+
+    auto* sf = new SectionFrame(r, "MOD MATRIX",
+                                PolyTheme::SectionBorder,
+                                PolyTheme::TextDark,
+                                PolyTheme::ControlBG);
+    pGraphics->AttachControl(sf);
+    mComponentControls[kComponentSectionFrame].push_back(sf);
+  }
+
+  // ── LCDPanel (320 × 72) ──────────────────────────────────────────────────
+  {
+    const float lw = 320.f, lh = 72.f;
+    IRECT r(mx, my, mx + lw, my + lh);
+    mComponentBounds[kComponentLCDPanel] = r;
+
+    auto* lcd = new LCDPanel(r, PolyTheme::LCDBackground);
+    pGraphics->AttachControl(lcd);
+    mComponentControls[kComponentLCDPanel].push_back(lcd);
+
+    auto* txt = new ITextControl(
+        r.GetPadded(-14.f), "PRESET: INIT",
+        IText(PolyTheme::FontControl + 1.f, PolyTheme::LCDText,
+              "Regular", EAlign::Center));
+    pGraphics->AttachControl(txt);
+    mComponentControls[kComponentLCDPanel].push_back(txt);
+  }
+
+  // ── PresetSaveButton (dirty + clean states) ───────────────────────────────
+  {
+    const float bw = 120.f, bh = 34.f, bg = 16.f, lblH = 18.f;
+    IRECT r(mx, my, mx + 2.f * bw + bg, my + lblH + bh);
+    mComponentBounds[kComponentPresetSaveButton] = r;
+
+    auto* lbl1 = new ITextControl(
+        IRECT(mx, my, mx + bw, my + lblH), "DIRTY",
+        IText(PolyTheme::FontControl - 1.f, PolyTheme::TextDark,
+              "Regular", EAlign::Center));
+    pGraphics->AttachControl(lbl1);
+    mComponentControls[kComponentPresetSaveButton].push_back(lbl1);
+
+    auto* dirty = new PresetSaveButton(
+        IRECT(mx, my + lblH, mx + bw, my + lblH + bh),
+        [](IControl*) {});
+    dirty->SetHasUnsavedChanges(true);
+    pGraphics->AttachControl(dirty);
+    mComponentControls[kComponentPresetSaveButton].push_back(dirty);
+
+    const float cx = mx + bw + bg;
+    auto* lbl2 = new ITextControl(
+        IRECT(cx, my, cx + bw, my + lblH), "CLEAN",
+        IText(PolyTheme::FontControl - 1.f, PolyTheme::TextDark,
+              "Regular", EAlign::Center));
+    pGraphics->AttachControl(lbl2);
+    mComponentControls[kComponentPresetSaveButton].push_back(lbl2);
+
+    auto* clean = new PresetSaveButton(
+        IRECT(cx, my + lblH, cx + bw, my + lblH + bh),
+        [](IControl*) {});
+    pGraphics->AttachControl(clean);
+    mComponentControls[kComponentPresetSaveButton].push_back(clean);
+  }
+
+  // ── State injection slider (bottom bar) ──────────────────────────────────
+  pGraphics->AttachControl(
+      new IVSliderControl(
+          IRECT(kSidebarW + kPad, bottomBounds.T + 8.f,
+                PLUG_WIDTH - kPad, bottomBounds.B - 8.f),
+          kParamStateSlider, "State", DEFAULT_STYLE, true),
+      kCtrlTag_TestKnob);
+
+  // ── Default view: PolyKnob ───────────────────────────────────────────────
+  ShowComponent(kComponentPolyKnob);
 }
-#endif
+
+void ComponentGallery::ShowComponent(int idx) {
+  for (int i = 0; i < kNumComponents; ++i) {
+    const bool hide = (i != idx);
+    for (auto* pCtrl : mComponentControls[i])
+      pCtrl->Hide(hide);
+  }
+  mCurrentComponent = idx;
+
+  IGraphics* pGraphics = GetUI();
+  if (pGraphics) pGraphics->SetAllControlsDirty();
+}
+
+void ComponentGallery::OnParamChange(int paramIdx, EParamSource /*source*/,
+                                     int /*sampleOffset*/) {
+  if (paramIdx == kParamStateSlider) {
+    IGraphics* pGraphics = GetUI();
+    if (pGraphics) pGraphics->SetAllControlsDirty();
+  }
+}
+
+void ComponentGallery::RunVRTCapture() {
+  const std::string outDir =
+      mVRTOutputDir.empty() ? "tests/Visual/current" : mVRTOutputDir;
+  VRTCapture::EnsureDir(outDir);
+
+  IGraphics* pGraphics = GetUI();
+  if (!pGraphics) {
+    std::fprintf(stderr, "[VRTCapture] ERROR: IGraphics not available.\n");
+    std::exit(1);
+  }
+
+  for (int i = 0; i < kNumComponents; ++i) {
+    ShowComponent(i);
+    VRTCapture::RenderWarmupFrames(pGraphics, 3);
+    SaveComponentPNG(i, outDir + "/" + kComponentNames[i] + ".png");
+  }
+
+  std::exit(0);
+}
+
+void ComponentGallery::SaveComponentPNG(int idx, const std::string& filePath) {
+  IGraphics* pGraphics = GetUI();
+  if (!pGraphics) return;
+
+  if (!VRTCapture::SaveRegionAsPNG(pGraphics, mComponentBounds[idx], filePath)) {
+    std::fprintf(stderr, "[VRTCapture] Failed to save '%s'.\n",
+                 filePath.c_str());
+  }
+}
+
+#endif  // IPLUG_EDITOR
 
 #if IPLUG_DSP
-void ComponentGallery::ProcessBlock(sample **inputs, sample **outputs,
+void ComponentGallery::ProcessBlock(sample** inputs, sample** outputs,
                                     int nFrames) {
-  const int nInChans = NInChansConnected();
+  const int nInChans  = NInChansConnected();
   const int nOutChans = NOutChansConnected();
 
   for (int chan = 0; chan < nOutChans; ++chan) {
