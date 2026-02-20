@@ -19,6 +19,10 @@
 #   -v             Verbose output
 #   --filter EXPR  Catch2 tag/name filter passed to run_tests (e.g. "[smoke]")
 #
+# Environment:
+#   POLYSYNTH_CMAKE_GENERATOR
+#                  Force CMake generator. Defaults to Ninja when available.
+#
 # Examples:
 #   ./scripts/dev.sh build
 #   ./scripts/dev.sh test --filter "[engine]"
@@ -34,10 +38,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TESTS_DIR="$ROOT/tests"
-
-BUILD_DIR="$TESTS_DIR/build"
-BUILD_ASAN="$TESTS_DIR/build_asan"
-BUILD_TSAN="$TESTS_DIR/build_tsan"
 
 # ---------------------------------------------------------------------------
 # Colours (disabled when not a TTY, e.g. in CI log files)
@@ -72,6 +72,39 @@ cpu_count() {
     else echo 4; fi
 }
 
+asan_options() {
+    local opts="halt_on_error=1:print_stacktrace=1"
+    if [[ "$(uname -s)" == "Linux" ]]; then
+        opts="detect_leaks=1:${opts}"
+    fi
+    echo "$opts"
+}
+
+pick_cmake_generator() {
+    if [[ -n "${POLYSYNTH_CMAKE_GENERATOR:-}" ]]; then
+        echo "${POLYSYNTH_CMAKE_GENERATOR}"
+        return
+    fi
+
+    if command -v ninja &>/dev/null; then
+        echo "Ninja"
+    else
+        echo "Unix Makefiles"
+    fi
+}
+
+generator_slug() {
+    case "$1" in
+        Ninja) echo "ninja" ;;
+        "Unix Makefiles") echo "make" ;;
+        *)
+            echo "$1" \
+                | tr '[:upper:]' '[:lower:]' \
+                | sed -E 's/[^a-z0-9]+/_/g; s/^_+//; s/_+$//'
+            ;;
+    esac
+}
+
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
@@ -94,6 +127,20 @@ CMAKE_COMMON=(
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 )
 [[ "$VERBOSE" == "1" ]] && CMAKE_COMMON+=(-DCMAKE_VERBOSE_MAKEFILE=ON)
+
+CMAKE_GENERATOR="$(pick_cmake_generator)"
+GENERATOR_SLUG="$(generator_slug "$CMAKE_GENERATOR")"
+
+BUILD_DIR="$TESTS_DIR/build_${GENERATOR_SLUG}"
+BUILD_ASAN="$TESTS_DIR/build_asan_${GENERATOR_SLUG}"
+BUILD_TSAN="$TESTS_DIR/build_tsan_${GENERATOR_SLUG}"
+
+if command -v ccache &>/dev/null; then
+    CMAKE_COMMON+=(
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache
+        -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    )
+fi
 
 # ---------------------------------------------------------------------------
 # deps – download external dependencies
@@ -126,14 +173,15 @@ cmd_deps() {
 # build – configure + build normal test binaries (no sanitizers)
 # ---------------------------------------------------------------------------
 cmd_build() {
-    hr; info "Build: normal (no sanitizers)  →  $BUILD_DIR"
+    hr; info "Build: normal (no sanitizers, generator: $CMAKE_GENERATOR)  →  $BUILD_DIR"
     require cmake "Install cmake: brew install cmake"
 
     cmake -S "$TESTS_DIR" -B "$BUILD_DIR" \
+        -G "$CMAKE_GENERATOR" \
         "${CMAKE_COMMON[@]}" \
         -DCMAKE_BUILD_TYPE=Debug
 
-    cmake --build "$BUILD_DIR" -- -j"$JOBS"
+    cmake --build "$BUILD_DIR" --parallel "$JOBS"
     ok "Build complete."
 }
 
@@ -186,6 +234,7 @@ cmd_lint() {
     # Configure to generate compile_commands.json
     info "Configuring CMake to generate compile_commands.json..."
     cmake -S "$TESTS_DIR" -B "$BUILD_DIR" \
+        -G "$CMAKE_GENERATOR" \
         "${CMAKE_COMMON[@]}" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DPOLYSYNTH_ENABLE_STATIC_ANALYSIS=ON
@@ -209,7 +258,7 @@ cmd_lint() {
 # asan – build + test under AddressSanitizer + UBSan
 # ---------------------------------------------------------------------------
 cmd_asan() {
-    hr; info "Build + test: ASan + UBSan  →  $BUILD_ASAN"
+    hr; info "Build + test: ASan + UBSan (generator: $CMAKE_GENERATOR)  →  $BUILD_ASAN"
     require cmake "Install cmake: brew install cmake"
 
     # Prefer clang for best ASan stack traces; fall back to system cc
@@ -221,21 +270,25 @@ cmd_asan() {
     info "  Compiler: $CC / $CXX"
 
     cmake -S "$TESTS_DIR" -B "$BUILD_ASAN" \
+        -G "$CMAKE_GENERATOR" \
         "${CMAKE_COMMON[@]}" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_C_COMPILER="$CC" \
         -DCMAKE_CXX_COMPILER="$CXX" \
         -DUSE_SANITIZER=Address
 
-    cmake --build "$BUILD_ASAN" -- -j"$JOBS"
+    cmake --build "$BUILD_ASAN" --parallel "$JOBS"
+
+    local ASAN_RUNTIME_OPTIONS
+    ASAN_RUNTIME_OPTIONS="$(asan_options)"
 
     hr; info "Running tests under ASan + UBSan..."
     if [[ -n "$FILTER" ]]; then
-        ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:print_stacktrace=1" \
+        ASAN_OPTIONS="$ASAN_RUNTIME_OPTIONS" \
         UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1" \
             "$BUILD_ASAN/run_tests" "$FILTER"
     else
-        ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:print_stacktrace=1" \
+        ASAN_OPTIONS="$ASAN_RUNTIME_OPTIONS" \
         UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1" \
             "$BUILD_ASAN/run_tests"
     fi
@@ -247,7 +300,7 @@ cmd_asan() {
 # tsan – build + test under ThreadSanitizer
 # ---------------------------------------------------------------------------
 cmd_tsan() {
-    hr; info "Build + test: TSan  →  $BUILD_TSAN"
+    hr; info "Build + test: TSan (generator: $CMAKE_GENERATOR)  →  $BUILD_TSAN"
     require cmake "Install cmake: brew install cmake"
 
     local CC CXX
@@ -256,13 +309,14 @@ cmd_tsan() {
     info "  Compiler: $CC / $CXX"
 
     cmake -S "$TESTS_DIR" -B "$BUILD_TSAN" \
+        -G "$CMAKE_GENERATOR" \
         "${CMAKE_COMMON[@]}" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_C_COMPILER="$CC" \
         -DCMAKE_CXX_COMPILER="$CXX" \
         -DUSE_SANITIZER=Thread
 
-    cmake --build "$BUILD_TSAN" -- -j"$JOBS"
+    cmake --build "$BUILD_TSAN" --parallel "$JOBS"
 
     hr; info "Running tests under TSan..."
     if [[ -n "$FILTER" ]]; then
@@ -281,7 +335,10 @@ cmd_tsan() {
 # ---------------------------------------------------------------------------
 cmd_clean() {
     hr; info "Cleaning build directories..."
-    for d in "$BUILD_DIR" "$BUILD_ASAN" "$BUILD_TSAN"; do
+    for d in \
+        "$BUILD_DIR" "$BUILD_ASAN" "$BUILD_TSAN" \
+        "$TESTS_DIR/build" "$TESTS_DIR/build_asan" "$TESTS_DIR/build_tsan"
+    do
         if [[ -d "$d" ]]; then
             rm -rf "$d"
             info "  Removed: $d"

@@ -223,6 +223,11 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
     - **Action:** Refactored the entire voice architecture to use `sample_t` (configurable via `types.h`) for signals and `uint32_t` for timestamps. Updated `sea::VoiceAllocator` to use `float` for control parameters (spread, detune) as extreme precision isn't needed there.
     - **Lesson:** When designing a DSP library for both desktop and embedded (`SEA_DSP`/`SEA_Util`), strict type discipline is required. Use `sample_t` alias everywhere. Avoid `uint64_t` for sample counters unless the wrap-around time (< 24 hours at 48kHz for uint32) is a genuine problem. (Here, `uint32_t` voice ages/timestamps are relative and short-lived, so wrap-around is manageable or irrelevant).
 
+14. **Ninja migration exposed platform-specific ASan runtime options**
+    - **Problem:** During Ninja pipeline validation, `just asan-ninja` aborted on macOS because `ASAN_OPTIONS=detect_leaks=1` is unsupported by the Apple sanitizer runtime.
+    - **Action:** Updated `scripts/dev.sh` to build ASan options dynamically: include `detect_leaks=1` only on Linux, while keeping `halt_on_error` and `print_stacktrace` across platforms. CI remains unchanged and still enforces leak checks on Linux.
+    - **Lesson:** Sanitizer runtime flags are not universally portable. Keep sanitizer policy strict in Linux CI, but gate unsupported options in local developer scripts by host OS.
+
 ---
 
 ## Resolved notes
