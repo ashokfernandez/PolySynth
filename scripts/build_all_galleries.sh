@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build all three component galleries with proper isolation
+# Build all ComponentGallery variants used by current Storybook stories.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,16 +14,15 @@ mkdir -p "${REPO_ROOT}/ComponentGallery/build-web"
 
 # 1. Build the WAM processor once (it's shared by all variants)
 echo "Building base WAM processor..."
-# We use 'knob' as a dummy name just to get the processor built once into build-web/scripts
-GALLERY_COMPONENT=KNOB "${REPO_ROOT}/scripts/build_single_gallery.sh" knob
+# Use an actual gallery variant to generate the shared processor output.
+GALLERY_COMPONENT=ENVELOPE "${REPO_ROOT}/scripts/build_single_gallery.sh" envelope
 
 # 2. Build all variants in parallel (using the pre-built processor)
 echo "Launching parallel UI builds for all variants..."
 
 # List of all component variants to build
 COMPONENTS=(
-  "knob" "fader" "envelope" "button"
-  "switch" "toggle" "slideswitch" "tabswitch" "radiobutton"
+  "envelope"
   "polyknob" "polysection" "polytoggle"
   "sectionframe" "lcdpanel" "presetsavebutton"
 )
@@ -34,7 +33,7 @@ for comp in "${COMPONENTS[@]}"; do
   # itself if we want to be perfectly clean, but let's just use --skip-processor for all others.
   
   # For the first one (knob), we already built it. For others, skip.
-  if [ "$comp" == "knob" ]; then
+  if [ "$comp" == "envelope" ]; then
     # Already done above, but we need to ensure the JS controller is built for knob too
     # Actually, the above call already built BOTH for knob. So we just skip knob in the loop.
     continue

@@ -20,6 +20,7 @@ fi
 
 (cd tests/Visual && npm run build-storybook)
 
+rm -rf docs/component-gallery
 mkdir -p docs/component-gallery
 cp -R tests/Visual/storybook-static/. docs/component-gallery/
 

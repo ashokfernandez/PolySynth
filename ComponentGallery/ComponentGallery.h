@@ -6,14 +6,11 @@
 const int kNumPresets = 1;
 
 enum EParams {
-  kParamKnob = 0,
-  kParamFader,
-  kParamButton,
-  kParamSwitch,
-  kParamToggle,
-  kParamSlideSwitch,
-  kParamTabSwitch,
-  kParamRadioButton,
+  kParamKnobPrimary = 0,
+  kParamKnobSecondary,
+  kParamToggleMono,
+  kParamTogglePoly,
+  kParamToggleFX,
   kNumParams
 };
 

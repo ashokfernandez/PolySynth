@@ -16,16 +16,12 @@
 
 ComponentGallery::ComponentGallery(const InstanceInfo &info)
     : Plugin(info, MakeConfig(kNumParams, kNumPresets)) {
-  GetParam(kParamKnob)->InitDouble("Knob", 0.5, 0., 1., 0.01);
-  GetParam(kParamFader)->InitDouble("Fader", 0.5, 0., 1., 0.01);
-  GetParam(kParamButton)->InitBool("Button", false);
-  GetParam(kParamSwitch)->InitEnum("Switch", 0, 3);
-  GetParam(kParamToggle)->InitBool("Toggle", false);
-  GetParam(kParamSlideSwitch)->InitBool("Slide Switch", false);
-  GetParam(kParamTabSwitch)
-      ->InitEnum("Tab Switch", 0, {"Tab 1", "Tab 2", "Tab 3"});
-  GetParam(kParamRadioButton)
-      ->InitEnum("Radio Button", 0, {"Option 1", "Option 2", "Option 3"});
+  GetParam(kParamKnobPrimary)->InitDouble("Knob Primary", 0.5, 0., 1., 0.01);
+  GetParam(kParamKnobSecondary)
+      ->InitDouble("Knob Secondary", 0.5, 0., 1., 0.01);
+  GetParam(kParamToggleMono)->InitBool("Toggle Mono", false);
+  GetParam(kParamTogglePoly)->InitBool("Toggle Poly", false);
+  GetParam(kParamToggleFX)->InitBool("Toggle FX", false);
 
 #if IPLUG_EDITOR
   mMakeGraphicsFunc = [&]() {
@@ -47,71 +43,13 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
   const float padding = 20.0f;
 
   // Build-time component selection via preprocessor defines
-#if defined(GALLERY_COMPONENT_KNOB)
-  const float knobSize = 100.0f;
-  pGraphics->AttachControl(new IVKnobControl(
-      IRECT(padding, padding, padding + knobSize, padding + knobSize),
-      kParamKnob));
-
-#elif defined(GALLERY_COMPONENT_FADER)
-  const float faderWidth = 60.0f;
-  const float faderHeight = 200.0f;
-  pGraphics->AttachControl(new IVSliderControl(
-      IRECT(padding, padding, padding + faderWidth, padding + faderHeight),
-      kParamFader));
-
-#elif defined(GALLERY_COMPONENT_ENVELOPE)
+#if defined(GALLERY_COMPONENT_ENVELOPE)
   const float envelopeWidth = 400.0f;
   const float envelopeHeight = 150.0f;
   Envelope *pEnvelope = new Envelope(IRECT(
       padding, padding, padding + envelopeWidth, padding + envelopeHeight));
   pEnvelope->SetADSR(0.2f, 0.4f, 0.6f, 0.5f);
   pGraphics->AttachControl(pEnvelope);
-
-#elif defined(GALLERY_COMPONENT_BUTTON)
-  // Pill-shaped button using roundness = 1.0f
-  const float buttonWidth = 120.0f;
-  const float buttonHeight = 40.0f;
-  IVStyle pillStyle = DEFAULT_STYLE.WithRoundness(1.0f);
-  pGraphics->AttachControl(
-      new IVButtonControl(IRECT(padding, padding, padding + buttonWidth,
-                                padding + buttonHeight),
-                          nullptr, "Button", pillStyle),
-      kNoTag);
-
-#elif defined(GALLERY_COMPONENT_SWITCH)
-  const float switchSize = 60.0f;
-  pGraphics->AttachControl(new IVSwitchControl(
-      IRECT(padding, padding, padding + switchSize, padding + switchSize),
-      kParamSwitch));
-
-#elif defined(GALLERY_COMPONENT_TOGGLE)
-  const float toggleWidth = 80.0f;
-  const float toggleHeight = 40.0f;
-  pGraphics->AttachControl(new IVToggleControl(
-      IRECT(padding, padding, padding + toggleWidth, padding + toggleHeight),
-      kParamToggle));
-
-#elif defined(GALLERY_COMPONENT_SLIDESWITCH)
-  const float slideWidth = 100.0f;
-  const float slideHeight = 40.0f;
-  pGraphics->AttachControl(new IVSlideSwitchControl(
-      IRECT(padding, padding, padding + slideWidth, padding + slideHeight),
-      kParamSlideSwitch));
-
-#elif defined(GALLERY_COMPONENT_TABSWITCH)
-  const float tabWidth = 300.0f;
-  const float tabHeight = 40.0f;
-  pGraphics->AttachControl(new IVTabSwitchControl(
-      IRECT(padding, padding, padding + tabWidth, padding + tabHeight),
-      kParamTabSwitch, {"One", "Two", "Three"}));
-
-#elif defined(GALLERY_COMPONENT_RADIOBUTTON)
-  const float radioWidth = 150.0f;
-  const float radioHeight = 120.0f;
-  pGraphics->AttachControl(new IVRadioButtonControl(
-      IRECT(padding, padding, padding + radioWidth, padding + radioHeight),
-      kParamRadioButton, {"Choice A", "Choice B", "Choice C"}));
 
 #elif defined(GALLERY_COMPONENT_POLYKNOB)
   // PolyKnob: custom themed knob with arc indicator, label, and value readout
@@ -121,14 +59,14 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
   // Default accent (red)
   pGraphics->AttachControl(new PolyKnob(
       IRECT(padding, padding, padding + polyKnobSize, padding + polyKnobSize + 36.f),
-      kParamKnob, "Cutoff"));
+      kParamKnobPrimary, "Cutoff"));
 
   // Cyan accent variant
   auto* cyanKnob = new PolyKnob(
       IRECT(padding + polyKnobSize + polyKnobSpacing, padding,
             padding + 2.f * polyKnobSize + polyKnobSpacing,
             padding + polyKnobSize + 36.f),
-      kParamFader, "Reso");
+      kParamKnobSecondary, "Reso");
   cyanKnob->SetAccent(PolyTheme::AccentCyan);
   pGraphics->AttachControl(cyanKnob);
 
@@ -137,7 +75,7 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
       IRECT(padding + 2.f * (polyKnobSize + polyKnobSpacing), padding + 18.f,
             padding + 2.f * (polyKnobSize + polyKnobSpacing) + polyKnobSize,
             padding + 18.f + polyKnobSize),
-      kParamKnob, "");
+      kParamKnobPrimary, "");
   bareKnob->WithShowLabel(false).WithShowValue(false);
   pGraphics->AttachControl(bareKnob);
 
@@ -164,19 +102,19 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
   // Inactive state (default value = 0)
   pGraphics->AttachControl(new PolyToggleButton(
       IRECT(padding, padding, padding + toggleWidth, padding + toggleHeight),
-      kParamToggle, "MONO"));
+      kParamToggleMono, "MONO"));
 
   // A second toggle wired to a different param to show both states simultaneously
   pGraphics->AttachControl(new PolyToggleButton(
       IRECT(padding + toggleWidth + toggleGap, padding,
             padding + 2.f * toggleWidth + toggleGap, padding + toggleHeight),
-      kParamButton, "POLY"));
+      kParamTogglePoly, "POLY"));
 
   // A third toggle for the row layout
   pGraphics->AttachControl(new PolyToggleButton(
       IRECT(padding + 2.f * (toggleWidth + toggleGap), padding,
             padding + 3.f * toggleWidth + 2.f * toggleGap, padding + toggleHeight),
-      kParamSlideSwitch, "FX"));
+      kParamToggleFX, "FX"));
 
 #elif defined(GALLERY_COMPONENT_SECTIONFRAME)
   // SectionFrame: generic framed group container with optional background
@@ -228,11 +166,10 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
                      "Bold", EAlign::Center)));
 
 #else
-  // Default: show knob
-  const float knobSize = 100.0f;
-  pGraphics->AttachControl(new IVKnobControl(
-      IRECT(padding, padding, padding + knobSize, padding + knobSize),
-      kParamKnob));
+  // Default: show PolyKnob (gallery focuses on PolySynth UI controls)
+  pGraphics->AttachControl(new PolyKnob(
+      IRECT(padding, padding, padding + 80.f, padding + 116.f),
+      kParamKnobPrimary, "Cutoff"));
 #endif
 }
 #endif
