@@ -294,6 +294,23 @@ void ComponentGallery::RunVRTCapture() {
 }
 ```
 
+### Deterministic Rendering Contract
+
+To guarantee pixel-identical output across runs:
+
+1. **Software raster backend** — when VRT capture mode is active and the Skia backend supports it, force the CPU (software) rasterizer. GPU-rendered frames vary across drivers.
+2. **Warmup frames** — before capturing each component, render 2-3 throwaway frames (`SetAllControlsDirty()` + draw cycle) to flush animation/first-paint transients, then snapshot on the next frame.
+3. **Fixed capture geometry** — capture region is the component's `IRECT` at 1x scale factor. Document this assumption at the capture call site. Do not rely on window DPI.
+
+### Capture Abstraction
+
+Isolate all capture logic in **one helper** (e.g., `VRTCaptureHelper`):
+
+- **Preferred path:** direct Skia `SkSurface` readback via `SkPngEncoder`
+- **Fallback path:** `IGraphics::GetDrawBitmap()` or framework-level screenshot export
+
+The rest of the codebase calls only the helper; it never touches Skia surface internals directly. This keeps backend assumptions in one place and makes a future backend swap a single-file change.
+
 ### Acceptance Criteria
 - [ ] Running with `--vrt-capture-mode` produces 7 PNG files
 - [ ] Each PNG has non-zero file size
@@ -301,6 +318,9 @@ void ComponentGallery::RunVRTCapture() {
 - [ ] PNG dimensions match the expected component sizes
 - [ ] PNGs are identical across multiple runs on the same machine (deterministic)
 - [ ] App exits with code 0 after capture completes
+- [ ] Software rasterizer selected in VRT mode (if backend supports it)
+- [ ] 2-3 warmup frames rendered before each capture
+- [ ] All capture logic lives in a single helper (no Skia surface access elsewhere)
 
 ---
 
@@ -470,11 +490,22 @@ just build && just test
 # just gallery-build  (if Emscripten available)
 ```
 
+### Build Parity Gate
+- [ ] Native CMake path verified: `just sandbox-build` exits 0
+- [ ] Existing native test/build path verified: `just build` + `just test` pass
+- [ ] WAM demo path verified still intact (no CI packaging changes in this sprint — declare unaffected)
+- [ ] Parallel project files (CMake/Xcode/WAM makefiles/workflows) updated or explicitly declared unaffected
+
 ### Code Quality
 - [ ] No system font strings (`"Arial"`, `"Helvetica"`, etc.) anywhere in gallery code
 - [ ] No SEA_DSP or audio engine includes in gallery CMake or source
 - [ ] All new shell scripts have `set -euo pipefail`
 - [ ] New shell scripts are executable (`chmod +x`)
+- [ ] All `GetUI()` calls guarded with `#if IPLUG_EDITOR` / `#endif`
+- [ ] Every header includes what it uses (no reliance on transitive includes)
+- [ ] No LLM reasoning-trace comments in committed source
+- [ ] `cppcheck` passes on new code with no new suppressions
+- [ ] Font names use `PolyTheme` constants (no hardcoded `"Roboto-Regular"` strings outside theme)
 
 ### PR Checklist
 - [ ] All new files committed

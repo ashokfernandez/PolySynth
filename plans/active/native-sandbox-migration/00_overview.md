@@ -46,6 +46,21 @@ Replace the entire web-based gallery with:
 - **Sprint 3** atomically swaps the CI pipeline — the new native VRT replaces Storybook/Playwright in one PR.
 - **Sprint 4** removes dead code that is no longer referenced by any workflow.
 
+### Cross-Sprint Guardrails (from Retrospective)
+
+Every sprint PR must satisfy these before requesting review:
+
+1. **Build parity** — verify all active build paths locally:
+   - `just sandbox-build` (or equivalent native CMake path)
+   - `just build` + `just test` (existing native test suite)
+   - WAM demo path intact (where the sprint touches CI or docs packaging)
+   - Parallel project files (CMake / Xcode / WAM makefiles / workflows) updated or explicitly declared unaffected
+2. **`#if IPLUG_EDITOR` guards** — any new code that calls `GetUI()` or references IGraphics types must be wrapped
+3. **Include what you use** — never rely on transitive includes; each header includes its own dependencies
+4. **Centralized typography** — use `PolyTheme` font names; no hardcoded font strings
+5. **No LLM artifacts** — no reasoning-trace comments, no "thinking out loud" in committed source
+6. **Fix, do not suppress** — cppcheck findings on new code must be fixed, not baselined with suppressions
+
 ## Critical Files Reference
 
 ### Existing (to be modified)
@@ -64,6 +79,8 @@ Replace the entire web-based gallery with:
 - `scripts/tasks/build_sandbox.sh` — native sandbox build script
 - `scripts/tasks/run_sandbox.sh` — sandbox launcher
 - `tests/Visual/baselines/*.png` — committed baseline images
+- `tests/Visual/vrt_config.json` — single source of truth for VRT tolerance constants (Sprint 2)
+- `scripts/tasks/check_migration_complete.sh` — automated post-migration structural validator (Sprint 4)
 
 ### To Be Deleted (Sprint 4)
 - `tests/Visual/package.json`, `tests/Visual/package-lock.json`

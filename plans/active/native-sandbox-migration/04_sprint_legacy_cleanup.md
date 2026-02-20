@@ -247,29 +247,73 @@ Move `plans/active/ui_strategy.md` → `plans/archive/ui_strategy.md`
 
 Before creating PR-4, verify ALL of the following:
 
-### Cleanup Verification
+### Automated Structural Validation
+
+Create **`scripts/tasks/check_migration_complete.sh`** and run it both locally and in CI. The script must assert ALL of the following and exit non-zero on any failure:
+
 ```bash
-# Verify no old gallery commands in Justfile:
-just --list | grep -i gallery
-# Expected: only 'gallery-test' (now aliases VRT)
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Verify no Storybook/Playwright files:
-ls tests/Visual/package.json 2>/dev/null && echo "FAIL: package.json exists" || echo "OK"
-ls tests/Visual/.storybook/ 2>/dev/null && echo "FAIL: .storybook exists" || echo "OK"
-ls tests/Visual/specs/ 2>/dev/null && echo "FAIL: specs exists" || echo "OK"
+PASS=0; FAIL=0
 
-# Verify no WAM build files in ComponentGallery:
-ls ComponentGallery/projects/ 2>/dev/null && echo "FAIL: projects exists" || echo "OK"
-ls ComponentGallery/config/ 2>/dev/null && echo "FAIL: config dir exists" || echo "OK"
+assert_absent() {
+  if [ -e "$1" ]; then echo "FAIL: $1 still exists"; FAIL=$((FAIL+1))
+  else echo "PASS: $1 absent"; PASS=$((PASS+1)); fi
+}
 
-# Verify no gallery build scripts:
-ls scripts/tasks/build_gallery.sh 2>/dev/null && echo "FAIL" || echo "OK"
-ls scripts/build_all_galleries.sh 2>/dev/null && echo "FAIL" || echo "OK"
+assert_no_match() {
+  if grep -q "$2" "$1" 2>/dev/null; then echo "FAIL: '$2' found in $1"; FAIL=$((FAIL+1))
+  else echo "PASS: '$2' absent from $1"; PASS=$((PASS+1)); fi
+}
 
-# Verify baselines still exist:
-ls tests/Visual/baselines/*.png
-# Expected: 7 PNG files
+assert_match() {
+  if grep -q "$2" "$1" 2>/dev/null; then echo "PASS: '$2' found in $1"; PASS=$((PASS+1))
+  else echo "FAIL: '$2' missing from $1"; FAIL=$((FAIL+1)); fi
+}
+
+# Files/dirs that must NOT exist
+assert_absent tests/Visual/package.json
+assert_absent tests/Visual/package-lock.json
+assert_absent tests/Visual/.storybook
+assert_absent tests/Visual/stories
+assert_absent tests/Visual/specs
+assert_absent tests/Visual/playwright.config.ts
+assert_absent ComponentGallery/projects
+assert_absent ComponentGallery/config
+assert_absent ComponentGallery/scripts
+assert_absent scripts/tasks/build_gallery.sh
+assert_absent scripts/build_all_galleries.sh
+assert_absent scripts/build_gallery_wam.sh
+
+# Justfile commands that must NOT exist
+assert_no_match Justfile "^gallery-build"
+assert_no_match Justfile "^gallery-view"
+assert_no_match Justfile "^gallery-rebuild"
+assert_no_match Justfile "^gallery-pages-build"
+assert_no_match Justfile "^gallery-pages-view"
+
+# CI workflow assertions
+assert_no_match .github/workflows/ci.yml "build-storybook-site"
+assert_match    .github/workflows/ci.yml "build-wam-demo"
+
+# Baselines must exist (exactly 7 PNGs)
+COUNT=$(find tests/Visual/baselines -name "*.png" 2>/dev/null | wc -l)
+if [ "$COUNT" -eq 7 ]; then echo "PASS: 7 baseline PNGs"; PASS=$((PASS+1))
+else echo "FAIL: expected 7 baseline PNGs, found $COUNT"; FAIL=$((FAIL+1)); fi
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[ "$FAIL" -eq 0 ] || exit 1
 ```
+
+Run locally:
+```bash
+bash scripts/tasks/check_migration_complete.sh
+# Expected: all assertions pass, exit 0
+```
+
+Add as a CI step in the `native-ui-tests` job so the migration contract is enforced going forward.
 
 ### Pipeline Still Works
 ```bash
@@ -283,37 +327,29 @@ just build && just test
 # Expected: PASS
 ```
 
-### Spec Validation Assertions (from Section 6)
+### Spec Validation (Automated)
 
-Run through the spec's validation checklist:
+All structural assertions from the migration spec are now covered by `check_migration_complete.sh` (above). Run it:
 
 ```bash
-# Assertion 1: package.json removed
-test ! -f tests/Visual/package.json && echo "PASS" || echo "FAIL"
-test ! -f tests/Visual/package-lock.json && echo "PASS" || echo "FAIL"
+bash scripts/tasks/check_migration_complete.sh && echo "ALL ASSERTIONS PASS"
+```
 
-# Assertion 2: gallery-build/gallery-view not in Justfile
-! grep -q "^gallery-build" Justfile && echo "PASS" || echo "FAIL"
-! grep -q "^gallery-view" Justfile && echo "PASS" || echo "FAIL"
-
-# Assertion 3: build-storybook-site not in ci.yml
-! grep -q "build-storybook-site" .github/workflows/ci.yml && echo "PASS" || echo "FAIL"
-
-# Assertion 4: build-wam-demo still in ci.yml
-grep -q "build-wam-demo" .github/workflows/ci.yml && echo "PASS" || echo "FAIL"
-
-# Assertion 5: sandbox builds (already verified above)
-
-# Assertion 6: VRT capture mode works
+Additionally verify VRT capture integrity manually once:
+```bash
 just sandbox-run -- --vrt-capture-mode --output-dir /tmp/vrt-assertion
-test $(find /tmp/vrt-assertion -name "*.png" | wc -l) -eq 7 && echo "PASS" || echo "FAIL"
-
-# Assertion 7: PNG dimensions non-zero
+test $(find /tmp/vrt-assertion -name "*.png" | wc -l) -eq 7 && echo "PASS: 7 PNGs" || echo "FAIL"
 for f in /tmp/vrt-assertion/*.png; do
     size=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null)
     test "$size" -gt 0 && echo "PASS: $f ($size bytes)" || echo "FAIL: $f is empty"
 done
 ```
+
+### Build Parity Gate
+- [ ] Native CMake path verified: `just sandbox-build` exits 0
+- [ ] Existing native test/build path verified: `just build` + `just test` pass
+- [ ] WAM demo path verified still intact: CI `build-wam-demo` unchanged
+- [ ] Parallel project files (CMake/Xcode/WAM makefiles/workflows) updated or explicitly declared unaffected
 
 ### PR Checklist
 - [ ] Only file deletions and .gitignore updates in this PR
@@ -321,3 +357,7 @@ done
 - [ ] Baseline PNGs preserved
 - [ ] PR title: "chore: remove deprecated Storybook/Playwright visual testing infrastructure"
 - [ ] PR description lists all removed files and references the migration spec
+- [ ] `scripts/tasks/check_migration_complete.sh` committed and executable
+- [ ] `check_migration_complete.sh` passes locally
+- [ ] `check_migration_complete.sh` added as a CI step
+- [ ] No LLM reasoning-trace comments in committed source

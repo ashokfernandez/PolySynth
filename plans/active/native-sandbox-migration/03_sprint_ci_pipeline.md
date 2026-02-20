@@ -352,6 +352,12 @@ just build && just test
 # Expected: PASS
 ```
 
+### Build Parity Gate
+- [ ] Native CMake path verified: `just sandbox-build` exits 0
+- [ ] Existing native test/build path verified: `just build` + `just test` pass
+- [ ] WAM demo path verified still intact: `build-wam-demo` job unchanged in ci.yml
+- [ ] Parallel project files (CMake/Xcode/WAM makefiles/workflows) updated or explicitly declared unaffected
+
 ### Workflow YAML Validation
 ```bash
 # Validate YAML syntax of all workflow files:
@@ -373,11 +379,18 @@ for f in ['.github/workflows/ci.yml', '.github/workflows/visual-tests.yml', '.gi
 - [ ] `build_headless.yml` has no npm/Node/Playwright steps
 - [ ] Dependency graph comment in `ci.yml` is updated
 
+### CI Transition Proof Criteria
+- [ ] Native visual workflow passes on at least one intentional UI-touching validation change (e.g., trivially adjust a component color, push, confirm VRT detects it)
+- [ ] Failure-path validation: intentionally break a baseline, push, confirm VRT job fails AND diff artifacts are uploaded and downloadable from `vrt-diff-reports`
+- [ ] Main CI dependency graph verified: `native-ui-tests` gates `build-macos` and `build-windows`; `build-storybook-site` is absent
+
 ### PR Checklist
 - [ ] Only workflow YAML files are modified in this PR
 - [ ] No source code changes
 - [ ] PR title: "ci: migrate visual regression to native C++ sandbox + Python VRT"
 - [ ] PR description lists the workflow changes and links to the spec
+- [ ] No LLM reasoning-trace comments in committed source
+- [ ] WAM demo build verified locally or declared untouched with justification
 
 ### CI Behavior After Merge
 - PRs trigger `native-visual-regression` job (not Playwright)

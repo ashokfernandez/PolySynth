@@ -36,6 +36,28 @@ python3 scripts/vrt_diff.py \
 - `--tolerance` (optional, default `3.0`): percentage threshold for pixel color distance (0-100 scale where 100 = max possible distance)
 - `--max-failed-pixels` (optional, default `10`): maximum allowed failing pixels before an image pair fails
 
+#### Configuration File (Single Source of Truth)
+
+Create **`tests/Visual/vrt_config.json`**:
+
+```json
+{
+  "tolerance": 3.0,
+  "max_failed_pixels": 10,
+  "expected_components": [
+    "Envelope", "PolyKnob", "PolySection", "PolyToggle",
+    "SectionFrame", "LCDPanel", "PresetSaveButton"
+  ]
+}
+```
+
+`vrt_diff.py` must:
+1. Load defaults from `vrt_config.json` (auto-detect repo root or accept `--config` path)
+2. Allow CLI flags `--tolerance` and `--max-failed-pixels` to override config values
+3. Log which source provided each value (config file vs. CLI override)
+
+This keeps tolerance constants checked-in and reviewable, not buried in script defaults or CI YAML.
+
 #### Algorithm (per image pair)
 
 ```python
@@ -313,6 +335,39 @@ Pillow>=10.0.0,<12.0.0
 
 ---
 
+## Task 2.7: Automated Tests for vrt_diff.py
+
+### What
+Create a pytest test suite for the VRT diff engine using deterministic synthetic fixtures.
+
+### Why
+The VRT script is a critical gate. A bug in the diff logic silently passes regressions or blocks clean PRs. It must have its own tests.
+
+### Files to Create
+
+**`tests/test_vrt_diff.py`**
+
+Use **synthetic PNG fixtures generated in test setup via Pillow** (no dependency on the sandbox binary). Required test cases:
+
+1. **Identical images pass** — two identical 64x64 solid-color PNGs, assert exit 0
+2. **Within-threshold drift passes** — pair differing by a few pixels below `max_failed_pixels`, assert exit 0
+3. **Beyond-threshold modification fails** — pair with a large changed region, assert exit 1
+4. **Missing baseline fails** — current image with no matching baseline, assert exit 1
+5. **Diff artifact red-mask validation** — on a failing pair, load `diff_*.png` and assert pixels at known changed coordinates are red (`#FF0000`)
+
+### Test Infrastructure
+- Use `tmp_path` (pytest fixture) for all I/O
+- Generate fixtures with `PIL.Image.new()` + `putpixel()` — deterministic, no external files
+- Import `vrt_diff.py` comparison function directly or invoke as subprocess
+
+### Acceptance Criteria
+- [ ] `pytest tests/test_vrt_diff.py` passes
+- [ ] All 5 test cases above are implemented
+- [ ] No test depends on the sandbox binary or real baseline PNGs
+- [ ] Tests complete in < 2 seconds
+
+---
+
 ## Sprint 2 Definition of Done
 
 Before creating PR-2, verify ALL of the following locally:
@@ -354,6 +409,11 @@ python3 scripts/vrt_diff.py \
 rm -rf tests/Visual/current/*.png tests/Visual/output/*.png
 ```
 
+### Code Quality
+- [ ] `cppcheck` passes on any new C++ code with no new suppressions
+- [ ] No LLM reasoning-trace comments in committed source
+- [ ] Every new header includes what it uses directly
+
 ### Regression Check
 ```bash
 # Existing tests still pass:
@@ -361,6 +421,12 @@ just build && just test
 
 # Old gallery commands still work (if Emscripten available)
 ```
+
+### Build Parity Gate
+- [ ] Native CMake path verified: `just sandbox-build` exits 0
+- [ ] Existing native test/build path verified: `just build` + `just test` pass
+- [ ] WAM demo path verified still intact (no CI packaging changes in this sprint — declare unaffected)
+- [ ] Parallel project files (CMake/Xcode/WAM makefiles/workflows) updated or explicitly declared unaffected
 
 ### PR Checklist
 - [ ] `scripts/vrt_diff.py` is committed and executable
@@ -370,3 +436,6 @@ just build && just test
 - [ ] `.gitignore` updated for VRT directories
 - [ ] Justfile updated with new commands
 - [ ] PR title: "feat: add Python VRT engine and baseline screenshots"
+- [ ] `tests/Visual/vrt_config.json` committed with tolerance defaults
+- [ ] `pytest tests/test_vrt_diff.py` passes (all 5 VRT diff test cases green)
+- [ ] No LLM reasoning-trace comments in committed source
