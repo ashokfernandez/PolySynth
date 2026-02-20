@@ -32,8 +32,8 @@ jobs:
 
       - name: Build ComponentGallery WAM artifact
         run: |
-          chmod +x scripts/build_gallery_wam.sh
-          ./scripts/build_gallery_wam.sh
+          chmod +x scripts/tasks/build_gallery.sh
+          ./scripts/tasks/build_gallery.sh
 
       - name: Upload build-web artifact
         uses: actions/upload-artifact@v4

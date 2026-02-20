@@ -1,41 +1,5 @@
 import { expect, test } from '@playwright/test';
 
-test('knob component renders isolated', async ({ page }) => {
-  await page.goto('/iframe.html?id=componentgallery-components--knob&viewMode=story');
-  const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
-
-  // Wait for WAM to load
-  await galleryFrame.locator('#wam').waitFor({ state: 'visible' });
-  await galleryFrame.locator('#wam canvas.pluginArea').waitFor({ state: 'visible' });
-
-  // Wait a moment for component to fully render
-  await page.waitForTimeout(500);
-
-  // Take screenshot of the knob component
-  await expect(page).toHaveScreenshot('knob-component.png', {
-    fullPage: true,
-    maxDiffPixelRatio: 0.012
-  });
-});
-
-test('fader component renders isolated', async ({ page }) => {
-  await page.goto('/iframe.html?id=componentgallery-components--fader&viewMode=story');
-  const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
-
-  // Wait for WAM to load
-  await galleryFrame.locator('#wam').waitFor({ state: 'visible' });
-  await galleryFrame.locator('#wam canvas.pluginArea').waitFor({ state: 'visible' });
-
-  // Wait a moment for component to fully render
-  await page.waitForTimeout(500);
-
-  // Take screenshot of the fader component
-  await expect(page).toHaveScreenshot('fader-component.png', {
-    fullPage: true,
-    maxDiffPixelRatio: 0.012
-  });
-});
-
 test('envelope component renders isolated', async ({ page }) => {
   await page.goto('/iframe.html?id=componentgallery-components--envelope&viewMode=story');
   const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
@@ -54,8 +18,8 @@ test('envelope component renders isolated', async ({ page }) => {
   });
 });
 
-test('knob story auto-initializes without manual start', async ({ page }) => {
-  await page.goto('/iframe.html?id=componentgallery-components--knob&viewMode=story');
+test('polyknob story auto-initializes without manual start', async ({ page }) => {
+  await page.goto('/iframe.html?id=componentgallery-components--poly-knob&viewMode=story');
   const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
   await galleryFrame.locator('#wam').waitFor({ state: 'visible' });
   await galleryFrame.locator('#wam canvas.pluginArea').waitFor({ state: 'visible' });
@@ -118,11 +82,36 @@ test('polytoggle component renders isolated', async ({ page }) => {
   });
 });
 
+test('sectionframe component renders isolated', async ({ page }) => {
+  await page.goto('/iframe.html?id=componentgallery-components--section-frame&viewMode=story');
+  const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
+
+  await galleryFrame.locator('#wam').waitFor({ state: 'visible' });
+  await expect(galleryFrame.locator('#wam canvas.pluginArea')).toBeVisible();
+});
+
+test('lcdpanel component renders isolated', async ({ page }) => {
+  await page.goto('/iframe.html?id=componentgallery-components--lcd-panel&viewMode=story');
+  const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
+
+  await galleryFrame.locator('#wam').waitFor({ state: 'visible' });
+  await expect(galleryFrame.locator('#wam canvas.pluginArea')).toBeVisible();
+});
+
+test('preset save button component renders isolated', async ({ page }) => {
+  await page.goto('/iframe.html?id=componentgallery-components--preset-save-button&viewMode=story');
+  const galleryFrame = page.frameLocator('iframe[title="Component Gallery"]');
+
+  await galleryFrame.locator('#wam').waitFor({ state: 'visible' });
+  await expect(galleryFrame.locator('#wam canvas.pluginArea')).toBeVisible();
+});
+
 test('components render with correct dimensions', async ({ page }) => {
-  // Built-in iPlug2 controls + custom PolySynth controls
+  // Controls used in the PolySynth UI.
   const components = [
-    'knob', 'fader', 'envelope',
-    'poly-knob', 'poly-section', 'poly-toggle'
+    'envelope',
+    'poly-knob', 'poly-section', 'poly-toggle',
+    'section-frame', 'lcd-panel', 'preset-save-button'
   ];
 
   for (const component of components) {

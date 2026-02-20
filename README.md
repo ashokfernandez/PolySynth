@@ -1,312 +1,99 @@
 # PolySynth
 
-<p align="center">
-  <strong>A professional-grade, cross-platform polyphonic synthesizer</strong><br>
-  <em>Built with C++ and iPlug2 for maximum performance and portability</em>
-</p>
+Professional-grade polyphonic synthesizer built with C++ and iPlug2.
 
-<p align="center">
-  <a href="https://ashokfernandez.github.io/PolySynth/web-demo/"><strong>🎛️ Live Web Demo</strong></a>
-</p>
+[![CI](https://github.com/ashokfernandez/PolySynth/actions/workflows/ci.yml/badge.svg)](https://github.com/ashokfernandez/PolySynth/actions/workflows/ci.yml)
+[![PR Visual Regression](https://github.com/ashokfernandez/PolySynth/actions/workflows/visual-tests.yml/badge.svg)](https://github.com/ashokfernandez/PolySynth/actions/workflows/visual-tests.yml)
+[![Web Demo](https://img.shields.io/badge/Web%20Demo-Live-blue)](https://ashokfernandez.github.io/PolySynth/web-demo/)
+[![Component Gallery](https://img.shields.io/badge/Component%20Gallery-Storybook-1f7a8c)](https://ashokfernandez.github.io/PolySynth/component-gallery/)
 
-<p align="center">
-  <a href="https://github.com/ashokfernandez/PolySynth/actions"><img src="https://github.com/ashokfernandez/PolySynth/workflows/CI/badge.svg" alt="CI Status"></a>
-  <a href="https://ashokfernandez.github.io/PolySynth/web-demo/"><img src="https://img.shields.io/badge/Web%20Demo-Play%20Now-blue" alt="Web Demo"></a>
-  <a href="https://ashokfernandez.github.io/PolySynth/component-gallery/"><img src="https://img.shields.io/badge/Component%20Gallery-Storybook-8A2BE2" alt="Component Gallery"></a>
-</p>
+## Live Links
 
----
+- Web demo: [https://ashokfernandez.github.io/PolySynth/web-demo/](https://ashokfernandez.github.io/PolySynth/web-demo/)
+- Component gallery: [https://ashokfernandez.github.io/PolySynth/component-gallery/](https://ashokfernandez.github.io/PolySynth/component-gallery/)
+- GitHub Actions: [https://github.com/ashokfernandez/PolySynth/actions](https://github.com/ashokfernandez/PolySynth/actions)
 
-## Overview
+## Feature Snapshot
 
-PolySynth is a classic-style virtual analog synthesizer designed for musicians, producers, and audio developers. It features a clean signal path with hands-on control over every parameter, inspired by the golden era of analog polysynths.
+- 5-voice polyphony with deterministic voice allocation
+- Dual oscillators (saw, square, triangle, sine)
+- Resonant low-pass filter
+- ADSR envelopes (amp + filter)
+- LFO modulation paths
+- Preset management (factory + user presets)
+- Cross-platform targets: desktop/plugin + web demos
 
-### Key Features
-
-- **5-Voice Polyphony** — Rich, stackable voices with intelligent voice allocation
-- **Dual Oscillators** — Sawtooth, Square, Triangle, and Sine with mix control
-- **Resonant Filter** — 24dB/oct low-pass filter with self-oscillating resonance
-- **ADSR Envelopes** — Dedicated amplitude and filter envelopes
-- **LFO Modulation** — Multiple waveforms for vibrato, tremolo, and filter sweeps
-- **Preset System** — Factory sounds + user preset save/load
-- **Cross-Platform** — macOS (AU/VST3/Standalone), Windows (VST3)
-
----
-
-## Documentation Map
-
-- Docs hub: [`docs/README.md`](docs/README.md)
-- Architecture docs: [`docs/architecture/`](docs/architecture)
-- Guides: [`docs/guides/README.md`](docs/guides/README.md)
-- Agent handbook: [`docs/agents/README.md`](docs/agents/README.md)
-- Agent policy: [`AGENTS.md`](AGENTS.md)
-- Planning index: [`plans/README.md`](plans/README.md)
-
----
-
-## Architecture
-
-PolySynth follows a **Hub & Spoke** architecture that cleanly separates concerns:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Platform                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Desktop   │  │   Plugin    │  │      Embedded       │  │
-│  │  (iPlug2)   │  │ (AU/VST3)   │  │   (Future: Daisy)   │  │
-│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
-└─────────┼────────────────┼────────────────────┼─────────────┘
-          │                │                    │
-          └────────────────┼────────────────────┘
-                           │
-          ┌────────────────▼────────────────┐
-          │           Core Engine           │
-          │  ┌──────────────────────────┐   │
-          │  │       SynthState         │   │  ← Single Source of Truth
-          │  │   (All Parameters)       │   │
-          │  └────────────┬─────────────┘   │
-          │               │                 │
-          │  ┌────────────▼─────────────┐   │
-          │  │     Voice Manager        │   │  ← Polyphony & Allocation
-          │  │  ┌─────┐ ┌─────┐ ┌─────┐ │   │
-          │  │  │ V1  │ │ V2  │ │ ... │ │   │
-          │  │  └──┬──┘ └──┬──┘ └──┬──┘ │   │
-          │  └─────┼───────┼───────┼────┘   │
-          │        └───────┼───────┘        │
-          │                ▼                │
-          │  ┌──────────────────────────┐   │
-          │  │     DSP Components       │   │
-          │  │  • Oscillators (BLIT)    │   │
-          │  │  • Filters (VA/Biquad)   │   │
-          │  │  • Envelopes (ADSR)      │   │
-          │  │  • LFO                   │   │
-          │  └──────────────────────────┘   │
-          └─────────────────────────────────┘
-```
-
-### Design Principles
-
-| Principle | Implementation |
-|-----------|----------------|
-| **Platform Agnostic** | Core DSP has zero framework dependencies |
-| **Single Source of Truth** | `SynthState` struct holds all parameters |
-| **Testable** | Headless rendering without DAW required |
-| **Real-time Safe** | No allocations in audio thread |
-
----
-
-## Project Structure
-
-```
-PolySynth/
-├── src/
-│   ├── core/                    # Pure C++ DSP Engine
-│   │   ├── dsp/                 # DSP building blocks
-│   │   │   ├── Oscillator.h     # Band-limited oscillators
-│   │   │   ├── ADSREnvelope.h   # Envelope generator
-│   │   │   ├── BiquadFilter.h   # IIR filter
-│   │   │   └── va/              # Virtual Analog filters (TPT)
-│   │   ├── Engine.h             # Main synthesis engine
-│   │   ├── Voice.h              # Single voice (osc + env + filter)
-│   │   ├── VoiceManager.h       # Polyphony & allocation
-│   │   ├── SynthState.h         # Central state struct
-│   │   └── PresetManager.h      # JSON preset I/O
-│   │
-│   └── platform/
-│       └── desktop/             # iPlug2 wrapper
-│           ├── PolySynth.cpp    # Plugin entry point
-│           ├── PolySynth_DSP.h  # DSP ↔ Plugin bridge
-│           └── resources/
-│               └── web/         # React UI
-│
-├── tests/
-│   ├── unit/                    # Catch2 unit tests
-│   └── demos/                   # Audio rendering demos
-│
-└── external/
-    └── iPlug2/                  # Audio plugin framework
-```
-
----
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 
-- **CMake** 3.14+
-- **Node.js** 16+ (for UI development)
-- **Xcode** (macOS) or **MSVC** (Windows)
-- **just** command runner (recommended)
+- CMake 3.14+
+- `just`
+- Node.js 22+ (for gallery/Storybook workflows)
+- Xcode (macOS) or MSVC (Windows)
 
-Install `just`:
-
-```bash
-# macOS
-brew install just
-
-# Ubuntu/Debian
-sudo apt install just
-```
-
-### Quick Start
+### Setup + Build
 
 ```bash
-# Clone with submodules
 git clone --recursive https://github.com/ashokfernandez/PolySynth.git
 cd PolySynth
 
-# Show available project commands
-just
-
-# Download dependencies
 just deps
-
-# Build and run tests
 just build
 just test
-
-# Static analysis
-just lint
-
-# Desktop app build/run
-just desktop-build
-just desktop-run
-
-# Example: pass filter args through to Catch2
-just test -- --filter "[engine]"
 ```
 
-### Quick Commands
+### Common Commands
 
 ```bash
-just quick            # build + test
-just quick-pr         # lint + asan + tsan + test
-just quick-desktop    # rebuild + launch app
-just quick-ui         # build + open Storybook
-just quick-logs       # show latest run logs
+just                  # list all tasks
+just check            # lint + test
+just ci-pr            # lint + asan + tsan + test
+just desktop-rebuild  # rebuild + launch desktop app
+just web-demo         # build and run web demo
+
+just gallery-build        # build ComponentGallery artifacts
+just gallery-view         # Storybook dev server
+just gallery-pages-build  # static Storybook into docs/component-gallery
+just gallery-pages-view   # serve static gallery pages
+just gallery-test         # visual regression pipeline
 ```
 
-### Command Logging
+### Logs
 
-`just` commands now run through a shared CLI wrapper:
-
-- Full stdout/stderr logs are always written to `.artifacts/logs/<run-id>/`
-- Terminal output stays compact (`PASS/FAIL`, duration)
-- On failure, you get a short issue excerpt plus the full log path
+All `just` tasks write full logs to `.artifacts/logs/<run-id>/`.
 
 ```bash
-# Show the latest run summary and log paths
 just logs-latest
-
-# Stream full command output live (still writes logs)
 POLYSYNTH_VERBOSE=1 just test
 ```
 
-### Component Gallery Quick Commands
+## Documentation Map
 
-Requires Node 22+ for Storybook 10 in `tests/Visual`.
-If you use `nvm`, run `nvm use` from repo root (`.nvmrc` is set to Node 22.22.0).
-
-```bash
-# Build gallery plugin output (WAM/web assets)
-just gallery-build
-
-# Rebuild gallery (clean build)
-just gallery-rebuild
-
-# View gallery in Storybook (localhost:6006 by default)
-just gallery-view
-
-# Rebuild + immediately view
-just gallery-rebuild-view
-
-# Build static gallery docs page (for docs/component-gallery/index.html)
-just gallery-pages-build
-
-# View static gallery docs over HTTP (required; file:// is blocked by browser CORS)
-just gallery-pages-view
-
-# Build + run visual regression tests
-just gallery-test
-
-# Inspect latest logs if a step fails
-just logs-latest
-
-# Run Storybook Vitest checks only
-cd tests/Visual && npm run test:stories
-```
-
----
-
-## Audio Demos
-
-Every commit generates audio artifacts to verify DSP correctness:
-
-🎧 **[Listen to the latest demos →](https://ashokfernandez.github.io/PolySynth/)**
-
----
+- Docs hub: [`/Users/ashokfernandez/Software/PolySynth/docs/README.md`](docs/README.md)
+- Architecture overview: [`/Users/ashokfernandez/Software/PolySynth/docs/architecture/OVERVIEW.md`](docs/architecture/OVERVIEW.md)
+- Design principles: [`/Users/ashokfernandez/Software/PolySynth/docs/architecture/DESIGN_PRINCIPLES.md`](docs/architecture/DESIGN_PRINCIPLES.md)
+- Testing guide: [`/Users/ashokfernandez/Software/PolySynth/docs/architecture/TESTING_GUIDE.md`](docs/architecture/TESTING_GUIDE.md)
+- Agent policy: [`/Users/ashokfernandez/Software/PolySynth/AGENTS.md`](AGENTS.md)
+- Agent handbook: [`/Users/ashokfernandez/Software/PolySynth/docs/agents/README.md`](docs/agents/README.md)
+- Planning hub: [`/Users/ashokfernandez/Software/PolySynth/plans/README.md`](plans/README.md)
 
 ## Testing
 
-PolySynth uses a comprehensive testing strategy:
-
-| Test Type | Description | Count |
-|-----------|-------------|-------|
-| **Unit Tests** | Component-level DSP verification | 30 cases |
-| **Golden Master** | WAV comparison for regression detection | Automated |
-| **UI Tests** | React component testing | 16 cases |
-| **Integration** | Full build verification | CI/CD |
-
-Run the test suite:
-
 ```bash
-# C++ unit tests
 just test
-
-# Sanitizer runs
 just asan
 just tsan
-
-# JavaScript tests
-cd src/platform/desktop/resources/web
-npm test
+just gallery-test
 ```
-
----
-
-## Factory Presets
-
-| Preset | Character | Key Settings |
-|--------|-----------|--------------|
-| 🎹 **Warm Pad** | Soft, evolving | Slow attack, low cutoff |
-| ⚡ **Bright Lead** | Punchy, present | Fast attack, high resonance |
-| 🎸 **Dark Bass** | Deep, growling | Very low cutoff, LFO modulation |
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Write tests for your changes
-4. Ensure checks pass (`just check`)
-5. Submit a pull request
-
-Please read the [documentation hub](docs/README.md) and [architecture overview](docs/architecture/OVERVIEW.md) before contributing.
-
----
 
 ## License
 
-This project is provided for educational and personal use. See [LICENSE](LICENSE) for details.
-
----
+See [`/Users/ashokfernandez/Software/PolySynth/LICENSE`](LICENSE).
 
 ## Acknowledgments
 
-Built with these excellent open-source projects:
-
-- [iPlug2](https://github.com/iPlug2/iPlug2) — Cross-platform audio plugin framework
-- [Catch2](https://github.com/catchorg/Catch2) — C++ testing framework
-- [nlohmann/json](https://github.com/nlohmann/json) — JSON for Modern C++
-- [Vite](https://vitejs.dev/) + [React](https://react.dev/) — Modern web UI toolkit
+- [iPlug2](https://github.com/iPlug2/iPlug2)
+- [Catch2](https://github.com/catchorg/Catch2)
+- [nlohmann/json](https://github.com/nlohmann/json)
+- [Storybook](https://storybook.js.org/)

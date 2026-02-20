@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "${ROOT_DIR}"
 
-./scripts/build_all_galleries.sh
+./scripts/tasks/build_gallery.sh
 
 if [ -s "$HOME/.nvm/nvm.sh" ]; then
   # shellcheck disable=SC1090
@@ -20,6 +20,7 @@ fi
 
 (cd tests/Visual && npm run build-storybook)
 
+rm -rf docs/component-gallery
 mkdir -p docs/component-gallery
 cp -R tests/Visual/storybook-static/. docs/component-gallery/
 

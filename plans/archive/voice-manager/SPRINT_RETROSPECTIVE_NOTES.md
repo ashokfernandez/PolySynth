@@ -228,6 +228,16 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
     - **Action:** Updated `scripts/dev.sh` to build ASan options dynamically: include `detect_leaks=1` only on Linux, while keeping `halt_on_error` and `print_stacktrace` across platforms. CI remains unchanged and still enforces leak checks on Linux.
     - **Lesson:** Sanitizer runtime flags are not universally portable. Keep sanitizer policy strict in Linux CI, but gate unsupported options in local developer scripts by host OS.
 
+15. **Storybook gallery 404 due to incomplete build artifact set**
+    - **Problem:** Component-gallery stories load iframe targets like `gallery/knob/index.html`, but CI built only `ComponentGallery/build-web/index.html` via `scripts/build_gallery_wam.sh`. Deployed Pages lacked per-component subdirectories, causing `/component-gallery/gallery/*/index.html` 404s.
+    - **Action:** Switched gallery build paths to `scripts/tasks/build_gallery.sh` (which now runs `scripts/build_all_galleries.sh`), updated CI workflows to use that task, and added `scripts/tasks/check_gallery_story_assets.py` to assert each story target has a corresponding built page.
+    - **Lesson:** If Storybook uses `staticDirs` for iframe content, CI must build the full static source tree, not just a base bundle. Add an explicit structural check so missing iframe targets fail the pipeline before deploy.
+
+16. **Gallery drift left obsolete components in deployed pages**
+    - **Problem:** The gallery still exposed legacy iPlug demo variants (knob/fader/button/switch/etc.) and `gallery-pages-build` copied into `docs/component-gallery` without cleaning, so removed components persisted as stale folders.
+    - **Action:** Reduced gallery variants/stories/specs to the PolySynth-relevant controls only (`envelope`, `polyknob`, `polysection`, `polytoggle`, `sectionframe`, `lcdpanel`, `presetsavebutton`) and updated `build_gallery_pages.sh` to clear `docs/component-gallery` before publishing.
+    - **Lesson:** Static-site publish steps must replace the destination directory, not overlay it. If the component surface is curated, enforce it in one place (stories + build variant list) and keep smoke tests aligned with those IDs.
+
 ---
 
 ## Resolved notes

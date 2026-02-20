@@ -11,7 +11,7 @@ cd "${ROOT_DIR}"
 PORT=${1:-6006}
 BUILD_INDEX="ComponentGallery/build-web/index.html"
 VISUAL_DIR="tests/Visual"
-STORY_PATH="/?path=/story/componentgallery-ui-components--knob"
+STORY_PATH="/?path=/story/componentgallery-components--poly-knob"
 URL="http://localhost:${PORT}${STORY_PATH}"
 
 if [ ! -f "$BUILD_INDEX" ]; then
