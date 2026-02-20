@@ -1,16 +1,16 @@
 #define PLUG_NAME "PolySynth"
-#define PLUG_MFR "PolySynth"
+#define PLUG_MFR "Side Effects"
 #define PLUG_VERSION_HEX 0x00010000
 #define PLUG_VERSION_STR "1.0.0"
 #define PLUG_UNIQUE_ID 'aYva'
 #define PLUG_MFR_ID 'Acme'
 #define PLUG_URL_STR "https://iplug2.github.io"
 #define PLUG_EMAIL_STR "spam@me.com"
-#define PLUG_COPYRIGHT_STR "Copyright 2025 Acme Inc"
+#define PLUG_COPYRIGHT_STR "Copyright 2025 Side Effects"
 #define PLUG_CLASS_NAME PolySynthPlugin
 
 #define BUNDLE_NAME "PolySynth"
-#define BUNDLE_MFR "PolySynth"
+#define BUNDLE_MFR "SideEffects"
 #define BUNDLE_DOMAIN "com"
 
 #define PLUG_CHANNEL_IO "0-2"
@@ -36,7 +36,7 @@
 #define AUV2_VIEW_CLASS_STR "PolySynth_View"
 
 #define AAX_TYPE_IDS 'IPI1', 'IPI2'
-#define AAX_PLUG_MFR_STR "Acme"
+#define AAX_PLUG_MFR_STR "Side Effects"
 #define AAX_PLUG_NAME_STR "PolySynth\nIPIS"
 #define AAX_DOES_AUDIOSUITE 0
 #define AAX_PLUG_CATEGORY_STR "Synth"

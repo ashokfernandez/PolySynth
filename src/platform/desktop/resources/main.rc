@@ -211,8 +211,8 @@ BEGIN
             VALUE "FileDescription", "PolySynth"
             VALUE "InternalName", "PolySynth"
             VALUE "ProductName", "PolySynth"
-            VALUE "CompanyName", "PolySynth"
-            VALUE "LegalCopyright", "Copyright 2020 Acme Inc"
+            VALUE "CompanyName", "Side Effects"
+            VALUE "LegalCopyright", "Copyright 2025 Side Effects"
             VALUE "LegalTrademarks", "VST is a trademark of Steinberg Media Technologies GmbH, Audio Unit is a trademark of Apple, Inc."
         END
     END
@@ -237,4 +237,3 @@ ROBOTO_FN TTF ROBOTO_FN
 ROBOTO_BOLD_FN TTF ROBOTO_BOLD_FN
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-
