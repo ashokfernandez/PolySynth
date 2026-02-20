@@ -122,7 +122,8 @@ test('components render with correct dimensions', async ({ page }) => {
   // Built-in iPlug2 controls + custom PolySynth controls
   const components = [
     'knob', 'fader', 'envelope',
-    'poly-knob', 'poly-section', 'poly-toggle'
+    'poly-knob', 'poly-section', 'poly-toggle',
+    'section-frame', 'lcd-panel', 'preset-save-button'
   ];
 
   for (const component of components) {

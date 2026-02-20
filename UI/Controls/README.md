@@ -144,6 +144,71 @@ pGraphics->AttachControl(new PolyToggleButton(
 
 ---
 
+### SectionFrame
+Simple framed container with title text for grouping controls.
+
+**Implementation:** Custom control defined in `SectionFrame.h`
+- Base class: `IControl` (display-only, `mIgnoreMouse = true`)
+- Features: optional fill, border, top-left title label
+- Used in production UI section boundaries and dev panel grouping
+
+**Usage:**
+```cpp
+#include "SectionFrame.h"
+
+pGraphics->AttachControl(new SectionFrame(
+    IRECT(x, y, x+380, y+220),
+    "MOD MATRIX",
+    PolyTheme::SectionBorder,
+    PolyTheme::TextDark,
+    PolyTheme::ControlBG));
+```
+
+---
+
+### LCDPanel
+Dark rounded panel treatment used for LCD-like display areas.
+
+**Implementation:** Custom control defined in `LCDPanel.h`
+- Base class: `IControl` (display-only, `mIgnoreMouse = true`)
+- Features: rounded background, bezel/shadow, subtle inner highlight
+- Typically paired with an `ITextControl` for displayed content
+
+**Usage:**
+```cpp
+#include "LCDPanel.h"
+
+const IRECT panelRect(x, y, x+320, y+72);
+pGraphics->AttachControl(new LCDPanel(panelRect, PolyTheme::LCDBackground));
+pGraphics->AttachControl(new ITextControl(
+    panelRect.GetPadded(-14.f), "PRESET: INIT",
+    IText(13.f, PolyTheme::LCDText, "Bold", EAlign::Center)));
+```
+
+---
+
+### PresetSaveButton
+Stateful save control that visually indicates unsaved preset changes.
+
+**Implementation:** Custom control defined in `PresetSaveButton.h`
+- Base class: `IControl` with `IActionFunction` callback
+- Dirty state: accent background and `SAVE *` label
+- Clean state: muted appearance and non-actionable click behavior
+- Press feedback shown when dirty and clicked
+
+**Usage:**
+```cpp
+#include "PresetSaveButton.h"
+
+auto* save = new PresetSaveButton(
+    IRECT(x, y, x+120, y+34),
+    [](IControl* caller) { (void)caller; /* save preset */ });
+save->SetHasUnsavedChanges(true);
+pGraphics->AttachControl(save);
+```
+
+---
+
 ### PolyTheme
 Centralized color constants for the PolySynth UI theme.
 

@@ -4,9 +4,12 @@
 #if IPLUG_EDITOR
 // Custom controls from UI/Controls
 #include "Envelope.h"
+#include "LCDPanel.h"
 #include "PolyKnob.h"
 #include "PolySection.h"
 #include "PolyToggleButton.h"
+#include "PresetSaveButton.h"
+#include "SectionFrame.h"
 #endif
 
 #include <cstring>
@@ -174,6 +177,55 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
       IRECT(padding + 2.f * (toggleWidth + toggleGap), padding,
             padding + 3.f * toggleWidth + 2.f * toggleGap, padding + toggleHeight),
       kParamSlideSwitch, "FX"));
+
+#elif defined(GALLERY_COMPONENT_SECTIONFRAME)
+  // SectionFrame: generic framed group container with optional background
+  const float frameWidth = 380.0f;
+  const float frameHeight = 220.0f;
+  pGraphics->AttachControl(new SectionFrame(
+      IRECT(padding, padding, padding + frameWidth, padding + frameHeight),
+      "MOD MATRIX", PolyTheme::SectionBorder, PolyTheme::TextDark,
+      PolyTheme::ControlBG));
+
+#elif defined(GALLERY_COMPONENT_LCDPANEL)
+  // LCDPanel: dark "display" panel treatment used in the header preset area
+  const float panelWidth = 320.0f;
+  const float panelHeight = 72.0f;
+  const IRECT panelRect(padding, padding, padding + panelWidth,
+                        padding + panelHeight);
+  pGraphics->AttachControl(new LCDPanel(panelRect, PolyTheme::LCDBackground));
+  pGraphics->AttachControl(new ITextControl(
+      panelRect.GetPadded(-14.f), "PRESET: INIT",
+      IText(PolyTheme::FontControl + 1.f, PolyTheme::LCDText, "Bold",
+            EAlign::Center)));
+
+#elif defined(GALLERY_COMPONENT_PRESETSAVEBUTTON)
+  // PresetSaveButton: dirty/clean state variants side-by-side
+  const float buttonWidth = 120.0f;
+  const float buttonHeight = 34.0f;
+  const float buttonGap = 16.0f;
+  const float labelHeight = 18.0f;
+
+  auto *dirty = new PresetSaveButton(
+      IRECT(padding, padding + labelHeight, padding + buttonWidth,
+            padding + labelHeight + buttonHeight),
+      [](IControl *ctrl) { (void)ctrl; });
+  dirty->SetHasUnsavedChanges(true);
+  pGraphics->AttachControl(dirty);
+  pGraphics->AttachControl(new ITextControl(
+      IRECT(padding, padding, padding + buttonWidth, padding + labelHeight),
+      "DIRTY", IText(PolyTheme::FontControl - 1.f, PolyTheme::TextDark,
+                     "Bold", EAlign::Center)));
+
+  const float cleanX = padding + buttonWidth + buttonGap;
+  pGraphics->AttachControl(new PresetSaveButton(
+      IRECT(cleanX, padding + labelHeight, cleanX + buttonWidth,
+            padding + labelHeight + buttonHeight),
+      [](IControl *ctrl) { (void)ctrl; }));
+  pGraphics->AttachControl(new ITextControl(
+      IRECT(cleanX, padding, cleanX + buttonWidth, padding + labelHeight),
+      "CLEAN", IText(PolyTheme::FontControl - 1.f, PolyTheme::TextDark,
+                     "Bold", EAlign::Center)));
 
 #else
   // Default: show knob

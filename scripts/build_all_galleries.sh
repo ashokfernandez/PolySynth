@@ -8,6 +8,10 @@ cd "${REPO_ROOT}"
 
 echo "Building isolated component galleries in parallel..."
 
+# Start from a clean gallery artifact root to avoid stale components lingering.
+rm -rf "${REPO_ROOT}/ComponentGallery/build-web"
+mkdir -p "${REPO_ROOT}/ComponentGallery/build-web"
+
 # 1. Build the WAM processor once (it's shared by all variants)
 echo "Building base WAM processor..."
 # We use 'knob' as a dummy name just to get the processor built once into build-web/scripts
@@ -17,7 +21,12 @@ GALLERY_COMPONENT=KNOB "${REPO_ROOT}/scripts/build_single_gallery.sh" knob
 echo "Launching parallel UI builds for all variants..."
 
 # List of all component variants to build
-COMPONENTS=("knob" "fader" "envelope" "button" "switch" "toggle" "slideswitch" "tabswitch" "radiobutton" "polyknob" "polysection" "polytoggle")
+COMPONENTS=(
+  "knob" "fader" "envelope" "button"
+  "switch" "toggle" "slideswitch" "tabswitch" "radiobutton"
+  "polyknob" "polysection" "polytoggle"
+  "sectionframe" "lcdpanel" "presetsavebutton"
+)
 
 for comp in "${COMPONENTS[@]}"; do
   # Skip 'knob' processor build if we already did it, but actually build_single_gallery
