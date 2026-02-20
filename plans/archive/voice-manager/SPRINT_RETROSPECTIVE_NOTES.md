@@ -228,6 +228,11 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
     - **Action:** Updated `scripts/dev.sh` to build ASan options dynamically: include `detect_leaks=1` only on Linux, while keeping `halt_on_error` and `print_stacktrace` across platforms. CI remains unchanged and still enforces leak checks on Linux.
     - **Lesson:** Sanitizer runtime flags are not universally portable. Keep sanitizer policy strict in Linux CI, but gate unsupported options in local developer scripts by host OS.
 
+15. **Storybook gallery 404 due to incomplete build artifact set**
+    - **Problem:** Component-gallery stories load iframe targets like `gallery/knob/index.html`, but CI built only `ComponentGallery/build-web/index.html` via `scripts/build_gallery_wam.sh`. Deployed Pages lacked per-component subdirectories, causing `/component-gallery/gallery/*/index.html` 404s.
+    - **Action:** Switched gallery build paths to `scripts/tasks/build_gallery.sh` (which now runs `scripts/build_all_galleries.sh`), updated CI workflows to use that task, and added `scripts/tasks/check_gallery_story_assets.py` to assert each story target has a corresponding built page.
+    - **Lesson:** If Storybook uses `staticDirs` for iframe content, CI must build the full static source tree, not just a base bundle. Add an explicit structural check so missing iframe targets fail the pipeline before deploy.
+
 ---
 
 ## Resolved notes

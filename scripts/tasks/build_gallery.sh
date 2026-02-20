@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ComponentGallery Build Script
-# Builds the WAM/web gallery output into ComponentGallery/build-web.
+# Builds all per-component gallery pages used by Storybook iframe stories.
 
 set -euo pipefail
 
@@ -38,7 +38,8 @@ if ! command -v emmake >/dev/null 2>&1; then
   exit 1
 fi
 
-./scripts/build_gallery_wam.sh
+./scripts/build_all_galleries.sh
+python3 ./scripts/tasks/check_gallery_story_assets.py
 
 echo ""
 echo "Build complete."
