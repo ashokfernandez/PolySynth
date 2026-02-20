@@ -395,11 +395,13 @@ jobs:
 
       - name: Build ComponentGallery web bundle for Storybook staticDirs
         run: |
-          chmod +x scripts/build_gallery_wam.sh
-          ./scripts/build_gallery_wam.sh
+          chmod +x scripts/tasks/build_gallery.sh
+          ./scripts/tasks/build_gallery.sh
 
       - name: Verify ComponentGallery static dir
-        run: test -f ComponentGallery/build-web/index.html
+        run: |
+          test -f ComponentGallery/build-web/knob/index.html
+          test -f ComponentGallery/build-web/polyknob/index.html
 
       - name: Install Storybook dependencies
         working-directory: tests/Visual
