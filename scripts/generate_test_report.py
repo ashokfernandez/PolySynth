@@ -563,7 +563,13 @@ def generate_index(artifacts):
         .csv-link:hover {
             border-color: var(--accent-blue);
         }
-        
+
+        .download-meta {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            margin-top: 0.75rem;
+        }
+
         /* Footer */
         .footer {
             margin-top: 4rem;
@@ -611,10 +617,28 @@ def generate_index(artifacts):
         </a>
 
         <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem;">
+            <a class="csv-link" href="#downloads">⬇️ Downloads</a>
             <a class="csv-link" href="#web-demo">🎛️ Web Demo</a>
             <a class="csv-link" href="#audio-labs">🎧 Audio Labs</a>
             <a class="csv-link" href="audio-labs.html">📄 Audio-only Page</a>
             <a class="csv-link" href="component-gallery/index.html">🧩 Component Gallery</a>
+        </div>
+
+        <div id="downloads" class="demo-card" style="margin-bottom:2.25rem;">
+            <div class="header">
+                <span class="icon">⬇️</span>
+                <div class="title-group">
+                    <h3>Download Desktop Version</h3>
+                    <span class="filename">docs/downloads.json</span>
+                </div>
+            </div>
+            <p class="description">Latest release binaries are fetched from GitHub Releases. Buttons below update automatically when a new release tag is published.</p>
+            <div class="csv-list">
+                <a id="download-macos" class="csv-link" href="#" hidden>🍎 Download macOS Installer</a>
+                <a id="download-windows" class="csv-link" href="#" hidden>🪟 Download Windows VST3 Zip</a>
+                <a id="download-release-page" class="csv-link" href="https://github.com/ashokfernandez/PolySynth/releases/latest" target="_blank" rel="noopener noreferrer">📦 Open GitHub Releases</a>
+            </div>
+            <div id="download-meta" class="download-meta">Loading latest release metadata...</div>
         </div>
 
         <div id="web-demo" class="demo-card" style="margin-bottom:2.25rem;">
@@ -732,6 +756,55 @@ def generate_index(artifacts):
             </p>
         </div>
     </div>
+    <script>
+        (async () => {
+            const meta = document.getElementById('download-meta');
+            const macLink = document.getElementById('download-macos');
+            const winLink = document.getElementById('download-windows');
+            const releasesLink = document.getElementById('download-release-page');
+
+            const guessOS = () => {
+                const ua = navigator.userAgent.toLowerCase();
+                if (ua.includes('mac')) return 'macos';
+                if (ua.includes('win')) return 'windows';
+                return 'unknown';
+            };
+
+            try {
+                const response = await fetch('downloads.json', { cache: 'no-store' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const platforms = data.platforms || {};
+                const release = data.release || null;
+                const os = guessOS();
+
+                if (platforms.macos) {
+                    macLink.href = platforms.macos;
+                    macLink.hidden = false;
+                }
+                if (platforms.windows) {
+                    winLink.href = platforms.windows;
+                    winLink.hidden = false;
+                }
+
+                if (release && release.html_url) {
+                    releasesLink.href = release.html_url;
+                }
+
+                if (release && release.tag) {
+                    meta.textContent = `Latest release: ${release.tag}${os === 'macos' ? ' (macOS recommended below)' : os === 'windows' ? ' (Windows recommended below)' : ''}`;
+                } else {
+                    meta.textContent = 'Latest release metadata loaded.';
+                }
+
+                if (macLink.hidden && winLink.hidden) {
+                    meta.textContent = 'No downloadable assets were found in the latest release yet.';
+                }
+            } catch (error) {
+                meta.textContent = 'Latest release metadata unavailable. Use GitHub Releases link.';
+            }
+        })();
+    </script>
 </body>
 </html>''')
 

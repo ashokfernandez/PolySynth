@@ -14,10 +14,12 @@ This folder contains strategy docs, execution plans, and archived planning artif
 - Testing strategy plan: [`plans/active/04_testing_strategy.md`](active/04_testing_strategy.md)
 - Program management plan: [`plans/active/05_program_management.md`](active/05_program_management.md)
 - Roadmap: [`plans/active/roadmap.md`](active/roadmap.md)
+- Sprint retrospective notes: [`plans/SPRINT_RETROSPECTIVE_NOTES.md`](SPRINT_RETROSPECTIVE_NOTES.md)
 
 ## Domain Plans
 
 - UI strategy: [`plans/active/ui_strategy.md`](active/ui_strategy.md)
+- Release pipeline: [`plans/active/release_pipeline.md`](active/release_pipeline.md)
 - DSP refactor plans:
   - [`plans/active/dsp_refactor.md`](active/dsp_refactor.md)
   - [`plans/active/dsp-refactor-claude.md`](active/dsp-refactor-claude.md)

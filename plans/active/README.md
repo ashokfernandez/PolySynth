@@ -14,6 +14,7 @@ These are the current, non-archived planning documents.
 ## Domain
 
 - UI strategy: [`plans/active/ui_strategy.md`](ui_strategy.md)
+- Release pipeline: [`plans/active/release_pipeline.md`](release_pipeline.md)
 - DSP refactor:
   - [`plans/active/dsp_refactor.md`](dsp_refactor.md)
   - [`plans/active/dsp-refactor-claude.md`](dsp-refactor-claude.md)
