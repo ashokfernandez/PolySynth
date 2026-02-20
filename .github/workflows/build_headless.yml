@@ -33,7 +33,7 @@ jobs:
     - name: Install build dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake make python3 ccache
+        sudo apt-get install -y cmake ninja-build make python3 ccache
 
     - name: Setup Emscripten
       uses: mymindstorm/setup-emsdk@v14
@@ -62,7 +62,7 @@ jobs:
         
     - name: Configure and build native tests
       run: |
-        cmake -S tests -B tests/build -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        cmake -S tests -B tests/build -G Ninja -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         cmake --build tests/build --parallel
         
     - name: Show ccache stats

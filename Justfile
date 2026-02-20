@@ -18,25 +18,49 @@ deps *args:
 build *args:
     bash ./scripts/cli.sh run build -- ./scripts/dev.sh build {{args}}
 
+# Force Ninja generator for test/sanitizer tasks.
+build-ninja *args:
+    POLYSYNTH_CMAKE_GENERATOR=Ninja bash ./scripts/cli.sh run build-ninja -- ./scripts/dev.sh build {{args}}
+
 # Run unit tests. Pass-through example: `just test -- --filter "[engine]"`.
 test *args:
     bash ./scripts/cli.sh run test -- ./scripts/dev.sh test {{args}}
+
+# Force Ninja generator for unit tests.
+test-ninja *args:
+    POLYSYNTH_CMAKE_GENERATOR=Ninja bash ./scripts/cli.sh run test-ninja -- ./scripts/dev.sh test {{args}}
 
 # Run static analysis (Cppcheck/Clang-Tidy based on local availability).
 lint *args:
     bash ./scripts/cli.sh run lint -- ./scripts/dev.sh lint {{args}}
 
+# Force Ninja generator for static analysis configure/build graph.
+lint-ninja *args:
+    POLYSYNTH_CMAKE_GENERATOR=Ninja bash ./scripts/cli.sh run lint-ninja -- ./scripts/dev.sh lint {{args}}
+
 # Build and run tests under AddressSanitizer + UBSan.
 asan *args:
     bash ./scripts/cli.sh run asan -- ./scripts/dev.sh asan {{args}}
+
+# Force Ninja generator for ASan pipeline.
+asan-ninja *args:
+    POLYSYNTH_CMAKE_GENERATOR=Ninja bash ./scripts/cli.sh run asan-ninja -- ./scripts/dev.sh asan {{args}}
 
 # Build and run tests under ThreadSanitizer.
 tsan *args:
     bash ./scripts/cli.sh run tsan -- ./scripts/dev.sh tsan {{args}}
 
+# Force Ninja generator for TSan pipeline.
+tsan-ninja *args:
+    POLYSYNTH_CMAKE_GENERATOR=Ninja bash ./scripts/cli.sh run tsan-ninja -- ./scripts/dev.sh tsan {{args}}
+
 # Remove test build directories managed by scripts/dev.sh.
 clean *args:
     bash ./scripts/cli.sh run clean -- ./scripts/dev.sh clean {{args}}
+
+# Force Unix Makefiles generator (compat/debug fallback).
+build-make *args:
+    POLYSYNTH_CMAKE_GENERATOR="Unix Makefiles" bash ./scripts/cli.sh run build-make -- ./scripts/dev.sh build {{args}}
 
 # Quick path: build + unit tests (fast local confidence check).
 quick:

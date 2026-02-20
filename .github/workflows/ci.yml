@@ -40,7 +40,7 @@ jobs:
       - name: Install static analysis tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake cppcheck clang-tidy ccache
+          sudo apt-get install -y cmake ninja-build cppcheck clang-tidy ccache
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -59,6 +59,7 @@ jobs:
       - name: Configure CMake (generate compile_commands.json)
         run: |
           cmake -S tests -B tests/build \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -105,7 +106,7 @@ jobs:
       - name: Install build dependencies (Clang for best ASan output)
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake clang llvm ccache
+          sudo apt-get install -y cmake ninja-build clang llvm ccache
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -124,6 +125,7 @@ jobs:
       - name: Configure CMake (ASan + UBSan)
         run: |
           cmake -S tests -B tests/build_asan \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++ \
@@ -132,7 +134,7 @@ jobs:
             -DUSE_SANITIZER=Address
 
       - name: Build (ASan)
-        run: cmake --build tests/build_asan -- -j$(nproc)
+        run: cmake --build tests/build_asan --parallel $(nproc)
 
       # halt_on_error=1 ensures the CI job turns red on the first violation.
       # print_stacktrace=1 ensures the report is readable without a debugger.
@@ -156,6 +158,7 @@ jobs:
           ASAN_SYMBOLIZER_PATH: "/usr/bin/llvm-symbolizer"
         run: |
           cmake -S libs/SEA_DSP -B build/sea_dsp_asan \
+            -G Ninja \
             -DSEA_BUILD_TESTS=ON \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_C_COMPILER=clang \
@@ -163,7 +166,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DUSE_SANITIZER=Address
-          cmake --build build/sea_dsp_asan -- -j$(nproc)
+          cmake --build build/sea_dsp_asan --parallel $(nproc)
           ./build/sea_dsp_asan/tests/sea_tests
 
       - name: Show ccache stats
@@ -184,7 +187,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake clang llvm ccache
+          sudo apt-get install -y cmake ninja-build clang llvm ccache
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -202,6 +205,7 @@ jobs:
       - name: Configure CMake (TSan)
         run: |
           cmake -S tests -B tests/build_tsan \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++ \
@@ -210,7 +214,7 @@ jobs:
             -DUSE_SANITIZER=Thread
 
       - name: Build (TSan)
-        run: cmake --build tests/build_tsan -- -j$(nproc)
+        run: cmake --build tests/build_tsan --parallel $(nproc)
 
       - name: Run unit tests (TSan)
         env:
@@ -226,6 +230,7 @@ jobs:
           ASAN_SYMBOLIZER_PATH: "/usr/bin/llvm-symbolizer"
         run: |
           cmake -S libs/SEA_DSP -B build/sea_dsp_tsan \
+            -G Ninja \
             -DSEA_BUILD_TESTS=ON \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_C_COMPILER=clang \
@@ -233,7 +238,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DUSE_SANITIZER=Thread
-          cmake --build build/sea_dsp_tsan -- -j$(nproc)
+          cmake --build build/sea_dsp_tsan --parallel $(nproc)
           ./build/sea_dsp_tsan/tests/sea_tests
 
       - name: Show ccache stats
@@ -264,7 +269,7 @@ jobs:
       - name: Install native build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ccache
+          sudo apt-get install -y cmake ninja-build ccache
 
       - name: Reset ccache stats
         run: ccache -z
@@ -276,11 +281,11 @@ jobs:
 
       - name: Configure and build native test binaries
         run: |
-          cd tests
-          mkdir -p build
-          cd build
-          cmake .. -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          make
+          cmake -S tests -B tests/build \
+            -G Ninja \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build tests/build --parallel $(nproc)
 
       - name: Run native unit tests
         run: |
@@ -289,8 +294,12 @@ jobs:
 
       - name: Build and run SEA_DSP unit tests
         run: |
-          cmake -S libs/SEA_DSP -B build/sea_dsp_tests -DSEA_BUILD_TESTS=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build/sea_dsp_tests
+          cmake -S libs/SEA_DSP -B build/sea_dsp_tests \
+            -G Ninja \
+            -DSEA_BUILD_TESTS=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build/sea_dsp_tests --parallel $(nproc)
           ./build/sea_dsp_tests/tests/sea_tests
 
       - name: Verify golden-master audio output
