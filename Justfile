@@ -75,9 +75,10 @@ quick-pr:
 quick-desktop:
     just desktop-rebuild
 
-# Quick path: build gallery and open Storybook.
+# Quick path: build and open native sandbox.
 quick-ui:
-    just gallery-rebuild-view
+    just sandbox-build
+    just sandbox-run
 
 # Quick path: inspect latest failure logs.
 quick-logs:
@@ -152,31 +153,7 @@ web-demo:
 wam-demo-build:
     bash ./scripts/cli.sh run wam-demo-build -- bash -lc 'cd src/platform/desktop && chmod +x scripts/makedist-web.sh && ./scripts/makedist-web.sh off'
 
-# Component gallery workflow
-# Build ComponentGallery WAM/web assets.
-gallery-build:
-    bash ./scripts/cli.sh run gallery-build -- ./scripts/tasks/build_gallery.sh
-
-# Alias for gallery-build (kept for familiarity).
-gallery-rebuild:
-    bash ./scripts/cli.sh run gallery-rebuild -- ./scripts/tasks/build_gallery.sh
-
-# Run Storybook dev server for component gallery.
-gallery-view port="6006":
-    bash ./scripts/cli.sh run gallery-view -- ./scripts/tasks/view_gallery.sh {{port}}
-
-# Build gallery then open Storybook.
-gallery-rebuild-view port="6006":
-    bash ./scripts/cli.sh run gallery-build -- ./scripts/tasks/build_gallery.sh
-    bash ./scripts/cli.sh run gallery-view -- ./scripts/tasks/view_gallery.sh {{port}}
-
-# Build static Storybook pages into docs/component-gallery.
-gallery-pages-build:
-    bash ./scripts/cli.sh run gallery-pages-build -- ./scripts/tasks/build_gallery_pages.sh
-
-# Serve docs/component-gallery over local HTTP.
-gallery-pages-view port="8092":
-    bash ./scripts/cli.sh run gallery-pages-view -- ./scripts/tasks/view_gallery_pages.sh {{port}}
+# Visual regression testing workflow
 
 # Run gallery visual regression test pipeline.
 # UPDATED: now builds sandbox and runs VRT.

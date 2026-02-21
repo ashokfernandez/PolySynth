@@ -9,7 +9,7 @@
 build*/
 build_desktop*/
 build-web/
-ComponentGallery/build-web/
+ComponentGallery/build/
 bin/
 obj/
 *.o
@@ -39,14 +39,8 @@ tests/build/
 tests/run_tests
 node_modules/
 playwright-report/
-tests/Visual/node_modules/
-tests/Visual/node_modules_backup_*/
-tests/Visual/playwright-report/
-tests/Visual/test-results/
-tests/Visual/storybook-static/
-tests/Visual/debug-storybook.log
-docs/component-gallery/
 scripts/__pycache__/
+docs/component-gallery/
 
 # iPlug2 Generated (Specific build folders)
 src/platform/desktop/build-*/

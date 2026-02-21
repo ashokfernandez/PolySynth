@@ -510,6 +510,9 @@ jobs:
       - name: Run VRT
         run: bash scripts/tasks/run_vrt.sh --verify
 
+      - name: Validate migration contract
+        run: bash scripts/tasks/check_migration_complete.sh
+
       - name: Upload diff artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
