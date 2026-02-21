@@ -54,5 +54,6 @@
 #define APP_SIGNAL_VECTOR_SIZE 64
 
 #define ROBOTO_FN "Roboto-Regular.ttf"
+#define ROBOTO_BOLD_FN "Roboto-Bold.ttf"
 
 #define kCtrlTag_TestKnob 101

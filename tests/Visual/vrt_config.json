@@ -1,0 +1,8 @@
+{
+  "tolerance": 3.0,
+  "max_failed_pixels": 10,
+  "expected_components": [
+    "Envelope", "PolyKnob", "PolySection", "PolyToggle",
+    "SectionFrame", "LCDPanel", "PresetSaveButton"
+  ]
+}

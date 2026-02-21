@@ -179,8 +179,18 @@ gallery-pages-view port="8092":
     bash ./scripts/cli.sh run gallery-pages-view -- ./scripts/tasks/view_gallery_pages.sh {{port}}
 
 # Run gallery visual regression test pipeline.
+# UPDATED: now builds sandbox and runs VRT.
 gallery-test:
-    bash ./scripts/cli.sh run gallery-test -- ./scripts/tasks/test_gallery_visual.sh
+    just sandbox-build
+    just vrt-run
+
+# Run gallery visual regression test pipeline (baseline mode).
+vrt-baseline:
+    bash ./scripts/cli.sh run vrt-baseline -- ./scripts/tasks/run_vrt.sh --generate
+
+# Run gallery visual regression test pipeline (run mode).
+vrt-run:
+    bash ./scripts/cli.sh run vrt-run -- ./scripts/tasks/run_vrt.sh --verify
 
 # Show latest run summary and log file locations.
 logs-latest:
