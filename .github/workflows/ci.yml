@@ -493,7 +493,10 @@ jobs:
           ./scripts/download_dependencies.sh
 
       - name: Install Python VRT dependencies
-        run: pip3 install -r scripts/requirements-vrt.txt
+        run: |
+          python3 -m venv .venv
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+          .venv/bin/pip install -r scripts/requirements-vrt.txt
 
       - name: Build PolySynthGallery sandbox
         run: |
