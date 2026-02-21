@@ -34,9 +34,12 @@ def main():
             
     tolerance = args.tolerance if args.tolerance is not None else config.get("tolerance", 3.0)
     max_failed = args.max_failed_pixels if args.max_failed_pixels is not None else config.get("max_failed_pixels", 10)
-    
+    crop_top_px = config.get("crop_top_px", 0)
+
     print(f"Using tolerance: {tolerance}% (from {'CLI' if args.tolerance is not None else 'config'})")
     print(f"Using max_failed_pixels: {max_failed} (from {'CLI' if args.max_failed_pixels is not None else 'config'})")
+    if crop_top_px:
+        print(f"Cropping top {crop_top_px}px from each image (window chrome exclusion)")
 
     baseline_dir = Path(args.baseline_dir)
     current_dir = Path(args.current_dir)
@@ -60,12 +63,17 @@ def main():
         try:
             current_img = Image.open(current_img_path).convert("RGBA")
             baseline_img = Image.open(baseline_img_path).convert("RGBA")
+            if crop_top_px > 0:
+                w, h = current_img.size
+                current_img = current_img.crop((0, crop_top_px, w, h))
+                w, h = baseline_img.size
+                baseline_img = baseline_img.crop((0, crop_top_px, w, h))
         except Exception as e:
             print(f"FAIL  {img_name} (Error loading images: {e})")
             all_passed = False
             failing_components.append(img_name)
             continue
-            
+
         if current_img.size != baseline_img.size:
             print(f"FAIL  {img_name} (Dimension mismatch: baseline={baseline_img.width}x{baseline_img.height} current={current_img.width}x{current_img.height})")
             all_passed = False
