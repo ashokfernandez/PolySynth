@@ -8,15 +8,14 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
   CCACHE_DIR: ~/.cache/ccache
 
 jobs:
   full-headless-validation:
-    runs-on: ubuntu-latest
+    runs-on: macos-14
     permissions:
       contents: write
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -31,22 +30,13 @@ jobs:
           ${{ runner.os }}-ccache-${{ github.workflow }}-
 
     - name: Install build dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake ninja-build make python3 ccache
+      run: brew install cmake ninja make python3 ccache
 
     - name: Setup Emscripten
       uses: mymindstorm/setup-emsdk@v14
       with:
         version: latest
 
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: npm
-        cache-dependency-path: tests/Visual/package-lock.json
-        
     - name: Reset ccache stats
       run: ccache -z
 
@@ -59,48 +49,39 @@ jobs:
       run: |
         chmod +x scripts/download_iPlug2.sh
         ./scripts/download_iPlug2.sh
-        
+
     - name: Configure and build native tests
       run: |
         cmake -S tests -B tests/build -G Ninja -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         cmake --build tests/build --parallel
-        
+
     - name: Show ccache stats
       run: ccache -s
 
     - name: Run native tests
       run: ./tests/build/run_tests
-        
+
     - name: Generate audio verification report
       run: |
         python3 scripts/generate_test_report.py
 
-    - name: Install visual test dependencies (npm)
-      working-directory: tests/Visual
-      run: npm ci
-
-    - name: Restore Playwright browser cache
-      id: playwright-cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-${{ hashFiles('tests/Visual/package-lock.json') }}
-
-    - name: Install Playwright system dependencies (cache miss only)
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      working-directory: tests/Visual
-      run: npx playwright install --with-deps chromium
-
-    - name: Ensure Playwright Chromium is available
-      if: steps.playwright-cache.outputs.cache-hit == 'true'
-      working-directory: tests/Visual
-      run: npx playwright install chromium
-
-    - name: Run component gallery visual test pipeline
+    - name: Install Python VRT dependencies
       run: |
-        chmod +x scripts/tasks/test_gallery_visual.sh
-        ./scripts/tasks/test_gallery_visual.sh
+        python3 -m venv .venv
+        echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+        .venv/bin/pip install -r scripts/requirements-vrt.txt
 
+    - name: Build PolySynthGallery sandbox
+      run: |
+        cmake -S ComponentGallery -B ComponentGallery/build \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        cmake --build ComponentGallery/build --parallel $(nproc)
+
+    - name: Run VRT
+      run: bash scripts/tasks/run_vrt.sh --verify
 
     - name: Build PolySynth WAM web demo
       working-directory: src/platform/desktop
@@ -108,26 +89,14 @@ jobs:
         chmod +x scripts/makedist-web.sh
         ./scripts/makedist-web.sh off
 
-    - name: Build Storybook static site
-      working-directory: tests/Visual
-      run: npm run build-storybook
-
     - name: Verify generated web demo bundle
       run: test -f src/platform/desktop/build-web/index.html
 
-    - name: Upload Storybook static artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: component-gallery-storybook-static
-        path: tests/Visual/storybook-static
-        if-no-files-found: error
-
-    - name: Stage web demo and Storybook into docs/
+    - name: Stage web demo into docs/
       run: |
-        rm -rf docs/web-demo docs/component-gallery
-        mkdir -p docs/web-demo docs/component-gallery
+        rm -rf docs/web-demo
+        mkdir -p docs/web-demo
         cp -R src/platform/desktop/build-web/. docs/web-demo/
-        cp -R tests/Visual/storybook-static/. docs/component-gallery/
         touch docs/.nojekyll
 
     - name: Deploy staged docs to gh-pages
