@@ -245,6 +245,41 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
 
 ---
 
+## Native Sandbox Migration — Sprint 1 (Sandbox App Foundation) — Retro
+
+### Issues & Resolutions
+
+1. **`just sandbox-build` and `just sandbox-run` missing from Justfile**
+   - **Problem:** The Sprint 1 DoD explicitly requires both Justfile targets as the primary developer-facing entrypoints. Neither command nor its backing scripts (`scripts/tasks/build_sandbox.sh`, `scripts/tasks/run_sandbox.sh`) were committed in the initial implementation.
+   - **Action:** Added both scripts and Justfile targets in a follow-up fix commit on the same branch before merge.
+   - **Lesson:** Justfile targets are part of the deliverable, not scaffolding. The DoD checklist items `just sandbox-build` and `just sandbox-run` should be smoke-tested locally before opening the PR — if the command doesn't exist, the PR isn't ready.
+
+2. **VRT activation uses env vars instead of CLI flags**
+   - **Problem:** The DoD specifies `just sandbox-run -- --vrt-capture-mode --output-dir /tmp/vrt-test` as the VRT invocation. The implementation used `POLYSYNTH_VRT_MODE=1` / `POLYSYNTH_VRT_OUTPUT_DIR=...` environment variables instead.
+   - **Action:** Accepted as-is for Sprint 1 — the plan's Task 1.4 explicitly lists env-var fallback as acceptable, and the `run_sandbox.sh` script forwards `$@` so CLI flags remain available once the C++ arg-parsing is confirmed. The DoD bash block should be updated in the plan to reflect the env-var invocation path.
+   - **Lesson:** When a task note says "Set via environment variable as a fallback," the implementing agent should resolve *which* interface the DoD smoke test uses before writing the test commands. If the implementation chooses env vars over CLI flags, update the DoD snippet at the same time.
+
+3. **`IGraphicsSkia::GetSurface()` not validated against iPlug2 source**
+   - **Problem:** `VRTCaptureHelper.h` calls `pSkia->GetSurface()` with a comment noting "validate against IGraphicsSkia.h once dependencies are present." The iPlug2 dependency wasn't present at commit time, so this is an unverified call path.
+   - **Action:** Accepted for Sprint 1 — the fallback path prints a clear diagnostic and returns false rather than crashing, and the note is prominently marked as a TODO. Sprint 2 must verify or correct the method name when the full iPlug2 dependency is available.
+   - **Lesson:** When a key platform integration point can't be verified at implementation time, the fallback path must be robust (print diagnostic + return false, not crash), and the TODO must be at the call site rather than only in a comment at the top of the file. This was done correctly here.
+
+### What worked well
+
+- **`VRTCaptureHelper.h` isolation:** All Skia surface readback logic is confined to a single header under `#ifdef IGRAPHICS_SKIA`. The rest of the codebase calls only `VRTCapture::SaveRegionAsPNG` — no Skia internals leak into `ComponentGallery.cpp`.
+- **`#if IPLUG_EDITOR` discipline:** Every `GetUI()` call is inside an `IPLUG_EDITOR` guard. The WAM processor build failure class from Sprint 4 was avoided entirely.
+- **`PolyTheme` constants throughout:** No hardcoded font strings anywhere in the gallery code. Font resource names use the bundled TTF files and `PolyTheme` constants consistently.
+- **No SEA_DSP or audio engine pull-in:** The gallery CMake is clean — it only links iPlug2 and the UI controls.
+- **Warmup frame accumulation before VRT capture:** `OnIdle` waits for 3 dirty frames before triggering capture, ensuring controls have rendered at least once. This addresses a class of flaky capture bugs proactively.
+
+### Technical Debt / Open Items for Sprint 2
+
+- **Verify `IGraphicsSkia::GetSurface()`** against `external/iPlug2/IGraphics/IGraphicsSkia.h` once `just deps` has been run. Update or replace the call as needed.
+- **Clarify VRT invocation interface:** Decide whether `--vrt-capture-mode` CLI flag or `POLYSYNTH_VRT_MODE=1` env var is the canonical interface and update the Sprint 2 plan's smoke test accordingly.
+- **`PolySynthGallery` binary output path:** `run_sandbox.sh` uses `find "$BUILD_DIR" -name "PolySynthGallery" -type f -executable`. Verify the actual binary name produced by `iplug_add_plugin(PolySynthGallery ...)` on both Linux and macOS before Sprint 2 CI work.
+
+---
+
 ## Resolved notes
 
 - **Sprint 1 scaffolding** — all issues resolved and merged in PR #36 (squash commit to main).
