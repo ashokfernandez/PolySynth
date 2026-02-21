@@ -3,12 +3,34 @@
 #include "IGraphicsStructs.h" // Mock structs
 #include "catch.hpp"
 
+#include <fstream>
+#include <sstream>
+#include <string>
+
 // Since LCDPanel and SectionFrame include "IControl.h" etc, we need to ensure
 // our mocks are found. CMake configuration will handle include paths.
 
 #include "../../UI/Controls/LCDPanel.h"
 #include "../../UI/Controls/PolyKnob.h"
 #include "../../UI/Controls/SectionFrame.h"
+
+static std::string ReadComponentGallerySource() {
+  const char *candidates[] = {"ComponentGallery/ComponentGallery.cpp",
+                              "../ComponentGallery/ComponentGallery.cpp",
+                              "../../ComponentGallery/ComponentGallery.cpp"};
+
+  for (const char *path : candidates) {
+    std::ifstream source(path);
+    if (!source.is_open())
+      continue;
+
+    std::ostringstream buffer;
+    buffer << source.rdbuf();
+    return buffer.str();
+  }
+
+  return {};
+}
 
 TEST_CASE("LCDPanel Basic", "[UI][LCD]") {
   IRECT rect(0, 0, 100, 50);
@@ -197,4 +219,11 @@ TEST_CASE("PolySection - resize clears cached layer", "[UI][Section]") {
 
   REQUIRE(g2.startLayerCalls == 1);
   REQUIRE(g2.endLayerCalls == 1);
+}
+
+TEST_CASE("ComponentGallery has no bottom debug slider", "[UI][Gallery]") {
+  const std::string text = ReadComponentGallerySource();
+  REQUIRE(!text.empty());
+
+  REQUIRE(text.find("kCtrlTag_TestKnob") == std::string::npos);
 }

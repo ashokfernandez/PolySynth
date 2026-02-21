@@ -114,8 +114,6 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
 
   const IRECT sidebarBounds(0.f, 0.f, kSidebarW, PLUG_HEIGHT - kBottomBarH);
   const IRECT mainBounds(kSidebarW, 0.f, PLUG_WIDTH, PLUG_HEIGHT - kBottomBarH);
-  const IRECT bottomBounds(0.f, PLUG_HEIGHT - kBottomBarH, PLUG_WIDTH,
-                           PLUG_HEIGHT);
 
   // ── Sidebar navigation buttons ───────────────────────────────────────────
   const float btnH = 36.f;
@@ -276,13 +274,6 @@ void ComponentGallery::OnLayout(IGraphics *pGraphics) {
     pGraphics->AttachControl(clean);
     mComponentControls[kComponentPresetSaveButton].push_back(clean);
   }
-
-  // ── State injection slider (bottom bar) ──────────────────────────────────
-  pGraphics->AttachControl(
-      new IVSliderControl(IRECT(kSidebarW + kPad, bottomBounds.T + 8.f,
-                                PLUG_WIDTH - kPad, bottomBounds.B - 8.f),
-                          kParamStateSlider, "State", DEFAULT_STYLE, true),
-      kCtrlTag_TestKnob);
 
   // ── Default view: PolyKnob ───────────────────────────────────────────────
   ShowComponent(kComponentPolyKnob);

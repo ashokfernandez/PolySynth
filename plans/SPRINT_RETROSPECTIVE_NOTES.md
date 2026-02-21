@@ -299,6 +299,11 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
    - **Action:** Hardened the binary lookup in `run_vrt.sh` and `run_sandbox.sh` to handle macOS bundle structures and direct binary paths more reliably.
    - **Lesson:** Shell scripts interacting with build artifacts should be defensive about binary locations. Log the path being attempted if it fails.
 
+4. **Debug `State` slider leaked into the curated gallery UI**
+   - **Problem:** `ComponentGallery::OnLayout()` attached a bottom-bar `IVSliderControl` labeled `State`, which appeared as an unexpected control in the production gallery view.
+   - **Action:** Removed the debug slider attachment from `ComponentGallery.cpp` and added a regression unit test in `tests/unit/Test_UI_Components.cpp` that fails if `kCtrlTag_TestKnob` appears in the gallery source.
+   - **Lesson:** Keep gallery surfaces strictly curated; temporary debug controls must not be attached in default layouts. Add a regression check whenever debug-only UI slips into user-facing views.
+
 ### What worked well
 
 - **Single source of truth in `vrt_config.json`**: Putting tolerance and expected components in a JSON file made the Python script much cleaner and allows for easy future adjustments without touching code.
