@@ -54,3 +54,8 @@ src/platform/desktop/*.xcworkspace
 src/platform/desktop/*.xcodeproj
 src/platform/desktop/*.sln
 plans/*.pdf
+
+# VRT ephemeral directories
+tests/Visual/current/
+tests/Visual/output/
+

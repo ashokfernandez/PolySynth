@@ -280,6 +280,38 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
 
 ---
 
+## Native Sandbox Migration — Sprint 2 (Python VRT Engine + Integration) — Retro
+
+### Issues & Resolutions
+
+1. **Skia dependency missing from local environment**
+   - **Problem:** Attempting to use `IGRAPHICS_SKIA` for deterministic surface readback failed because the required Skia binaries and headers were missing from `external/iPlug2/Dependencies/Build/mac`. Building Skia from scratch is a heavy task unsuitable for a sprint iteration.
+   - **Action:** Implemented a robust fallback in `VRTCaptureHelper.h` using the native `SaveWindowScreenshot` API (CoreGraphics on Mac). This captures the entire application window instead of a specific region.
+   - **Lesson:** Don't assume backend availability based on CMake options alone. Always verify dependencies are physically present. The fallback ensures VRT can run even in a "batteries not included" environment.
+
+2. **Linker error: Undefined symbol `_SaveWindowScreenshot` in plugin targets**
+   - **Problem:** `VRTCaptureHelper.h` is included by `ComponentGallery.cpp`, which is compiled for multiple targets (Standalone APP, VST3, AU, CLAP). `SaveWindowScreenshot` is only defined in the Standalone APP entry point (`IPlugAPP_main.cpp`). Linking failed for non-APP targets.
+   - **Action:** Wrapped the external declaration and the call site in `#if defined(APP_API)` guards.
+   - **Lesson:** Headers shared between APP and Plugin targets must be extremely careful with target-specific symbols. Use preprocessor guards to isolate platform/target-specific logic.
+
+3. **`vrt-baseline` command failed to find binary in CI-like run**
+   - **Problem:** `run_vrt.sh` used `find` to locate the binary, but the path was slightly different than expected in certain environments.
+   - **Action:** Hardened the binary lookup in `run_vrt.sh` and `run_sandbox.sh` to handle macOS bundle structures and direct binary paths more reliably.
+   - **Lesson:** Shell scripts interacting with build artifacts should be defensive about binary locations. Log the path being attempted if it fails.
+
+### What worked well
+
+- **Single source of truth in `vrt_config.json`**: Putting tolerance and expected components in a JSON file made the Python script much cleaner and allows for easy future adjustments without touching code.
+- **VRT tests with synthetic fixtures**: `tests/test_vrt_diff.py` successfully validates the diffing logic (identical, sub-threshold, failing, missing baseline) without needing the heavy sandbox binary, making it fast and portable.
+- **Python script as a clean CLI tool**: Using `argparse` with clear help text and consistent exit codes makes the VRT engine easy to integrate into any CI pipeline.
+
+### Technical Debt / Future Improvements
+
+- **Full-window captures instead of cropped regions**: The `SaveWindowScreenshot` fallback captures the whole window (Sidebar + Component). While this works for regression, it's not as "pure" as individual component crops. A future improvement could be to implement cropping in `vrt_diff.py`.
+- **Audio device probing errors on headless environments**: The sandbox logs errors about `RtApiCore::probeDeviceInfo` on Mac when no audio output is available. This doesn't block screenshot generation but adds noise to the logs.
+
+---
+
 ## Resolved notes
 
 - **Sprint 1 scaffolding** — all issues resolved and merged in PR #36 (squash commit to main).
