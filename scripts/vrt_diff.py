@@ -34,12 +34,14 @@ def main():
             
     tolerance = args.tolerance if args.tolerance is not None else config.get("tolerance", 3.0)
     max_failed = args.max_failed_pixels if args.max_failed_pixels is not None else config.get("max_failed_pixels", 10)
-    crop_top_px = config.get("crop_top_px", 0)
+    # crop_top_px is expressed in logical (1x) pixels and scaled to match each
+    # image's actual capture resolution. 28 = macOS standard title bar height.
+    crop_top_logical_px = config.get("crop_top_px", 0)
 
     print(f"Using tolerance: {tolerance}% (from {'CLI' if args.tolerance is not None else 'config'})")
     print(f"Using max_failed_pixels: {max_failed} (from {'CLI' if args.max_failed_pixels is not None else 'config'})")
-    if crop_top_px:
-        print(f"Cropping top {crop_top_px}px from each image (window chrome exclusion)")
+    if crop_top_logical_px:
+        print(f"Cropping top {crop_top_logical_px}px logical (window chrome exclusion)")
 
     baseline_dir = Path(args.baseline_dir)
     current_dir = Path(args.current_dir)
@@ -63,11 +65,36 @@ def main():
         try:
             current_img = Image.open(current_img_path).convert("RGBA")
             baseline_img = Image.open(baseline_img_path).convert("RGBA")
-            if crop_top_px > 0:
-                w, h = current_img.size
-                current_img = current_img.crop((0, crop_top_px, w, h))
-                w, h = baseline_img.size
-                baseline_img = baseline_img.crop((0, crop_top_px, w, h))
+
+            # Detect pixel ratio and crop title bar scaled to capture resolution.
+            # Baseline is the reference size; current may be at a different scale
+            # (e.g. 2x Retina locally vs 1x on CI).
+            if baseline_img.width > 0 and current_img.width > 0:
+                scale = current_img.width / baseline_img.width
+            else:
+                scale = 1.0
+
+            if crop_top_logical_px > 0:
+                # Crop baseline (always at its native resolution)
+                bw, bh = baseline_img.size
+                b_crop = round(crop_top_logical_px)
+                baseline_img = baseline_img.crop((0, b_crop, bw, bh))
+                # Crop current scaled to its capture resolution
+                cw, ch = current_img.size
+                c_crop = round(crop_top_logical_px * scale)
+                current_img = current_img.crop((0, c_crop, cw, ch))
+
+            # Normalise both images to the smaller resolution so comparison is
+            # always at the lower DPI (avoids upscaling artefacts). This makes
+            # baselines generated on a 2x Retina machine work on a 1x CI runner.
+            if current_img.size != baseline_img.size:
+                target_w = min(current_img.width, baseline_img.width)
+                target_h = min(current_img.height, baseline_img.height)
+                target = (target_w, target_h)
+                if current_img.size != target:
+                    current_img = current_img.resize(target, Image.LANCZOS)
+                if baseline_img.size != target:
+                    baseline_img = baseline_img.resize(target, Image.LANCZOS)
         except Exception as e:
             print(f"FAIL  {img_name} (Error loading images: {e})")
             all_passed = False
@@ -75,7 +102,7 @@ def main():
             continue
 
         if current_img.size != baseline_img.size:
-            print(f"FAIL  {img_name} (Dimension mismatch: baseline={baseline_img.width}x{baseline_img.height} current={current_img.width}x{current_img.height})")
+            print(f"FAIL  {img_name} (Dimension mismatch after resize: baseline={baseline_img.width}x{baseline_img.height} current={current_img.width}x{current_img.height})")
             all_passed = False
             failing_components.append(img_name)
             continue
