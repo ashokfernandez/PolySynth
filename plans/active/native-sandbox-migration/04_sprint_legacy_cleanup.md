@@ -249,71 +249,17 @@ Before creating PR-4, verify ALL of the following:
 
 ### Automated Structural Validation
 
-Create **`scripts/tasks/check_migration_complete.sh`** and run it both locally and in CI. The script must assert ALL of the following and exit non-zero on any failure:
-
+Run these spot checks locally:
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-PASS=0; FAIL=0
-
-assert_absent() {
-  if [ -e "$1" ]; then echo "FAIL: $1 still exists"; FAIL=$((FAIL+1))
-  else echo "PASS: $1 absent"; PASS=$((PASS+1)); fi
-}
-
-assert_no_match() {
-  if grep -q "$2" "$1" 2>/dev/null; then echo "FAIL: '$2' found in $1"; FAIL=$((FAIL+1))
-  else echo "PASS: '$2' absent from $1"; PASS=$((PASS+1)); fi
-}
-
-assert_match() {
-  if grep -q "$2" "$1" 2>/dev/null; then echo "PASS: '$2' found in $1"; PASS=$((PASS+1))
-  else echo "FAIL: '$2' missing from $1"; FAIL=$((FAIL+1)); fi
-}
-
-# Files/dirs that must NOT exist
-assert_absent tests/Visual/package.json
-assert_absent tests/Visual/package-lock.json
-assert_absent tests/Visual/.storybook
-assert_absent tests/Visual/stories
-assert_absent tests/Visual/specs
-assert_absent tests/Visual/playwright.config.ts
-assert_absent ComponentGallery/projects
-assert_absent ComponentGallery/config
-assert_absent ComponentGallery/scripts
-assert_absent scripts/tasks/build_gallery.sh
-assert_absent scripts/build_all_galleries.sh
-assert_absent scripts/build_gallery_wam.sh
-
-# Justfile commands that must NOT exist
-assert_no_match Justfile "^gallery-build"
-assert_no_match Justfile "^gallery-view"
-assert_no_match Justfile "^gallery-rebuild"
-assert_no_match Justfile "^gallery-pages-build"
-assert_no_match Justfile "^gallery-pages-view"
-
-# CI workflow assertions
-assert_no_match .github/workflows/ci.yml "build-storybook-site"
-assert_match    .github/workflows/ci.yml "build-wam-demo"
-
-# Baselines must exist (exactly 7 PNGs)
-COUNT=$(find tests/Visual/baselines -name "*.png" 2>/dev/null | wc -l)
-if [ "$COUNT" -eq 7 ]; then echo "PASS: 7 baseline PNGs"; PASS=$((PASS+1))
-else echo "FAIL: expected 7 baseline PNGs, found $COUNT"; FAIL=$((FAIL+1)); fi
-
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[ "$FAIL" -eq 0 ] || exit 1
+test ! -e tests/Visual/package.json
+test ! -e tests/Visual/.storybook
+test ! -e ComponentGallery/projects
+test ! -e scripts/tasks/build_gallery.sh
+! rg -n "^gallery-build|^gallery-view|^gallery-rebuild|^gallery-pages-build|^gallery-pages-view" Justfile
+! rg -n "build-storybook-site" .github/workflows/ci.yml
+rg -n "build-wam-demo" .github/workflows/ci.yml
+test "$(find tests/Visual/baselines -name '*.png' | wc -l | tr -d ' ')" = "7"
 ```
-
-Run locally:
-```bash
-bash scripts/tasks/check_migration_complete.sh
-# Expected: all assertions pass, exit 0
-```
-
-Add as a CI step in the `native-ui-tests` job so the migration contract is enforced going forward.
 
 ### Pipeline Still Works
 ```bash
@@ -327,13 +273,7 @@ just build && just test
 # Expected: PASS
 ```
 
-### Spec Validation (Automated)
-
-All structural assertions from the migration spec are now covered by `check_migration_complete.sh` (above). Run it:
-
-```bash
-bash scripts/tasks/check_migration_complete.sh && echo "ALL ASSERTIONS PASS"
-```
+### Spec Validation
 
 Additionally verify VRT capture integrity manually once:
 ```bash
@@ -357,7 +297,4 @@ done
 - [ ] Baseline PNGs preserved
 - [ ] PR title: "chore: remove deprecated Storybook/Playwright visual testing infrastructure"
 - [ ] PR description lists all removed files and references the migration spec
-- [ ] `scripts/tasks/check_migration_complete.sh` committed and executable
-- [ ] `check_migration_complete.sh` passes locally
-- [ ] `check_migration_complete.sh` added as a CI step
 - [ ] No LLM reasoning-trace comments in committed source

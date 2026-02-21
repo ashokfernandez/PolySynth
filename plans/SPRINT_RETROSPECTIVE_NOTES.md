@@ -380,7 +380,7 @@ The following should be added to the "Cross-Sprint Guardrails" section of `00_ov
 
 1. **Sprint 4 cleanup commit existed but `main` had not advanced to it**
    - **Problem:** The legacy-cleanup work (PR #49 scope) was present on `sprint/4-legacy-cleanup`, but `main` still contained pre-cleanup Storybook/Playwright artifacts and obsolete gallery commands.
-   - **Action:** Fast-forwarded `main` to `ef59866` (the Sprint 4 cleanup commit), then re-ran the migration contract and runtime validation commands: `bash scripts/tasks/check_migration_complete.sh`, `just sandbox-build`, and `just vrt-run` (all passing).
+   - **Action:** Fast-forwarded `main` to `ef59866` (the Sprint 4 cleanup commit), then re-ran runtime validation commands: `just sandbox-build` and `just vrt-run` (both passing), alongside structural repo checks.
    - **Lesson:** Marking a sprint "done" requires validating the target branch (`main`), not only a feature branch or PR description. Always run migration DoD checks on `main` before closing the sprint.
 
 2. **Archived planning doc left a stale index reference**

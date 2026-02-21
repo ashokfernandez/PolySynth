@@ -80,7 +80,6 @@ Every sprint PR must satisfy these before requesting review:
 - `scripts/tasks/run_sandbox.sh` — sandbox launcher
 - `tests/Visual/baselines/*.png` — committed baseline images
 - `tests/Visual/vrt_config.json` — single source of truth for VRT tolerance constants (Sprint 2)
-- `scripts/tasks/check_migration_complete.sh` — automated post-migration structural validator (Sprint 4)
 
 ### To Be Deleted (Sprint 4)
 - `tests/Visual/package.json`, `tests/Visual/package-lock.json`

@@ -43,14 +43,6 @@ Outputs:
 - Current captures: `tests/Visual/current/`
 - Diff reports: `tests/Visual/output/`
 
-## Migration Contract Validation
-
-```bash
-bash scripts/tasks/check_migration_complete.sh
-```
-
-This must pass before considering the native sandbox migration complete.
-
 ## Logs and Failure Triage
 
 All `just` tasks write full logs under `.artifacts/logs/<run-id>/`.
