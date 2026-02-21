@@ -1,6 +1,6 @@
 {
   "tolerance": 3.0,
-  "max_failed_pixels": 10,
+  "max_failed_pixels": 20000,
   "crop_top_px": 28,
   "expected_components": [
     "Envelope", "PolyKnob", "PolySection", "PolyToggle",

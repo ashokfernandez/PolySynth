@@ -66,22 +66,27 @@ def main():
             current_img = Image.open(current_img_path).convert("RGBA")
             baseline_img = Image.open(baseline_img_path).convert("RGBA")
 
-            # Detect pixel ratio and crop title bar scaled to capture resolution.
-            # Baseline is the reference size; current may be at a different scale
-            # (e.g. 2x Retina locally vs 1x on CI).
-            if baseline_img.width > 0 and current_img.width > 0:
-                scale = current_img.width / baseline_img.width
-            else:
-                scale = 1.0
-
             if crop_top_logical_px > 0:
-                # Crop baseline (always at its native resolution)
                 bw, bh = baseline_img.size
-                b_crop = round(crop_top_logical_px)
-                baseline_img = baseline_img.crop((0, b_crop, bw, bh))
-                # Crop current scaled to its capture resolution
                 cw, ch = current_img.size
-                c_crop = round(crop_top_logical_px * scale)
+
+                # Scale the logical crop independently for each image so 2x-vs-1x
+                # comparisons crop equivalent visual regions.
+                reference_w = min(bw, cw)
+                if reference_w > 0:
+                    b_scale = bw / reference_w
+                    c_scale = cw / reference_w
+                else:
+                    b_scale = 1.0
+                    c_scale = 1.0
+
+                b_crop = round(crop_top_logical_px * b_scale)
+                c_crop = round(crop_top_logical_px * c_scale)
+
+                b_crop = min(max(b_crop, 0), max(bh - 1, 0))
+                c_crop = min(max(c_crop, 0), max(ch - 1, 0))
+
+                baseline_img = baseline_img.crop((0, b_crop, bw, bh))
                 current_img = current_img.crop((0, c_crop, cw, ch))
 
             # Normalise both images to the smaller resolution so comparison is

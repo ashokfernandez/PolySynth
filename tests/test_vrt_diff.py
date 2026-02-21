@@ -132,7 +132,7 @@ def test_diff_artifact_red_mask(tmp_path):
     # Unchanged pixel should not be red
     assert d_load[0, 0] != (255, 0, 0, 255)
 
-def test_crop_top_scales_with_capture_resolution(tmp_path):
+def test_crop_top_scales_when_baseline_is_higher_dpi(tmp_path):
     baseline_dir = tmp_path / "baselines"
     current_dir = tmp_path / "current"
     output_dir = tmp_path / "output"
@@ -140,17 +140,17 @@ def test_crop_top_scales_with_capture_resolution(tmp_path):
     current_dir.mkdir()
     output_dir.mkdir()
 
-    baseline = Image.new("RGBA", (8, 8), (255, 255, 255, 255))
+    baseline = Image.new("RGBA", (16, 16), (255, 255, 255, 255))
     b_load = baseline.load()
-    for y in range(2):
-        for x in range(8):
+    for y in range(4):
+        for x in range(16):
             b_load[x, y] = (255, 0, 0, 255)
     baseline.save(baseline_dir / "test.png")
 
-    current = Image.new("RGBA", (16, 16), (255, 255, 255, 255))
+    current = Image.new("RGBA", (8, 8), (255, 255, 255, 255))
     c_load = current.load()
-    for y in range(4):
-        for x in range(16):
+    for y in range(2):
+        for x in range(8):
             c_load[x, y] = (0, 255, 0, 255)
     current.save(current_dir / "test.png")
 
