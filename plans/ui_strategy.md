@@ -1,3 +1,3 @@
 # Moved
 
-This document moved to [`plans/active/ui_strategy.md`](active/ui_strategy.md).
+This document moved to [`plans/archive/ui_strategy.md`](archive/ui_strategy.md).

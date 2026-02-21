@@ -25,6 +25,7 @@ This repository has three documentation lanes:
 
 - Guides index: [`docs/guides/README.md`](guides/README.md)
 - UI development guide: [`docs/guides/UI_DEVELOPMENT_GUIDE.md`](guides/UI_DEVELOPMENT_GUIDE.md)
+- Testing setup guide: [`docs/guides/TESTING_SETUP.md`](guides/TESTING_SETUP.md)
 
 ## Agent Docs
 

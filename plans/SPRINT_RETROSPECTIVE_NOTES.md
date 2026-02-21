@@ -374,6 +374,27 @@ The following should be added to the "Cross-Sprint Guardrails" section of `00_ov
 
 ---
 
+## Native Sandbox Migration — Sprint 4 (Legacy Cleanup + Validation) — Retro
+
+### Issues & Resolutions
+
+1. **Sprint 4 cleanup commit existed but `main` had not advanced to it**
+   - **Problem:** The legacy-cleanup work (PR #49 scope) was present on `sprint/4-legacy-cleanup`, but `main` still contained pre-cleanup Storybook/Playwright artifacts and obsolete gallery commands.
+   - **Action:** Fast-forwarded `main` to `ef59866` (the Sprint 4 cleanup commit), then re-ran the migration contract and runtime validation commands: `bash scripts/tasks/check_migration_complete.sh`, `just sandbox-build`, and `just vrt-run` (all passing).
+   - **Lesson:** Marking a sprint "done" requires validating the target branch (`main`), not only a feature branch or PR description. Always run migration DoD checks on `main` before closing the sprint.
+
+2. **Archived planning doc left a stale index reference**
+   - **Problem:** `plans/active/ui_strategy.md` was moved to archive, but `plans/README.md` still linked the old active path, creating a broken navigation path.
+   - **Action:** Updated the planning index to point to `plans/archive/ui_strategy.md`.
+   - **Lesson:** Any file move in `plans/active/` requires a same-change update to `plans/README.md` links.
+
+3. **Testing docs and README still reflected Storybook-era workflows**
+   - **Problem:** User-facing docs still prioritized removed Storybook commands and lacked a single current setup guide for `just` + native sandbox VRT.
+   - **Action:** Added `docs/guides/TESTING_SETUP.md` (bootstrap, unit/sanitizer commands, VRT flow, migration validation, logs) and linked it from `README.md`, `docs/README.md`, and `docs/guides/README.md`. Also updated README command examples to native sandbox/VRT commands.
+   - **Lesson:** When workflow commands are removed from `Justfile`, documentation updates are part of the migration deliverable, not a follow-up.
+
+---
+
 ## Resolved notes
 
 - **Sprint 1 scaffolding** — all issues resolved and merged in PR #36 (squash commit to main).

@@ -6,12 +6,10 @@ Professional-grade polyphonic synthesizer built with C++ and iPlug2.
 [![PR Visual Regression](https://github.com/ashokfernandez/PolySynth/actions/workflows/visual-tests.yml/badge.svg)](https://github.com/ashokfernandez/PolySynth/actions/workflows/visual-tests.yml)
 [![Latest Release](https://img.shields.io/github/v/release/ashokfernandez/PolySynth?display_name=tag)](https://github.com/ashokfernandez/PolySynth/releases/latest)
 [![Web Demo](https://img.shields.io/badge/Web%20Demo-Live-blue)](https://ashokfernandez.github.io/PolySynth/web-demo/)
-[![Component Gallery](https://img.shields.io/badge/Component%20Gallery-Storybook-1f7a8c)](https://ashokfernandez.github.io/PolySynth/component-gallery/)
 
 ## Live Links
 
 - Web demo: [https://ashokfernandez.github.io/PolySynth/web-demo/](https://ashokfernandez.github.io/PolySynth/web-demo/)
-- Component gallery: [https://ashokfernandez.github.io/PolySynth/component-gallery/](https://ashokfernandez.github.io/PolySynth/component-gallery/)
 - Latest release downloads: [https://github.com/ashokfernandez/PolySynth/releases/latest](https://github.com/ashokfernandez/PolySynth/releases/latest)
 - GitHub Actions: [https://github.com/ashokfernandez/PolySynth/actions](https://github.com/ashokfernandez/PolySynth/actions)
 
@@ -41,7 +39,7 @@ Professional-grade polyphonic synthesizer built with C++ and iPlug2.
 
 - CMake 3.14+
 - `just`
-- Node.js 22+ (for gallery/Storybook workflows)
+- Node.js 22+ (for web demo workflows)
 - Xcode (macOS) or MSVC (Windows)
 
 ### Setup + Build
@@ -62,13 +60,11 @@ just                  # list all tasks
 just check            # lint + test
 just ci-pr            # lint + asan + tsan + test
 just desktop-rebuild  # rebuild + launch desktop app
+just sandbox-build    # build native UI sandbox
+just sandbox-run      # launch native UI sandbox
+just vrt-run          # run native visual regression checks
+just gallery-test     # sandbox-build + vrt-run
 just web-demo         # build and run web demo
-
-just gallery-build        # build ComponentGallery artifacts
-just gallery-view         # Storybook dev server
-just gallery-pages-build  # static Storybook into docs/component-gallery
-just gallery-pages-view   # serve static gallery pages
-just gallery-test         # visual regression pipeline
 ```
 
 ### Logs
@@ -86,6 +82,7 @@ POLYSYNTH_VERBOSE=1 just test
 - Architecture overview: [`/Users/ashokfernandez/Software/PolySynth/docs/architecture/OVERVIEW.md`](docs/architecture/OVERVIEW.md)
 - Design principles: [`/Users/ashokfernandez/Software/PolySynth/docs/architecture/DESIGN_PRINCIPLES.md`](docs/architecture/DESIGN_PRINCIPLES.md)
 - Testing guide: [`/Users/ashokfernandez/Software/PolySynth/docs/architecture/TESTING_GUIDE.md`](docs/architecture/TESTING_GUIDE.md)
+- Testing setup: [`/Users/ashokfernandez/Software/PolySynth/docs/guides/TESTING_SETUP.md`](docs/guides/TESTING_SETUP.md)
 - Agent policy: [`/Users/ashokfernandez/Software/PolySynth/AGENTS.md`](AGENTS.md)
 - Agent handbook: [`/Users/ashokfernandez/Software/PolySynth/docs/agents/README.md`](docs/agents/README.md)
 - Planning hub: [`/Users/ashokfernandez/Software/PolySynth/plans/README.md`](plans/README.md)
@@ -96,6 +93,8 @@ POLYSYNTH_VERBOSE=1 just test
 just test
 just asan
 just tsan
+just sandbox-build
+just vrt-run
 just gallery-test
 ```
 
@@ -108,4 +107,3 @@ See [`/Users/ashokfernandez/Software/PolySynth/LICENSE`](LICENSE).
 - [iPlug2](https://github.com/iPlug2/iPlug2)
 - [Catch2](https://github.com/catchorg/Catch2)
 - [nlohmann/json](https://github.com/nlohmann/json)
-- [Storybook](https://storybook.js.org/)

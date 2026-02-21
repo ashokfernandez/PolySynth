@@ -18,7 +18,7 @@ This folder contains strategy docs, execution plans, and archived planning artif
 
 ## Domain Plans
 
-- UI strategy: [`plans/active/ui_strategy.md`](active/ui_strategy.md)
+- UI strategy (archived): [`plans/archive/ui_strategy.md`](archive/ui_strategy.md)
 - Release pipeline: [`plans/active/release_pipeline.md`](active/release_pipeline.md)
 - DSP refactor plans:
   - [`plans/active/dsp_refactor.md`](active/dsp_refactor.md)
