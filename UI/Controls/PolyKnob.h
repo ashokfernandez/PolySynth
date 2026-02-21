@@ -63,7 +63,7 @@ public:
       WDL_String valStr;
       GetParam()->GetDisplay(valStr);
       g.DrawText(IText(PolyTheme::FontControl, PolyTheme::TextDark,
-                       "Roboto-Regular", EAlign::Center),
+                       "Regular", EAlign::Center),
                  valStr.Get(), mValueRect);
     }
   }

@@ -58,8 +58,9 @@ just test
 ```bash
 just                  # list all tasks
 just check            # lint + test
-just ci-pr            # lint + asan + tsan + test
+just ci-pr            # lint + asan + tsan + test + desktop-smoke
 just desktop-rebuild  # rebuild + launch desktop app
+just desktop-smoke    # build + startup smoke test (no immediate crash)
 just sandbox-build    # build native UI sandbox
 just sandbox-run      # launch native UI sandbox
 just vrt-run          # run native visual regression checks

@@ -510,6 +510,12 @@ jobs:
       - name: Run VRT
         run: bash scripts/tasks/run_vrt.sh --verify
 
+      - name: Build PolySynth desktop app
+        run: bash scripts/tasks/build_desktop.sh Release
+
+      - name: Smoke test desktop app startup
+        run: bash scripts/tasks/test_desktop_startup.sh Release
+
       - name: Upload diff artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4

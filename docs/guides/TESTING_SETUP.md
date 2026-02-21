@@ -26,7 +26,8 @@ just test            # Catch2 unit tests
 just asan            # AddressSanitizer + UBSan
 just tsan            # ThreadSanitizer
 just check           # lint + unit tests
-just ci-pr           # local PR gate (lint + asan + tsan + tests)
+just desktop-smoke   # desktop launch smoke test (UI boots then exits)
+just ci-pr           # local PR gate (lint + asan + tsan + tests + desktop-smoke)
 ```
 
 ## Native UI Visual Regression (VRT)

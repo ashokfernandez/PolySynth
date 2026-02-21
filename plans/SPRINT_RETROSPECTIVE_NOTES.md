@@ -243,6 +243,11 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
    - **Action:** Added release-download UI in the generator template and in the current docs page, plus CI generation of `docs/downloads.json` from GitHub Releases in `package-demo-site`.
    - **Lesson:** For generated documentation pages, update the source generator first and treat the generated HTML as derived output to avoid regressions.
 
+18. **Desktop app launch crash passed existing gates**
+   - **Problem:** `PolySynth` desktop app crashed on launch despite passing unit/sanitizer/visual CI because a control used font name `"Roboto-Regular"` while desktop startup only loaded `"Regular"`/`"Bold"`, triggering an `IGraphicsNanoVG` text assert at first draw.
+   - **Action:** Standardized `PolyKnob` value text to `"Regular"`, hardened desktop font loading to resolve bundle-resource paths across bundle-ID variants, added `scripts/tasks/test_desktop_startup.sh` (process must stay alive for a minimum window), and wired it into `just desktop-smoke`, `just ci-pr`, and CI `native-ui-tests`.
+   - **Lesson:** Build success and screenshot tests are insufficient for startup safety. Keep a dedicated desktop launch smoke test in the default pre-flight path and PR CI on macOS.
+
 ---
 
 ## Native Sandbox Migration — Sprint 1 (Sandbox App Foundation) — Retro

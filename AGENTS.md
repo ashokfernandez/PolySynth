@@ -20,11 +20,11 @@ You MUST use `just` as the default interface for local development and verificat
 * `just lint` - static analysis
 * `just asan` / `just tsan` - Address/Thread Sanitizer runs
 * `just check` - lint + test
-* `just ci-pr` - lint + asan + tsan + test
+* `just ci-pr` - lint + asan + tsan + test + desktop startup smoke
 
 **Desktop and Gallery Targets:**
-* `just desktop-build` / `just desktop-run` / `just desktop-rebuild` / `just install-local`
-* `just gallery-build` / `just gallery-view` / `just gallery-test` / `just gallery-pages-build` / `just gallery-pages-view`
+* `just desktop-build` / `just desktop-run` / `just desktop-rebuild` / `just desktop-smoke` / `just install-local`
+* `just sandbox-build` / `just sandbox-run` / `just gallery-test` / `just vrt-baseline` / `just vrt-run`
 
 ## 🔇 2. TOKEN-EFFICIENT COMMANDS (RTK)
 
@@ -110,3 +110,4 @@ Before concluding your task, running `just ci-pr`, or submitting a PR, you MUST 
 3.  [ ] **Variable Hygiene:** Have you verified all stored variables are actually read? Have you discarded unused return values as statements? Are intentionally unused parameters explicitly suppressed with `(void)param;`?
 4.  [ ] **Compile-Time Checks:** If the spec mentions trait requirements checked at compile time, have you actually implemented the `static_assert` calls?
 5.  [ ] **Golden Master Policy:** If your fix changes runtime behavior, have you checked the decision tree for Golden Masters?
+6.  [ ] **Desktop Startup Smoke:** Have you run `just desktop-smoke` (or CI equivalent) to verify the desktop app reaches UI-loaded state without crashing?

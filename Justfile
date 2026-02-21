@@ -94,17 +94,23 @@ check-sanitizers:
     just asan
     just tsan
 
-# Approximate PR gate: lint + ASan + TSan + unit tests.
+# Approximate PR gate: lint + ASan + TSan + unit tests + desktop startup smoke.
 ci-pr:
     just lint
     just asan
     just tsan
     just test
+    just desktop-smoke
 
 # Desktop app workflow
 # Build the standalone desktop app (default config: Debug).
 desktop-build config="Debug":
     bash ./scripts/cli.sh run desktop-build -- ./scripts/tasks/build_desktop.sh {{config}}
+
+# Build and run a startup smoke test for the standalone desktop app.
+desktop-smoke config="Debug":
+    bash ./scripts/cli.sh run desktop-build -- ./scripts/tasks/build_desktop.sh {{config}}
+    bash ./scripts/cli.sh run desktop-smoke -- bash ./scripts/tasks/test_desktop_startup.sh {{config}}
 
 # Launch latest built desktop app bundle.
 desktop-run:

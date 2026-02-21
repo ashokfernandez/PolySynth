@@ -313,8 +313,68 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
     return;
   }
 
-  pGraphics->LoadFont("Regular", ROBOTO_FN);
-  pGraphics->LoadFont("Bold", ROBOTO_BOLD_FN);
+  bool regularLoaded = false;
+  bool boldLoaded = false;
+  bool robotoRegularLoaded = false;
+  bool robotoBoldLoaded = false;
+
+  WDL_String resourcePath;
+  const char *bundleIDCandidates[] = {
+      GetBundleID(), BUNDLE_ID, "com." PLUG_NAME ".app." BUNDLE_NAME};
+
+  for (const char *bundleID : bundleIDCandidates) {
+    if (!bundleID || !bundleID[0]) {
+      continue;
+    }
+
+    WDL_String candidatePath;
+    BundleResourcePath(candidatePath, bundleID);
+    if (!candidatePath.GetLength()) {
+      continue;
+    }
+
+    WDL_String regularFontPath(candidatePath);
+    regularFontPath.Append("/");
+    regularFontPath.Append(ROBOTO_FN);
+
+    WDL_String boldFontPath(candidatePath);
+    boldFontPath.Append("/");
+    boldFontPath.Append(ROBOTO_BOLD_FN);
+
+    regularLoaded = regularLoaded ||
+                    pGraphics->LoadFont("Regular", regularFontPath.Get());
+    boldLoaded = boldLoaded || pGraphics->LoadFont("Bold", boldFontPath.Get());
+    robotoRegularLoaded =
+        robotoRegularLoaded ||
+        pGraphics->LoadFont("Roboto-Regular", regularFontPath.Get());
+    robotoBoldLoaded = robotoBoldLoaded ||
+                       pGraphics->LoadFont("Roboto-Bold", boldFontPath.Get());
+
+    if (regularLoaded && boldLoaded && robotoRegularLoaded &&
+        robotoBoldLoaded) {
+      resourcePath.Set(candidatePath.Get());
+      break;
+    }
+  }
+
+  // Fallback for edge cases where bundle resource discovery fails.
+  if (!regularLoaded)
+    regularLoaded = pGraphics->LoadFont("Regular", ROBOTO_FN);
+  if (!boldLoaded)
+    boldLoaded = pGraphics->LoadFont("Bold", ROBOTO_BOLD_FN);
+  if (!robotoRegularLoaded)
+    robotoRegularLoaded = pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN);
+  if (!robotoBoldLoaded)
+    robotoBoldLoaded = pGraphics->LoadFont("Roboto-Bold", ROBOTO_BOLD_FN);
+
+  if (!regularLoaded || !boldLoaded || !robotoRegularLoaded ||
+      !robotoBoldLoaded) {
+    std::fprintf(stderr,
+                 "[FontLoad] Failed! Regular=%d Bold=%d Roboto-Regular=%d "
+                 "Roboto-Bold=%d path='%s'\n",
+                 regularLoaded, boldLoaded, robotoRegularLoaded,
+                 robotoBoldLoaded, resourcePath.Get());
+  }
 
   pGraphics->AttachPanelBackground(PolyTheme::PanelBG);
 
