@@ -6,13 +6,12 @@
 // codebase calls only the functions in the VRTCapture namespace; no Skia
 // surface internals leak elsewhere.
 //
-// Preferred path  : IGraphicsSkia surface → SkPngEncoder
-// Fallback path   : reports failure and returns false
+// Preferred path  : IGraphicsSkia surface → SkPngEncoder (requires IGRAPHICS_SKIA)
+// Active path     : SaveWindowScreenshot fallback (APP_API, CoreGraphics on Mac)
 //
-// NOTE: The method name used to retrieve the backing surface from
-// IGraphicsSkia (GetSurface() below) must be validated against
-// external/iPlug2/IGraphics/IGraphicsSkia.h once dependencies are present.
-// Run `just deps` to download iPlug2, then verify or update the call.
+// The Skia path calls pSkia->GetSurface() — method name unverified against
+// IGraphicsSkia.h as Skia deps were unavailable during Sprint 2. Validated
+// when IGRAPHICS_SKIA is enabled; the fallback path is the current live path.
 
 #include "IGraphics.h"
 
@@ -112,7 +111,9 @@ inline bool SaveRegionAsPNG(iplug::igraphics::IGraphics *pGraphics,
     using namespace iplug::igraphics;
     auto *pSkia = dynamic_cast<IGraphicsSkia *>(pGraphics);
     if (pSkia) {
-      // NOTE: Validate GetSurface() against IGraphicsSkia.h.
+      // GetSurface() is unverified against IGraphicsSkia.h (Skia unavailable
+      // during Sprint 2). If this path is enabled, confirm the method name
+      // against external/iPlug2/IGraphics/IGraphicsSkia.h first.
       // Alternative names seen in iPlug2 forks: GetBackingSurface(), mSurface.
       sk_sp<SkSurface> surface = pSkia->GetSurface();
       if (surface) {
