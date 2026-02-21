@@ -26,7 +26,23 @@ You MUST use `just` as the default interface for local development and verificat
 * `just desktop-build` / `just desktop-run` / `just desktop-rebuild` / `just install-local`
 * `just gallery-build` / `just gallery-view` / `just gallery-test` / `just gallery-pages-build` / `just gallery-pages-view`
 
-## 🛑 2. ABSOLUTE CONSTRAINTS (The "Never" List)
+## 🔇 2. TOKEN-EFFICIENT COMMANDS (RTK)
+
+`rtk` (Rust Token Killer) is installed globally. You MUST use it for the following commands to reduce output noise and token consumption:
+
+| Instead of | Use |
+|---|---|
+| `ls` / `ls <path>` | `rtk ls <path>` |
+| `git status` / `git log` / `git diff` / `git branch` | `rtk git <subcommand>` |
+| `gh pr ...` / `gh issue ...` / `gh run ...` | `rtk gh <subcommand>` |
+| `cat <file>` | `rtk read <file>` |
+| `grep <pattern>` / `rg <pattern>` | `rtk grep <pattern>` |
+
+All other commands (cmake, just, bash scripts, etc.) run as normal. Commands already prefixed with `rtk`, heredocs (`<<`), and unrecognised commands pass through unchanged.
+
+> **Claude Code agents**: the auto-rewrite hook at `~/.claude/hooks/rtk-rewrite.sh` handles this transparently — no manual prefixing needed.
+
+## 🛑 3. ABSOLUTE CONSTRAINTS (The "Never" List)
 
 * **NO HEAP ALLOCATION IN AUDIO PATH:** You MUST NOT allocate memory on the heap in the hot path (e.g., inside `Process()` methods). Rely exclusively on stack-allocated arrays or `std::array` to ensure real-time safety.
 * **NO LLM ARTIFACTS IN CODE:** You MUST NOT commit your reasoning traces, stream-of-consciousness remarks, or "thinking out loud" comments (e.g., "Let's check if kPi is defined...") into production source files. Keep your reasoning in the PR description or your internal scratchpad.
