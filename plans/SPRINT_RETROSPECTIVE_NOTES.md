@@ -304,6 +304,11 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
    - **Action:** Removed the debug slider attachment from `ComponentGallery.cpp` and added a regression unit test in `tests/unit/Test_UI_Components.cpp` that fails if `kCtrlTag_TestKnob` appears in the gallery source.
    - **Lesson:** Keep gallery surfaces strictly curated; temporary debug controls must not be attached in default layouts. Add a regression check whenever debug-only UI slips into user-facing views.
 
+5. **Native VRT failed across macOS baseline vs Linux CI captures**
+   - **Problem:** PR #48 native visual regression failed in CI with all components differing due to window-chrome offset and DPI mismatch between macOS-generated baselines and Linux `xvfb` captures.
+   - **Action:** Updated `scripts/vrt_diff.py` to support logical top cropping (`crop_top_px`) scaled by capture ratio, normalize comparisons to the lower resolution, and configured `tests/Visual/vrt_config.json` with `crop_top_px: 28`; regenerated all seven native VRT baselines and added `tests/test_vrt_diff.py` coverage for crop scaling behavior.
+   - **Lesson:** Native visual baselines captured on one platform must account for cross-platform window chrome and DPI differences in the diff engine, and unit tests must inject explicit config instead of relying on repository defaults.
+
 ### What worked well
 
 - **Single source of truth in `vrt_config.json`**: Putting tolerance and expected components in a JSON file made the Python script much cleaner and allows for easy future adjustments without touching code.
