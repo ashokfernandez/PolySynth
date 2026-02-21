@@ -317,6 +317,58 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
 
 ---
 
+## Native Sandbox Migration — Sprint 3 (CI/CD Pipeline Swap) — Retro
+
+### Issues & Resolutions
+
+1. **iPlug2 APP target does not compile on Linux — sprint plan specified `ubuntu-latest` for VRT jobs**
+   - **Problem:** The sprint 3 spec stated `runs-on: ubuntu-latest` for `native-visual-regression` (in `visual-tests.yml`) and `native-ui-tests` (in `ci.yml`). The iPlug2 APP standalone target is not supported on Linux: `IPlugTimer.h` has `#error NOT IMPLEMENTED` for `OS_LINUX`, and `IPlugAPP_host.h` pulls in `swell.h` (a Cocoa abstraction layer that does not exist on Linux). The APP CMake library (`APP.cmake`) prints `"Error - Linux not yet supported"` but still unconditionally links the broken sources, causing immediate compilation failure.
+   - **Action:** Switched all three VRT/sandbox CI jobs to `macos-14` runners where the APP target compiles natively. Replaced `apt-get` install steps with `brew install` and removed `xvfb-run` (macOS GitHub runners have a windowing environment). The `mymindstorm/setup-emsdk` action used in `build_headless.yml` supports macOS so the WAM demo build was unaffected.
+   - **Root cause:** The sprint 3 plan was written before Sprint 1/2 confirmed whether the iPlug2 APP target would compile on Linux. Sprint 1 DoD explicitly required `just sandbox-build` to pass on Linux — that requirement was not actually validated. The Linux gap propagated silently until the CI jobs ran.
+   - **Lesson:** When a plan spec says a build must work on Platform X, the implementing agent must verify this before opening the PR — not assume the plan is correct. Sprint 1 DoD had `cmake -S ComponentGallery -B ComponentGallery/build -G Ninja` as an acceptance criterion for Linux. That criterion was not met, and Sprint 3 inherited the broken assumption. **Future sprint plans must be validated end-to-end on the target CI platform before the plan document is treated as authoritative.**
+
+2. **`pip3 install` blocked by PEP 668 on macOS Homebrew Python**
+   - **Problem:** After switching to `macos-14` runners, `pip3 install -r scripts/requirements-vrt.txt` failed with `error: externally-managed-environment`. Homebrew's Python 3 enforces PEP 668, which blocks system-wide pip installs to prevent breaking the Homebrew-managed Python environment.
+   - **Action:** Replaced `pip3 install` with a venv pattern in all three workflows:
+     ```yaml
+     python3 -m venv .venv
+     echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+     .venv/bin/pip install -r scripts/requirements-vrt.txt
+     ```
+     Adding the venv bin dir to `$GITHUB_PATH` makes `python3`, `pip`, and `pytest` resolve from the venv in all subsequent steps without explicit activation.
+   - **Lesson:** macOS GitHub runners use Homebrew Python which enforces PEP 668. **Never use bare `pip` or `pip3` on macOS CI — always use a venv.** This is a well-known macOS CI gotcha that should be in the workflow template from the start.
+
+3. **`ComponentGallery/CMakeLists.txt` built all plugin formats (VST3, CLAP, AU, etc.) instead of APP only**
+   - **Problem:** `iplug_add_plugin` was called without a `FORMATS` argument, which defaults to `ALL` — meaning it attempted to build APP, VST2, VST3, CLAP, AAX, AU, AUV3, WAM, and WASM targets. This is wrong for a developer gallery tool that only needs a standalone executable. On Linux, this caused VST3 (and other format) targets to be created with broken iPlug2 APP sources still pulled in transitively.
+   - **Action:** Added `FORMATS APP` to restrict the build to the standalone executable only.
+   - **Lesson:** `iplug_add_plugin` defaults to ALL formats for generality, but a gallery sandbox tool only needs `APP`. The CMakeLists.txt for non-plugin tools should always specify `FORMATS APP` explicitly. This also makes intent clear — a reader shouldn't have to know the iPlug2 defaults to understand what's being built.
+
+4. **Three separate CI failures required three separate fix commits after the initial PR**
+   - **Problem:** The initial commit had three sequential failures: (1) Linux APP compilation failure, (2) macOS PEP 668 pip failure, (3) CMakeLists.txt format scope issue. Each was a separate push. This meant the PR had a run of broken CI states visible in its history before stabilising.
+   - **Lesson:** Before pushing a CI pipeline change, simulate the full runner environment locally or in a test branch. For macOS CI specifically: check that pip usage goes through a venv, check that the APP target compiles, and verify the CMakeLists.txt `FORMATS` scope. A one-page "macOS CI checklist" added to the sprint plan would have caught all three issues before the first push.
+
+### What worked well
+
+- **YAML structure changes were correct first-time.** The dependency graph (removing `build-storybook-site`, adding `native-ui-tests`, updating `needs:` for `build-macos`/`build-windows`, stripping Storybook from `package-demo-site`) required no corrections — only the runner platform and Python install method needed fixing.
+- **Storybook/Playwright references were fully removed.** No `apt-get`, `npm ci`, `setup-node`, `PLAYWRIGHT_BROWSERS_PATH`, or Storybook artifact references remained after the initial rewrite.
+- **`FORMATS APP` fix is an improvement beyond the bug fix.** Explicitly naming `FORMATS APP` makes the CMakeLists.txt self-documenting and avoids wasted build time on plugin formats that CI never uses.
+
+### Process observations
+
+- **The sprint plan's target platform (ubuntu-latest) was never validated during Sprint 1/2.** The plan spec was written ahead of implementation and treated as authoritative, but the Linux APP compilation requirement in Sprint 1 DoD was never checked off. Sprint 3 inherited an incorrect baseline assumption and only discovered it when CI ran.
+- **macOS runner Python environment is different from Linux.** On Ubuntu, `pip3 install` works system-wide. On macOS (Homebrew Python), it does not. This difference must be accounted for any time a workflow is ported from Ubuntu to macOS.
+- **All three failures were discoverable by local simulation.** A one-time "dry-run CI locally" pass — building the APP on macOS, running pip install in a fresh shell, checking CMake target list — would have caught all three before any push.
+
+### Additions to cross-sprint guardrails (from this retro)
+
+The following should be added to the "Cross-Sprint Guardrails" section of `00_overview.md`:
+
+- **Validate build platform claims in plan docs.** If a plan specifies `ubuntu-latest` for a build, verify the build actually works on that runner before treating the plan as authoritative.
+- **Use a Python venv for any `pip install` step on macOS CI.** Never use bare `pip3 install` on macOS runners (Homebrew Python enforces PEP 668).
+- **Explicitly specify `FORMATS` in `iplug_add_plugin` for non-plugin tools.** Gallery/sandbox CMakeLists.txt files must use `FORMATS APP` (or the appropriate subset) rather than defaulting to `ALL`.
+
+---
+
 ## Resolved notes
 
 - **Sprint 1 scaffolding** — all issues resolved and merged in PR #36 (squash commit to main).
