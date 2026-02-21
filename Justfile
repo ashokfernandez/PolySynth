@@ -134,6 +134,15 @@ plugin-release-win:
 plugin-package-mac:
     bash ./scripts/cli.sh run plugin-package-mac -- ./scripts/tasks/create_pkg.sh
 
+# UI Sandbox workflow
+# Build the native PolySynthGallery standalone app.
+sandbox-build config="Debug":
+    bash ./scripts/cli.sh run sandbox-build -- ./scripts/tasks/build_sandbox.sh {{config}}
+
+# Launch the native PolySynthGallery sandbox for interactive development.
+sandbox-run *args:
+    bash ./scripts/cli.sh run sandbox-run -- ./scripts/tasks/run_sandbox.sh {{args}}
+
 # PolySynth web demo workflow
 # Build and serve web demo locally (opens browser when possible).
 web-demo:
