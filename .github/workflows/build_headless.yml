@@ -12,7 +12,7 @@ env:
 
 jobs:
   full-headless-validation:
-    runs-on: ubuntu-latest
+    runs-on: macos-14
     permissions:
       contents: write
 
@@ -30,9 +30,7 @@ jobs:
           ${{ runner.os }}-ccache-${{ github.workflow }}-
 
     - name: Install build dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y cmake ninja-build make python3 ccache
+      run: brew install cmake ninja make python3 ccache
 
     - name: Setup Emscripten
       uses: mymindstorm/setup-emsdk@v14
@@ -67,14 +65,8 @@ jobs:
       run: |
         python3 scripts/generate_test_report.py
 
-    - name: Install xvfb and X11/GL dependencies
-      run: |
-        sudo apt-get install -y \
-          xvfb libxcursor-dev libxrandr-dev libxinerama-dev \
-          libxi-dev libgl1-mesa-dev python3-pip
-
     - name: Install Python VRT dependencies
-      run: pip install -r scripts/requirements-vrt.txt
+      run: pip3 install -r scripts/requirements-vrt.txt
 
     - name: Build PolySynthGallery sandbox
       run: |
@@ -85,10 +77,8 @@ jobs:
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         cmake --build ComponentGallery/build --parallel $(nproc)
 
-    - name: Run VRT under xvfb
-      run: |
-        xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" \
-          bash scripts/tasks/run_vrt.sh --verify
+    - name: Run VRT
+      run: bash scripts/tasks/run_vrt.sh --verify
 
     - name: Build PolySynth WAM web demo
       working-directory: src/platform/desktop

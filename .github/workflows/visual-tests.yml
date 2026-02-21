@@ -9,26 +9,14 @@ env:
 jobs:
   native-visual-regression:
     name: Native Visual Regression
-    runs-on: ubuntu-latest
+    runs-on: macos-14
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install C++ build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build ccache python3-pip
-
-      - name: Install xvfb and X11/GL dependencies
-        run: |
-          sudo apt-get install -y \
-            xvfb \
-            libxcursor-dev \
-            libxrandr-dev \
-            libxinerama-dev \
-            libxi-dev \
-            libgl1-mesa-dev
+        run: brew install cmake ninja ccache python3
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -44,7 +32,7 @@ jobs:
           ./scripts/download_dependencies.sh
 
       - name: Install Python VRT dependencies
-        run: pip install -r scripts/requirements-vrt.txt
+        run: pip3 install -r scripts/requirements-vrt.txt
 
       - name: Build PolySynthGallery sandbox
         run: |
@@ -55,10 +43,8 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build ComponentGallery/build --parallel $(nproc)
 
-      - name: Run VRT under xvfb
-        run: |
-          xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" \
-            bash scripts/tasks/run_vrt.sh --verify
+      - name: Run VRT
+        run: bash scripts/tasks/run_vrt.sh --verify
 
       - name: Upload diff artifacts on failure
         if: failure()
