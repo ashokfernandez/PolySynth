@@ -26,6 +26,13 @@ You MUST use `just` as the default interface for local development and verificat
 * `just desktop-build` / `just desktop-run` / `just desktop-rebuild` / `just desktop-smoke` / `just install-local`
 * `just sandbox-build` / `just sandbox-run` / `just gallery-test` / `just vrt-baseline` / `just vrt-run`
 
+**Versioning and Release:**
+* `just version` — interactive TUI: shows current version + history, prompts for bump, commits/tags/pushes
+* `just version-show` — print current version and recent tags (non-interactive)
+* `just version-bump patch|minor|major` — non-interactive bump, full release flow
+* `just version-set 1.2.3` — set explicit version, full release flow
+* Pushing a `v*.*.*` tag triggers CI to build macOS `.pkg` + Windows `.zip` and publish to GitHub Releases
+
 ## 🔇 2. TOKEN-EFFICIENT COMMANDS (RTK)
 
 `rtk` (Rust Token Killer) is installed globally. You MUST use it for the following commands to reduce output noise and token consumption:
@@ -48,6 +55,8 @@ All other commands (cmake, just, bash scripts, etc.) run as normal. Commands alr
 * **NO LLM ARTIFACTS IN CODE:** You MUST NOT commit your reasoning traces, stream-of-consciousness remarks, or "thinking out loud" comments (e.g., "Let's check if kPi is defined...") into production source files. Keep your reasoning in the PR description or your internal scratchpad.
 * **FIX, DO NOT SUPPRESS:** You MUST NOT use static analysis (e.g., `cppcheck`) suppressions to hide warnings on newly written code. You must fix the underlying issue.
 * **DO NOT DEVIATE FROM SPEC:** The sprint plan and pseudocode are your absolute sources of truth. If a behavior is strictly specified (like immediate retriggering on steal or specific sample-rate reset values), you MUST implement it exactly as written and MUST NOT flag it as a bug.
+* **DO NOT HARDCODE PLUGIN IDENTITY:** You MUST NOT hardcode plugin name, company name, version, or bundle identifier strings anywhere outside `src/platform/desktop/config.h`. The Info.plist files are generated from `.in` templates by cmake at configure time — edit only `config.h` and re-run cmake. Hardcoding these values elsewhere (e.g. directly in a `.plist`) causes `[NSBundle bundleWithIdentifier:]` to return nil at runtime, silently breaking font loading and crashing DAWs.
+* **DO NOT CALL `BundleResourcePath` OUTSIDE `#ifndef WEB_API`:** On Emscripten, `PluginIDType = void*` so passing a `const char*` is a compile error. Any call to `BundleResourcePath` or `PluginPath` with a string argument must be wrapped in `#ifndef WEB_API`. The lint job enforces this via `scripts/check_platform_guards.py`.
 
 ## 🏗️ 3. ARCHITECTURE & DSP RULES (When/Then Triggers)
 

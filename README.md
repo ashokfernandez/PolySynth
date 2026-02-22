@@ -61,6 +61,7 @@ just check            # lint + test
 just ci-pr            # lint + asan + tsan + test + desktop-smoke
 just desktop-rebuild  # rebuild + launch desktop app
 just desktop-smoke    # build + startup smoke test (no immediate crash)
+just install-local    # build AU + VST3 and install into ~/Library for local DAW testing
 just sandbox-build    # build native UI sandbox
 just sandbox-run      # launch native UI sandbox
 just vrt-run          # run native visual regression checks
@@ -76,6 +77,23 @@ All `just` tasks write full logs to `.artifacts/logs/<run-id>/`.
 just logs-latest
 POLYSYNTH_VERBOSE=1 just test
 ```
+
+## Releasing
+
+Versioning uses a single interactive command. All metadata files (`config.h`, `CMakeLists.txt`, `main.rc`, Info.plists) are updated atomically.
+
+```bash
+just version              # interactive: shows current version, history, prompts for bump
+just version-bump patch   # non-interactive patch bump (1.0.0 → 1.0.1)
+just version-bump minor   # non-interactive minor bump (1.0.0 → 1.1.0)
+just version-bump major   # non-interactive major bump (1.0.0 → 2.0.0)
+just version-set 1.2.3   # set an explicit version
+just version-show         # print current version and recent release history
+```
+
+The interactive flow (`just version`) commits, tags (`v1.2.3`), and pushes. CI picks up the tag and automatically builds macOS (`.pkg`) and Windows (`.zip`) installers, then publishes them to [GitHub Releases](https://github.com/ashokfernandez/PolySynth/releases).
+
+**To rename the plugin or company:** edit `PLUG_NAME`, `BUNDLE_NAME`, `BUNDLE_MFR`, or `BUNDLE_DOMAIN` in `src/platform/desktop/config.h`, then re-run cmake — all Info.plists regenerate automatically from `.in` templates.
 
 ## Documentation Map
 
