@@ -319,6 +319,9 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   bool robotoBoldLoaded = false;
 
   WDL_String resourcePath;
+#ifndef WEB_API
+  // BundleResourcePath takes a PluginIDType (const char* on macOS, HMODULE on
+  // Windows, void* on other platforms). The web build uses the fallback below.
   const char *bundleIDCandidates[] = {
       GetBundleID(), BUNDLE_ID, "com." PLUG_NAME ".app." BUNDLE_NAME};
 
@@ -356,6 +359,7 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       break;
     }
   }
+#endif // !WEB_API
 
   // Fallback for edge cases where bundle resource discovery fails.
   if (!regularLoaded)

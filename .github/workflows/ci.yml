@@ -94,6 +94,12 @@ jobs:
             --tool clang-tidy \
             --verbose
 
+      # Guard check: BundleResourcePath takes PluginIDType which is void* on
+      # Emscripten/WEB, so any call with a const char* must be inside
+      # #ifndef WEB_API. This catches the regression without needing Emscripten.
+      - name: Check platform API guards (BundleResourcePath)
+        run: python3 scripts/check_platform_guards.py
+
   # ---------------------------------------------------------------------------
   # Job 2: Build & Test with ASan + UBSan
   # Catches memory corruption and undefined behaviour in unit tests.
