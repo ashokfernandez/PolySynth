@@ -1,73 +1,152 @@
-body {
-  font-family: arial;
-  margin: 0;
-  padding: none;
-  background: white;
-  background-size: cover;
-  text-align: center;
-  overflow: hidden;
+/*
+  PolySynth Web-Demo Refined (v3)
+  Chic, minimalist, high-contrast.
+*/
 
-  /* disable selection */
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none;   /* Safari */
-  -khtml-user-select: none;    /* Konqueror HTML */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently supported by Chrome and Opera */
+:root {
+  --c-black: #000;
+  --c-cream: #f5f0e8;
+  --gradient-se: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  --font-product: 'Audiowide', sans-serif;
+  --font-body: 'Roboto', sans-serif;
 }
 
+body {
+  font-family: var(--font-body);
+  margin: 0;
+  padding: 0;
+  background: var(--c-black);
+  color: var(--c-cream);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#main-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Landing State / Power On Button */
 #buttons {
-  display: inline-block;
-  /* vertical-align: top; */
-  margin-top: 50px;
-  margin-bottom: 10px;
-  margin-left: 20px;
-  font-weight: bold;
-  color: rgb(120, 120, 120);
+  position: absolute;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+#startWebAudioButton {
+  background: var(--gradient-se);
+  color: white;
+  border: none;
+  padding: 20px 48px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+  font-family: var(--font-product);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+#startWebAudioButton:hover:not(:disabled) {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 20px 50px rgba(139, 92, 246, 0.6);
+  filter: brightness(1.1);
+}
+
+#startWebAudioButton:disabled {
+  background: #111;
+  color: #333;
+  cursor: not-allowed;
+  box-shadow: none;
+  border: 1px solid #222;
+}
+
+#midi-info {
+  font-size: 0.8rem;
+  color: rgba(245, 240, 232, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Grayout / Loading */
+#greyout {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--c-black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  transition: opacity 0.5s ease;
+}
+
+#greyout.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 #status {
-  display: inline-block;
-  vertical-align: top;
-  margin-top: 50px;
-  margin-left: 20px;
-  font-weight: bold;
-  color: black;
+  font-family: var(--font-product);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  font-size: 1rem;
 }
 
-#greyout { position: relative; text-align: center; color: black; }
-
+/* Plugin Canvas */
 #wam {
-  /* 
-  position: absolute; 
-  */
-  /* z-index: 9; */
-  /* background-color: #f1f1f1; */
-  /* border: 1px solid #d3d3d3; */
-  text-align: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1s ease;
 }
 
-#wamheader {
-  padding: 2px;
-  cursor: move;
-  z-index: 10;
-  background-color: rgb(0, 86, 167);
-  color: #fff;
+#wam[hidden] {
+  display: none;
 }
 
-a, u { text-decoration: none; }
-a:link { color: #222; }
-a:visited { color: #222; }
-a:hover { color: black; }
-a:active { color: #222; }
-label  { color:#bbb; font-size:12px; }
-select { background:#222; color:#eee; height:20px; margin-top:10px; cursor:pointer; }
-img { pointer-events: none; } /*stops dragging imgs */
+canvas.pluginArea {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  /* Sharp scaling on mobile */
+  border: none;
+  background: transparent;
+  display: block;
+  outline: none;
+}
 
-.pluginArea { margin-right: auto; margin-left: auto; margin-right: auto; display: block; outline:0; }
-div.pluginArea { text-align: center; }
-/* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-canvas.pluginArea { border: 0px none; background-color: rgba(0, 0, 0, 0); display: block; box-shadow: 10px 10px 5px rgba(0,0,0,0.3); }
-.pluginInput { visibility:hidden }
+/* Selects */
+select {
+  background: transparent;
+  color: var(--c-dim);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: var(--font-body);
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+}
 
-* { -webkit-tap-highlight-color:rgba(0,0,0,0); }
+* {
+  -webkit-tap-highlight-color: transparent;
+}

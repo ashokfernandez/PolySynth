@@ -1,0 +1,217 @@
+/*
+  Side Effects Audio — Design System
+  Palette: Near-black / Cream / Sparse gradient accent
+  Typography: Baloo 2 (brand), Audiowide (product), Roboto (body)
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Audiowide&family=Roboto:wght@300;400;500;700&display=swap');
+
+/* ─── Tokens ─────────────────────────────────────────────── */
+:root {
+    /* Core palette */
+    --c-black: #0c0c0c;
+    --c-ink: #141414;
+    --c-card: #1a1a1a;
+    --c-border: rgba(255, 255, 255, 0.08);
+    --c-cream: #f5f0e8;
+    --c-dim: rgba(245, 240, 232, 0.45);
+    --c-subtle: rgba(245, 240, 232, 0.18);
+
+    /* Side Effects accent gradient — USE SPARINGLY */
+    --gradient-se: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+    --gradient-se-h: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+
+    /* Typography */
+    --font-brand: 'Baloo 2', cursive;
+    --font-product: 'Audiowide', sans-serif;
+    --font-body: 'Roboto', sans-serif;
+
+    /* Spacing (4pt grid) */
+    --s-xs: 8px;
+    --s-sm: 16px;
+    --s-md: 32px;
+    --s-lg: 64px;
+    --s-xl: 96px;
+
+    /* Shape */
+    --r-sm: 4px;
+    --r-md: 8px;
+    --r-lg: 16px;
+
+    /* Motion */
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --t-fast: 0.15s;
+    --t-base: 0.3s;
+    --t-slow: 0.6s;
+}
+
+/* ─── Reset ───────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ─── Base ────────────────────────────────────────────────── */
+body {
+    font-family: var(--font-body);
+    background: var(--c-black);
+    color: var(--c-cream);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+/* ─── Container ──────────────────────────────────────────── */
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 var(--s-md);
+}
+
+section {
+    padding: var(--s-lg) var(--s-md);
+}
+
+/* ─── Typography ─────────────────────────────────────────── */
+.font-brand {
+    font-family: var(--font-brand);
+}
+
+.font-product {
+    font-family: var(--font-product);
+}
+
+.text-dim {
+    color: var(--c-dim);
+}
+
+.text-subtle {
+    color: var(--c-subtle);
+}
+
+/* ─── Branded Accent ─────────────────────────────────────── */
+/* Only use this class for the "side effects" wordmark */
+.se-wordmark {
+    font-family: var(--font-brand);
+    background: var(--gradient-se);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.se-accent-bar {
+    display: block;
+    width: 40px;
+    height: 3px;
+    background: var(--gradient-se);
+    border-radius: 2px;
+    margin-bottom: var(--s-sm);
+}
+
+/* ─── Buttons ────────────────────────────────────────────── */
+.btn {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    padding: 12px 28px;
+    border-radius: var(--r-md);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        background var(--t-fast) var(--ease),
+        transform var(--t-fast) var(--ease),
+        box-shadow var(--t-fast) var(--ease);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn-primary {
+    background: var(--c-cream);
+    color: var(--c-black);
+    font-weight: 700;
+}
+
+.btn-primary:hover {
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(245, 240, 232, 0.15);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--c-cream);
+    border: 1px solid var(--c-border);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.btn-outline:hover {
+    border-color: var(--c-cream);
+    background: rgba(245, 240, 232, 0.05);
+}
+
+/* Single gradient button — use very rarely */
+.btn-se {
+    background: var(--gradient-se);
+    color: #fff;
+    font-weight: 700;
+}
+
+.btn-se:hover {
+    background: var(--gradient-se-h);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
+}
+
+/* ─── Cards ──────────────────────────────────────────────── */
+.card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    padding: var(--s-md);
+    transition: border-color var(--t-base) var(--ease), transform var(--t-base) var(--ease);
+}
+
+.card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-4px);
+}
+
+/* ─── Slide-in animation ─────────────────────────────────── */
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.reveal {
+    opacity: 0;
+    animation: slide-up var(--t-slow) var(--ease) forwards;
+}
+
+.reveal-delay-1 {
+    animation-delay: 0.1s;
+}
+
+.reveal-delay-2 {
+    animation-delay: 0.2s;
+}
+
+.reveal-delay-3 {
+    animation-delay: 0.3s;
+}

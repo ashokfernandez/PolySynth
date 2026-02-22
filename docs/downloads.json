@@ -1,7 +1,11 @@
 {
-  "generated_at_utc": "2026-02-20T00:58:42Z",
+  "generated_at_utc": "2026-02-23T00:15:00Z",
   "repository": "ashokfernandez/PolySynth",
-  "release": null,
-  "assets": [],
-  "platforms": {}
+  "release": {
+    "tag": "v1.0.1"
+  },
+  "platforms": {
+    "macos": "https://github.com/ashokfernandez/PolySynth/releases/download/v1.0.1/PolySynth-1.0.1-macOS.pkg",
+    "windows": "https://github.com/ashokfernandez/PolySynth/releases/download/v1.0.1/PolySynth-1.0.1-Windows.zip"
+  }
 }
