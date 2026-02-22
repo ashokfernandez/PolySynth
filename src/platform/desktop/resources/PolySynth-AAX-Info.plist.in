@@ -5,23 +5,23 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>PolySynth</string>
+	<string>@PLUG_DISPLAY_NAME@</string>
 	<key>CFBundleGetInfoString</key>
-	<string>PolySynth v1.0.0 Copyright 2025 Side Effects</string>
+	<string>@PLUG_DISPLAY_NAME@ v@PLUG_VERSION_STRING@ @PLUG_COPYRIGHT@</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.SideEffects.aax.PolySynth</string>
+	<string>@PLUG_BUNDLE_ID_BASE@.aax.@PLUG_BUNDLE_NAME@</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>PolySynth</string>
+	<string>@PLUG_DISPLAY_NAME@</string>
 	<key>CFBundlePackageType</key>
 	<string>TDMw</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>@PLUG_VERSION_STRING@</string>
 	<key>CFBundleSignature</key>
 	<string>PTul</string>
 	<key>CFBundleVersion</key>
-	<string>1.0.0</string>
+	<string>@PLUG_VERSION_STRING@</string>
 	<key>CSResourcesFileMapped</key>
 	<true/>
 	<key>LSMinimumSystemVersion</key>

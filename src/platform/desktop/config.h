@@ -10,7 +10,7 @@
 #define PLUG_CLASS_NAME PolySynthPlugin
 
 #define BUNDLE_NAME "PolySynth"
-#define BUNDLE_MFR "PolySynth"
+#define BUNDLE_MFR "SideEffects"
 #define BUNDLE_DOMAIN "com"
 
 #define PLUG_CHANNEL_IO "0-2"
