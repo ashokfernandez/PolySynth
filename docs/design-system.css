@@ -1,217 +1,476 @@
 /*
-  Side Effects Audio — Design System
-  Palette: Near-black / Cream / Sparse gradient accent
-  Typography: Baloo 2 (brand), Audiowide (product), Roboto (body)
+  Side Effects Audio — Design System v2.0
+  ========================================
+  Palette sourced from:
+    - Guitar pedals (teal+purple "Just a Phase", blue+amber "Hyper Drive")
+    - Instagram logo (@side.effects.audio — dark purple circle, teal type)
+    - PolySynth plugin UI (cream faceplate, muted red knobs, dark LCD)
+    - DR Filter plugin UI (slate blue-grey body, red bypass, light wordmark)
+
+  TOKEN NAMING CONVENTION:
+    --se-*        Side Effects brand colours (hardware / Instagram identity)
+    --ps-*        PolySynth plugin-specific colours (faceplate, LCD, knobs)
+    --c-*         Neutral surface colours (dark ramp, text)
+    --gradient-*  Named gradients (2 max — brand + product)
+    --font-*      Typeface stacks
+    --s-*         Spacing scale (4pt grid)
+    --r-*         Border radius scale
+    --t-*         Transition durations
+    --ease*       Easing curves
 */
 
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Audiowide&family=Roboto:wght@300;400;500;700&display=swap');
 
-/* ─── Tokens ─────────────────────────────────────────────── */
+/* ─── Tokens ─────────────────────────────────────────────────────────── */
 :root {
-    /* Core palette */
-    --c-black: #0c0c0c;
-    --c-ink: #141414;
-    --c-card: #1a1a1a;
-    --c-border: rgba(255, 255, 255, 0.08);
-    --c-cream: #f5f0e8;
-    --c-dim: rgba(245, 240, 232, 0.45);
-    --c-subtle: rgba(245, 240, 232, 0.18);
 
-    /* Side Effects accent gradient — USE SPARINGLY */
-    --gradient-se: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-    --gradient-se-h: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+  /* ── Side Effects Brand ──────────────────────────────────────────────
+     Direct from Instagram logo and guitar pedal photography             */
 
-    /* Typography */
-    --font-brand: 'Baloo 2', cursive;
-    --font-product: 'Audiowide', sans-serif;
-    --font-body: 'Roboto', sans-serif;
+  --se-brand-purple:     #3d1f6b;   /* Instagram logo dark purple circle */
+  --se-brand-purple-mid: #5c2d8f;   /* Lightened — hover states, midpoints */
+  --se-teal:             #2dd4bf;   /* Pedal faceplate / Instagram logo type */
+  --se-teal-bright:      #3ecfb2;   /* Brighter — hover on teal elements */
+  --se-amber:            #f5a623;   /* Hyper Drive pedal amber/yellow */
+  --se-amber-dark:       #e8950f;   /* Darker amber — hover/pressed */
+  --se-slate:            #6b7a99;   /* DR Filter plugin body blue-grey */
+  --se-slate-dark:       #4a5570;   /* Darker slate — hover states */
+  --se-red:              #e63946;   /* Knob accent red (web-safe bright) */
+  --se-red-dark:         #c0392b;   /* Exact plugin knob ring colour */
 
-    /* Spacing (4pt grid) */
-    --s-xs: 8px;
-    --s-sm: 16px;
-    --s-md: 32px;
-    --s-lg: 64px;
-    --s-xl: 96px;
 
-    /* Shape */
-    --r-sm: 4px;
-    --r-md: 8px;
-    --r-lg: 16px;
+  /* ── PolySynth Plugin Palette ────────────────────────────────────────
+     Eyedropped from plugin screenshot — used for Hero section + piano   */
 
-    /* Motion */
-    --ease: cubic-bezier(0.4, 0, 0.2, 1);
-    --t-fast: 0.15s;
-    --t-base: 0.3s;
-    --t-slow: 0.6s;
+  --ps-cream:        #e8e3d8;              /* Plugin faceplate background */
+  --ps-cream-border: #d5cfc4;              /* Plugin panel border / inset */
+  --ps-cream-dim:    rgba(44, 44, 44, 0.50); /* Secondary text on cream */
+  --ps-dark:         #1a1a1a;              /* LCD panel near-black */
+  --ps-lcd-green:    #4ade80;              /* LCD green text readout */
+  --ps-text:         #2c2c2c;             /* Main body text on cream */
+
+
+  /* ── Neutral Surfaces (dark ramp) ────────────────────────────────────
+     For dark sections: demo, SEA_DSP, audio samples, footer            */
+
+  --c-black:         #0c0c0c;
+  --c-ink:           #141414;
+  --c-card:          #1e1e1e;
+  --c-border:        rgba(255, 255, 255, 0.08);
+  --c-border-strong: rgba(255, 255, 255, 0.16);
+  --c-cream:         #f5f0e8;              /* Cream text on dark BG */
+  --c-dim:           rgba(245, 240, 232, 0.50);
+  --c-subtle:        rgba(245, 240, 232, 0.22);
+
+
+  /* ── Gradients ───────────────────────────────────────────────────────
+     Two gradients only. Used sparingly and with clear purpose.
+
+     --gradient-se  : Brand identity — "side effects" wordmark, hero CTA,
+                      Power On button. Draws from Instagram logo colours.
+     --gradient-ps  : Product accent — "PolySynth" underline bar, section
+                      tags on cream, download button hover.
+     Old purple→pink gradient is retired entirely.                        */
+
+  --gradient-se:       linear-gradient(135deg, #3d1f6b 0%, #2dd4bf 100%);
+  --gradient-se-hover: linear-gradient(135deg, #5c2d8f 0%, #3ecfb2 100%);
+  --gradient-ps:       linear-gradient(135deg, #e63946 0%, #f5a623 100%);
+  --gradient-ps-hover: linear-gradient(135deg, #c0392b 0%, #e8950f 100%);
+
+
+  /* ── Typography ──────────────────────────────────────────────────────
+     Baloo 2    → ONLY "side effects" wordmark (ExtraBold 800)
+     Audiowide  → "PolySynth", technical labels, component titles
+     Roboto     → all body copy, buttons, nav, descriptions              */
+
+  --font-brand:   'Baloo 2', cursive;
+  --font-product: 'Audiowide', sans-serif;
+  --font-body:    'Roboto', sans-serif;
+
+
+  /* ── Spacing (4pt grid) ──────────────────────────────────────────── */
+
+  --s-2:   4px;
+  --s-xs:  8px;
+  --s-sm:  16px;
+  --s-md:  32px;
+  --s-lg:  64px;
+  --s-xl:  96px;
+  --s-2xl: 128px;
+
+
+  /* ── Border Radius ───────────────────────────────────────────────── */
+
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   20px;
+  --r-full: 9999px;
+
+
+  /* ── Motion ──────────────────────────────────────────────────────── */
+
+  --ease:        cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast:  0.15s;
+  --t-base:  0.30s;
+  --t-slow:  0.60s;
 }
 
-/* ─── Reset ───────────────────────────────────────────────── */
+
+/* ─── Reset ───────────────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* ─── Base ────────────────────────────────────────────────── */
+
+/* ─── Base ────────────────────────────────────────────────────────────── */
 body {
-    font-family: var(--font-body);
-    background: var(--c-black);
-    color: var(--c-cream);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+  font-family: var(--font-body);
+  background: var(--c-black);
+  color: var(--c-cream);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 img {
-    display: block;
-    max-width: 100%;
+  display: block;
+  max-width: 100%;
 }
 
-/* ─── Container ──────────────────────────────────────────── */
+
+/* ─── Container ───────────────────────────────────────────────────────── */
 .container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 var(--s-md);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 var(--s-md);
 }
 
 section {
-    padding: var(--s-lg) var(--s-md);
+  padding: var(--s-lg) var(--s-md);
 }
 
-/* ─── Typography ─────────────────────────────────────────── */
-.font-brand {
-    font-family: var(--font-brand);
-}
 
-.font-product {
-    font-family: var(--font-product);
-}
+/* ─── Typography Utilities ────────────────────────────────────────────── */
+.font-brand   { font-family: var(--font-brand); }
+.font-product { font-family: var(--font-product); }
+.text-dim     { color: var(--c-dim); }
+.text-subtle  { color: var(--c-subtle); }
 
-.text-dim {
-    color: var(--c-dim);
-}
 
-.text-subtle {
-    color: var(--c-subtle);
-}
+/* ─── Branded Accent ──────────────────────────────────────────────────── */
 
-/* ─── Branded Accent ─────────────────────────────────────── */
-/* Only use this class for the "side effects" wordmark */
+/* "side effects" wordmark — gradient text on dark backgrounds */
 .se-wordmark {
-    font-family: var(--font-brand);
-    background: var(--gradient-se);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+  font-family: var(--font-brand);
+  font-weight: 800;
+  background: var(--gradient-se);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* Fallback for non-supporting browsers */
+  color: var(--se-teal);
 }
 
-.se-accent-bar {
-    display: block;
-    width: 40px;
-    height: 3px;
-    background: var(--gradient-se);
-    border-radius: 2px;
-    margin-bottom: var(--s-sm);
+/* "side effects" wordmark on dark purple backgrounds (About section) */
+.se-wordmark--on-purple {
+  font-family: var(--font-brand);
+  font-weight: 800;
+  color: var(--se-teal);
 }
 
-/* ─── Buttons ────────────────────────────────────────────── */
+/* Gradient text for section tags on cream backgrounds */
+.gradient-text-product {
+  background: var(--gradient-ps);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--se-red);
+}
+
+/* Accent bars under headings */
+.accent-bar {
+  display: block;
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  margin-bottom: var(--s-sm);
+}
+
+.accent-bar--brand   { background: var(--gradient-se); }
+.accent-bar--product { background: var(--gradient-ps); }
+.accent-bar--teal    { background: var(--se-teal); }
+
+
+/* ─── Section Tags (eyebrow labels) ──────────────────────────────────── */
+.section-tag {
+  display: block;
+  font-size: 0.70rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  margin-bottom: var(--s-xs);
+}
+
+.section-tag--brand   { color: var(--se-teal); }
+.section-tag--product { /* uses gradient-text-product */ }
+.section-tag--light   { color: rgba(255, 255, 255, 0.60); }
+.section-tag--dark    { color: rgba(44, 44, 44, 0.55); }
+
+.section-title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--s-sm);
+}
+
+.section-sub {
+  font-size: 1rem;
+  font-weight: 300;
+  line-height: 1.6;
+  margin-top: var(--s-xs);
+}
+
+
+/* ─── Buttons ─────────────────────────────────────────────────────────── */
 .btn {
-    display: inline-block;
-    font-family: var(--font-body);
-    font-weight: 500;
-    font-size: 0.9rem;
-    letter-spacing: 0.5px;
-    padding: 12px 28px;
-    border-radius: var(--r-md);
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    transition:
-        background var(--t-fast) var(--ease),
-        transform var(--t-fast) var(--ease),
-        box-shadow var(--t-fast) var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  padding: 12px 28px;
+  border-radius: var(--r-sm);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
 }
 
-.btn:hover {
-    transform: translateY(-2px);
-}
+.btn:hover   { transform: translateY(-2px); }
+.btn:active  { transform: translateY(0); }
 
+/* Primary — gradient-se fill */
 .btn-primary {
-    background: var(--c-cream);
-    color: var(--c-black);
-    font-weight: 700;
+  background: var(--gradient-se);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(61, 31, 107, 0.40);
 }
-
 .btn-primary:hover {
-    background: #fff;
-    box-shadow: 0 8px 24px rgba(245, 240, 232, 0.15);
+  background: var(--gradient-se-hover);
+  box-shadow: 0 14px 36px rgba(61, 31, 107, 0.55);
 }
 
+/* Download — white fill, product gradient on hover */
+.btn-download {
+  background: #fff;
+  color: var(--se-slate);
+  font-weight: 700;
+}
+.btn-download:hover {
+  background: var(--gradient-ps);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(230, 57, 70, 0.35);
+}
+
+/* Outline — transparent with border */
 .btn-outline {
-    background: transparent;
-    color: var(--c-cream);
-    border: 1px solid var(--c-border);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--c-cream);
+  border: 1px solid var(--c-border-strong);
 }
-
 .btn-outline:hover {
-    border-color: var(--c-cream);
-    background: rgba(245, 240, 232, 0.05);
+  border-color: var(--c-cream);
+  background: rgba(245, 240, 232, 0.05);
 }
 
-/* Single gradient button — use very rarely */
-.btn-se {
-    background: var(--gradient-se);
-    color: #fff;
-    font-weight: 700;
+/* Outline on cream backgrounds */
+.btn-outline-dark {
+  background: transparent;
+  color: var(--ps-text);
+  border: 1px solid var(--ps-cream-border);
+}
+.btn-outline-dark:hover {
+  border-color: var(--se-teal);
+  color: var(--se-brand-purple);
 }
 
-.btn-se:hover {
-    background: var(--gradient-se-h);
-    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
-}
 
-/* ─── Cards ──────────────────────────────────────────────── */
+/* ─── Cards ───────────────────────────────────────────────────────────── */
 .card {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--r-lg);
-    padding: var(--s-md);
-    transition: border-color var(--t-base) var(--ease), transform var(--t-base) var(--ease);
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--s-md);
+  transition:
+    border-color var(--t-base) var(--ease),
+    transform var(--t-base) var(--ease),
+    box-shadow var(--t-base) var(--ease);
 }
 
 .card:hover {
-    border-color: rgba(255, 255, 255, 0.18);
-    transform: translateY(-4px);
+  border-color: var(--c-border-strong);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
 }
 
-/* ─── Slide-in animation ─────────────────────────────────── */
-@keyframes slide-up {
-    from {
-        opacity: 0;
-        transform: translateY(24px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* Download card — on slate background */
+.card-download {
+  background: rgba(0, 0, 0, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-md);
+  padding: var(--s-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--s-md);
+  transition:
+    background var(--t-base) var(--ease),
+    border-color var(--t-base) var(--ease),
+    transform var(--t-base) var(--ease);
 }
 
-.reveal {
-    opacity: 0;
-    animation: slide-up var(--t-slow) var(--ease) forwards;
+.card-download:hover {
+  background: rgba(0, 0, 0, 0.32);
+  border-color: rgba(255, 255, 255, 0.30);
+  transform: translateY(-3px);
 }
 
-.reveal-delay-1 {
-    animation-delay: 0.1s;
+/* Sample card — audio samples section */
+.card-sample {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: var(--s-sm) var(--s-md);
+  transition:
+    border-color var(--t-base) var(--ease),
+    transform var(--t-base) var(--ease);
 }
 
-.reveal-delay-2 {
-    animation-delay: 0.2s;
+.card-sample:hover {
+  border-color: rgba(45, 212, 191, 0.40);
+  transform: translateY(-2px);
 }
 
-.reveal-delay-3 {
-    animation-delay: 0.3s;
+/* Feature box — left-border style on cream backgrounds */
+.feature-box {
+  padding-left: var(--s-sm);
+  border-left: 3px solid var(--ps-cream-border);
+  transition: border-left-color var(--t-base) var(--ease);
+}
+
+.feature-box:hover {
+  border-left-color: var(--se-teal);
+}
+
+.feature-box h3 {
+  font-family: var(--font-product);
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  color: var(--ps-text);
+  margin-bottom: 8px;
+}
+
+.feature-box p {
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: var(--ps-cream-dim);
+  line-height: 1.7;
+}
+
+
+/* ─── Chip / Badge ────────────────────────────────────────────────────── */
+.chip {
+  display: inline-block;
+  font-size: 0.70rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.70);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+
+/* ─── Divider ─────────────────────────────────────────────────────────── */
+hr.divider {
+  border: none;
+  border-top: 1px solid var(--c-border);
+  margin: 0;
+}
+
+
+/* ─── Scroll Reveal ───────────────────────────────────────────────────── */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity var(--t-slow) var(--ease),
+    transform var(--t-slow) var(--ease);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+[data-reveal-delay="1"] { transition-delay: 0.10s; }
+[data-reveal-delay="2"] { transition-delay: 0.20s; }
+[data-reveal-delay="3"] { transition-delay: 0.30s; }
+[data-reveal-delay="4"] { transition-delay: 0.40s; }
+
+
+/* ─── Animations ──────────────────────────────────────────────────────── */
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes bounce-down {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(8px); }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes midi-pulse {
+  from { opacity: 0.55; }
+  to   { opacity: 1.00; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+
+/* ─── Utility Spinner ─────────────────────────────────────────────────── */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--c-border-strong);
+  border-top-color: var(--se-teal);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
 }

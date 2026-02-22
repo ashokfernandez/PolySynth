@@ -561,6 +561,25 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --output docs/downloads.json
 
+      - name: Validate docs HTML
+        run: |
+          test -f docs/index.html \
+            || (echo "ERROR: docs/index.html missing" && exit 1)
+          grep -q "web-demo/scripts/audioworklet.js" docs/index.html \
+            || (echo "ERROR: Missing audioworklet.js reference in index.html" && exit 1)
+          grep -q "web-demo/scripts/PolySynth-web.js" docs/index.html \
+            || (echo "ERROR: Missing PolySynth-web.js reference in index.html" && exit 1)
+          test -f docs/web-demo/scripts/PolySynth-web.wasm \
+            || (echo "ERROR: WASM artifact missing from docs/web-demo/scripts/" && exit 1)
+          test -f docs/design-system.css \
+            || (echo "ERROR: design-system.css missing" && exit 1)
+          for f in docs/audio/*.wav; do
+            name=$(basename "$f")
+            grep -q "$name" docs/index.html \
+              || echo "WARN: $name not referenced in index.html"
+          done
+          echo "Docs validation passed"
+
       - name: Finalize docs for Pages
         run: |
           touch docs/.nojekyll

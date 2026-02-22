@@ -55,6 +55,21 @@
       <div id="status">Warming up...</div>
     </div>
 
+    <!-- CORS Warning (file:// protocol only) -->
+    <div id="cors-warning" style="display:none; position:fixed; inset:0; z-index:300; background:#0c0c0c; align-items:center; justify-content:center; flex-direction:column; padding:32px; text-align:center;">
+      <div style="max-width:480px;">
+        <div style="font-family:'Audiowide',sans-serif; font-size:1.1rem; color:#2dd4bf; letter-spacing:2px; text-transform:uppercase; margin-bottom:16px;">Local Server Required</div>
+        <p style="font-family:'Roboto',sans-serif; color:rgba(245,240,232,0.7); font-size:0.95rem; line-height:1.6; margin-bottom:24px;">
+          Browsers block WASM files when opened directly from disk (<code style="color:#2dd4bf;">file://</code>). Serve the demo over HTTP to use it locally:
+        </p>
+        <pre style="background:#141414; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:16px; font-size:0.85rem; color:#f5f0e8; text-align:left; overflow-x:auto;">python3 -m http.server 8080 --directory ..
+# then open: http://localhost:8080/web-demo/</pre>
+        <p style="font-family:'Roboto',sans-serif; color:rgba(245,240,232,0.4); font-size:0.8rem; margin-top:16px;">
+          The live site at <span style="color:#2dd4bf;">sideeffectsaudio.com</span> works without any setup.
+        </p>
+      </div>
+    </div>
+
     <!-- Pre-Audio Landing -->
     <div id="buttons">
       <div
@@ -72,6 +87,13 @@
   </div>
 
   <script type='text/javascript'>
+    // CORS detection — WASM can't be fetched over file:// protocol
+    if (location.protocol === 'file:') {
+      document.getElementById('cors-warning').style.display = 'flex';
+      document.getElementById('buttons').style.display = 'none';
+      document.getElementById('greyout').classList.add('hidden');
+    }
+
     statusElement = document.getElementById('status');
     Module.canvas = document.getElementById('canvas');
     Module.canvas.addEventListener("webglcontextlost", function (e) {
