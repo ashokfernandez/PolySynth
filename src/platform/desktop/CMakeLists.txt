@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(PolySynth VERSION 1.0.0)
+project(PolySynth VERSION 1.0.1)
 
 if(NOT DEFINED IPLUG2_DIR)
   set(IPLUG2_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../external/iPlug2" CACHE PATH "iPlug2 root directory")
