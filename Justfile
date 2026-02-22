@@ -179,6 +179,22 @@ vrt-run:
 logs-latest:
     bash ./scripts/cli.sh latest
 
-# Set project version across VERSION + desktop platform metadata.
+# Interactive version manager: shows current version, history, and prompts for a bump.
+version:
+    python3 scripts/version.py
+
+# Show current version and recent release history (non-interactive).
+version-show:
+    python3 scripts/version.py --show
+
+# Bump and release a specific part non-interactively: just version-bump patch|minor|major
+version-bump part:
+    python3 scripts/version.py --bump {{part}}
+
+# Set an explicit version non-interactively: just version-set 1.2.3
+version-set version:
+    python3 scripts/version.py --set {{version}}
+
+# Set project version across VERSION + desktop platform metadata (low-level).
 set-version version:
     bash ./scripts/cli.sh run set-version -- ./scripts/tasks/set_version.sh {{version}}
