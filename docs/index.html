@@ -1729,6 +1729,15 @@
     })();
   </script>
 
+  <!-- Assign canvas to Module before WASM runtime starts -->
+  <script>
+    Module.canvas = document.getElementById('canvas');
+    Module.canvas.addEventListener('webglcontextlost', function (e) {
+      alert('WebGL context lost. Reloading.');
+      location.reload();
+    }, false);
+  </script>
+
   <!-- WAM WASM + compiled C++ engine — must be last -->
   <script src="web-demo/scripts/PolySynth-web.js"></script>
 
