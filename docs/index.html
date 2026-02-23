@@ -1530,17 +1530,24 @@
               numberOfOutputs: outputBuses.length, outputChannelCount: outputBuses,
               processorOptions: { inputChannelCount: inputBuses }
             };
-            PolySynthController.importScripts(actx).then(function () {
-              PolySynth_WAM = new PolySynthController(actx, options);
-              if (PolySynth_WAM) {
-                PolySynth_WAM.connect(actx.destination);
-                connectionsDone();
-              }
-            }).catch(function (e) {
-              console.error('PolySynthController failure:', e);
-              btn.textContent = 'Error — reload page';
-              btn.disabled = false;
-            });
+            // PolySynth-awn.js uses a relative origin ("./scripts/…") which is
+            // correct for web-demo/index.html but resolves wrong from the root.
+            // Load the three AudioWorklet modules manually with the correct prefix.
+            var base = 'web-demo/scripts/';
+            actx.audioWorklet.addModule(base + 'PolySynth-wam.js')
+              .then(function () { return actx.audioWorklet.addModule(base + 'wam-processor.js'); })
+              .then(function () { return actx.audioWorklet.addModule(base + 'PolySynth-awp.js'); })
+              .then(function () {
+                PolySynth_WAM = new PolySynthController(actx, options);
+                if (PolySynth_WAM) {
+                  PolySynth_WAM.connect(actx.destination);
+                  connectionsDone();
+                }
+              }).catch(function (e) {
+                console.error('PolySynthController failure:', e);
+                btn.textContent = 'Error — reload page';
+                btn.disabled = false;
+              });
           };
           document.head.appendChild(s2);
         };
