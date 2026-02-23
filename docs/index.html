@@ -98,95 +98,63 @@
     .header__link.active { color: var(--se-teal); }
 
 
-    /* ─── Hero Section ─────────────────────────────────────────── */
+    /* ─── Hero Banner (compact — product identity only) ──────── */
     .hero {
-      min-height: 100vh;
-      background: var(--ps-cream);
+      background: var(--c-black);
+      margin-top: 64px; /* push below fixed nav */
+      padding-top: 0;
+      padding-bottom: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       position: relative;
       overflow: hidden;
-      padding-top: 64px; /* clear fixed nav */
+      /* Wavy top border instead of a full-height section */
+      border-bottom: 1px solid var(--c-border);
     }
 
-    /* Wavy decorative lines — echoes the guitar pedal faceplate texture */
     .hero__waves {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      opacity: 0.5;
+      opacity: 0.18;
     }
 
     .hero__content {
       position: relative;
       z-index: 1;
-      padding: var(--s-lg) var(--s-md);
-      max-width: 720px;
-    }
-
-    .hero__eyebrow {
-      font-size: 1rem;
-      line-height: 1;
-      margin-bottom: var(--s-sm);
-      display: inline-block;
+      padding: var(--s-md) var(--s-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--s-md);
+      flex-wrap: wrap;
     }
 
     .hero__product-name {
       font-family: var(--font-product);
-      font-size: clamp(4rem, 10vw, 7rem);
-      color: var(--ps-text);
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      color: var(--c-cream);
       line-height: 1.0;
-      letter-spacing: -0.02em;
-      margin-bottom: 0;
+      letter-spacing: -0.01em;
+      margin: 0;
     }
 
     .hero__product-underline {
-      display: block;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--gradient-ps);
-      width: 80%;
-      max-width: 400px;
-      margin: var(--s-xs) auto var(--s-md);
+      display: none; /* removed in compact layout */
     }
 
-    .hero__description {
-      font-size: 1.1rem;
-      font-weight: 300;
-      line-height: 1.7;
-      color: var(--ps-cream-dim);
-      max-width: 520px;
-      margin: 0 auto var(--s-md);
-    }
-
-    .hero__cta {
-      font-family: var(--font-product);
-      font-size: 1rem;
-      padding: 18px 48px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      border-radius: var(--r-sm);
-    }
-
-    .scroll-hint {
-      position: absolute;
-      bottom: var(--s-md);
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 1.5rem;
-      color: var(--ps-cream-border);
-      animation: bounce-down 1.8s ease-in-out infinite;
-      line-height: 1;
-      user-select: none;
-    }
+    .hero__eyebrow { display: none; }
+    .hero__description { display: none; }
+    .hero__cta { display: none; }
+    .scroll-hint { display: none; }
 
 
-    /* ─── Demo Section ─────────────────────────────────────────── */
+    /* ─── Demo Section (main hero) ─────────────────────────────── */
     #demo {
       background: var(--c-black);
-      min-height: 60vh;
+      min-height: 80vh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -291,7 +259,7 @@
       display: none;
       flex-direction: column;
       align-items: center;
-      gap: var(--s-md);
+      gap: var(--s-lg);
       padding: var(--s-xl) var(--s-md);
       text-align: center;
       max-width: 560px;
@@ -302,13 +270,106 @@
       font-size: clamp(1.75rem, 4vw, 2.5rem);
       color: var(--c-cream);
       line-height: 1.1;
+      margin-bottom: 0;
     }
 
     .demo-ready-sub {
-      font-size: 0.95rem;
+      font-size: 0.875rem;
       font-weight: 300;
-      color: var(--c-dim);
-      line-height: 1.7;
+      color: var(--c-subtle);
+      line-height: 1.6;
+      margin-top: -8px;
+    }
+
+    /* ── Input Method Panel — shown in Ready state ─────────────── */
+    .input-methods {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-xs);
+      margin-bottom: calc(-1 * var(--s-xs));
+    }
+
+    .input-method {
+      display: flex;
+      align-items: center;
+      gap: var(--s-sm);
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-md);
+      padding: 14px var(--s-sm);
+      text-align: left;
+      transition: border-color var(--t-fast) var(--ease);
+    }
+
+    .input-method.detected {
+      border-color: var(--se-teal);
+      background: rgba(45, 212, 191, 0.06);
+    }
+
+    .input-method__icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      width: 36px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .input-method__text {
+      flex: 1;
+    }
+
+    .input-method__title {
+      font-family: var(--font-product);
+      font-size: 0.8rem;
+      color: var(--c-cream);
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .input-method__desc {
+      font-size: 0.78rem;
+      font-weight: 300;
+      color: var(--c-subtle);
+      line-height: 1.4;
+    }
+
+    .input-method__status {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      font-family: var(--font-product);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--c-subtle);
+      padding: 4px 10px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--c-border-strong);
+    }
+
+    .input-method.detected .input-method__status {
+      color: var(--se-teal);
+      border-color: var(--se-teal);
+      background: rgba(45, 212, 191, 0.10);
+    }
+
+    .input-method__led {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--r-full);
+      background: #2a2a2a;
+      flex-shrink: 0;
+      transition: background 0.4s var(--ease), box-shadow 0.4s var(--ease);
+    }
+
+    .input-method.midi-detecting .input-method__led {
+      background: var(--se-amber);
+      box-shadow: 0 0 8px 2px rgba(245, 166, 35, 0.55);
+      animation: midi-pulse 0.8s ease-in-out infinite alternate;
+    }
+
+    .input-method.midi-connected .input-method__led {
+      background: var(--se-teal);
+      box-shadow: 0 0 10px 2px rgba(45, 212, 191, 0.55);
     }
 
     /* Power On button — animated gradient, Audiowide for tech feel */
@@ -350,61 +411,8 @@
     }
 
 
-    /* ── MIDI Indicator ────────────────────────────────────────── */
-    .midi-indicator {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--s-xs);
-    }
-
-    .midi-indicator-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-product);
-      font-size: 0.72rem;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-    }
-
-    .midi-led {
-      width: 10px;
-      height: 10px;
-      border-radius: var(--r-full);
-      background: #2a2a2a;
-      flex-shrink: 0;
-      transition: background 0.4s var(--ease), box-shadow 0.4s var(--ease);
-    }
-
-    .midi-label { color: var(--c-subtle); }
-
-    .midi-hint {
-      font-size: 0.70rem;
-      font-family: var(--font-body);
-      font-weight: 300;
-      color: var(--c-subtle);
-      letter-spacing: 0;
-      text-transform: none;
-      text-align: center;
-    }
-
-    /* States via JS: data-state on .midi-indicator */
-    .midi-indicator[data-state="detecting"] .midi-led {
-      background: var(--se-amber);
-      box-shadow: 0 0 8px 2px rgba(245, 166, 35, 0.55);
-      animation: midi-pulse 0.8s ease-in-out infinite alternate;
-    }
-    .midi-indicator[data-state="detecting"] .midi-label { color: var(--se-amber); }
-
-    .midi-indicator[data-state="connected"] .midi-led {
-      background: var(--se-teal);
-      box-shadow: 0 0 10px 2px rgba(45, 212, 191, 0.55);
-    }
-    .midi-indicator[data-state="connected"] .midi-label { color: var(--se-teal); }
-
-    .midi-indicator[data-state="error"] .midi-led { background: var(--se-red); }
-    .midi-indicator[data-state="error"] .midi-label { color: var(--c-subtle); }
+    /* ── MIDI LED (inside input-method card) ───────────────────── */
+    /* Styles live in .input-method__led rules above */
 
 
     /* ── State C: Active (canvas + piano) ─────────────────────── */
@@ -925,36 +933,15 @@
   </header>
 
 
-  <!-- ─── Hero ───────────────────────────────────────────────────── -->
+  <!-- ─── Hero Banner (compact) ──────────────────────────────────── -->
   <section class="hero" id="hero">
-
-    <!-- Decorative wavy lines — echoes guitar pedal faceplate texture -->
-    <svg class="hero__waves" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice"
-      xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <g stroke="#d5cfc4" stroke-width="1.5" fill="none" opacity="0.6">
-        <path d="M-100,120 C200,80 400,160 700,120 S1000,80 1300,120"/>
-        <path d="M-100,180 C200,140 400,220 700,180 S1000,140 1300,180"/>
-        <path d="M-100,240 C200,200 400,280 700,240 S1000,200 1300,240"/>
-        <path d="M-100,300 C200,260 400,340 700,300 S1000,260 1300,300"/>
-        <path d="M-100,360 C200,320 400,400 700,360 S1000,320 1300,360"/>
-        <path d="M-100,420 C200,380 400,460 700,420 S1000,380 1300,420"/>
-        <path d="M-100,480 C200,440 400,520 700,480 S1000,440 1300,480"/>
-      </g>
-    </svg>
-
     <div class="hero__content">
-      <span class="hero__eyebrow se-wordmark" data-reveal>side effects</span>
-      <h1 class="hero__product-name" data-reveal data-reveal-delay="1">PolySynth</h1>
-      <span class="hero__product-underline" data-reveal data-reveal-delay="1"></span>
-      <p class="hero__description" data-reveal data-reveal-delay="2">
-        A boutique polyphonic synthesizer. Play it live in your browser, or download for your DAW.
-      </p>
-      <a href="#demo" class="btn btn-primary hero__cta" data-reveal data-reveal-delay="3">
-        Start playing →
-      </a>
+      <h1 class="hero__product-name">PolySynth</h1>
+      <span style="color: var(--c-subtle); font-size: 0.8rem; font-weight: 300; letter-spacing: 2px; text-transform: uppercase;">by</span>
+      <span class="se-wordmark" style="font-size: 1.1rem;">side effects</span>
+      <span style="color: var(--c-border-strong); font-size: 1.2rem; line-height: 1; padding: 0 4px;">·</span>
+      <span style="color: var(--c-subtle); font-size: 0.82rem; font-weight: 300; letter-spacing: 0.5px;">Boutique polyphonic synthesizer</span>
     </div>
-
-    <div class="scroll-hint" aria-hidden="true">↓</div>
   </section>
 
 
@@ -985,23 +972,49 @@
 
       <!-- State B: Ready -->
       <div id="demo-ready">
-        <p class="demo-ready-headline">PolySynth is ready to play</p>
-        <p class="demo-ready-sub">
-          Click the button below to start the audio engine.
-          Browsers require a tap before sound can begin — this is a web security feature, not a bug.
-        </p>
+        <p class="demo-ready-headline">Ready to play</p>
+        <p class="demo-ready-sub">Browsers require a tap before audio can start.</p>
+
+        <!-- Input method panel — shows musician how to play -->
+        <div class="input-methods">
+
+          <!-- MIDI keyboard row -->
+          <div class="input-method" id="midi-method">
+            <div class="input-method__led" id="midi-led"></div>
+            <div class="input-method__icon">🎹</div>
+            <div class="input-method__text">
+              <div class="input-method__title">USB / MIDI Keyboard</div>
+              <div class="input-method__desc" id="midi-method-desc">Plug in before starting for full hardware control</div>
+            </div>
+            <div class="input-method__status" id="midi-status">Not detected</div>
+          </div>
+
+          <!-- Virtual piano row -->
+          <div class="input-method detected">
+            <div class="input-method__icon">🖱</div>
+            <div class="input-method__text">
+              <div class="input-method__title">Virtual Piano</div>
+              <div class="input-method__desc">Click or tap the keys below the synth to play</div>
+            </div>
+            <div class="input-method__status" style="color: var(--se-teal); border-color: var(--se-teal); background: rgba(45,212,191,0.10);">Ready</div>
+          </div>
+
+          <!-- Chord buttons row -->
+          <div class="input-method detected">
+            <div class="input-method__icon">♩</div>
+            <div class="input-method__text">
+              <div class="input-method__title">Chord Buttons</div>
+              <div class="input-method__desc">One-tap chord demo — C, F, G7, Am, Em</div>
+            </div>
+            <div class="input-method__status" style="color: var(--se-teal); border-color: var(--se-teal); background: rgba(45,212,191,0.10);">Ready</div>
+          </div>
+
+        </div>
 
         <button type="button" id="startWebAudioButton" onclick="startWebAudio()" disabled>
           Start playing →
         </button>
 
-        <div class="midi-indicator" data-state="disconnected" id="midi-indicator">
-          <div class="midi-indicator-row">
-            <span class="midi-led"></span>
-            <span class="midi-label" id="midi-label">No MIDI device connected</span>
-          </div>
-          <span class="midi-hint">Plug in a USB keyboard before starting for hardware control.</span>
-        </div>
       </div>
 
       <!-- State C: Active -->
@@ -1378,18 +1391,37 @@
     var midiAccess = null;
 
     function setMidiState(state, deviceName) {
-      var indicator = document.getElementById('midi-indicator');
-      var label = document.getElementById('midi-label');
-      indicator.dataset.state = state;
+      var row    = document.getElementById('midi-method');
+      var led    = document.getElementById('midi-led');
+      var desc   = document.getElementById('midi-method-desc');
+      var status = document.getElementById('midi-status');
+      if (!row) return;
 
-      if (state === 'connected') {
-        label.textContent = 'Connected: ' + (deviceName || 'MIDI Device');
-      } else if (state === 'detecting') {
-        label.textContent = 'Detecting device...';
+      // Reset classes
+      row.classList.remove('detected', 'midi-detecting', 'midi-connected');
+      led.style.cssText = '';
+
+      if (state === 'detecting') {
+        row.classList.add('midi-detecting');
+        desc.textContent   = 'Detecting connected devices…';
+        status.textContent = 'Detecting';
+        status.style.cssText = '';
+      } else if (state === 'connected') {
+        row.classList.add('detected', 'midi-connected');
+        desc.textContent   = deviceName || 'MIDI Device';
+        status.textContent = 'Connected';
+        status.style.color = 'var(--se-teal)';
+        status.style.borderColor = 'var(--se-teal)';
+        status.style.background  = 'rgba(45,212,191,0.10)';
       } else if (state === 'error') {
-        label.textContent = 'MIDI access denied';
+        desc.textContent   = 'MIDI access denied by browser';
+        status.textContent = 'Denied';
+        status.style.cssText = '';
       } else {
-        label.textContent = 'No MIDI device connected';
+        // disconnected / unsupported
+        desc.textContent   = 'Plug in before starting for full hardware control';
+        status.textContent = 'Not detected';
+        status.style.cssText = '';
       }
     }
 
