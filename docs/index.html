@@ -98,55 +98,69 @@
     .header__link.active { color: var(--se-teal); }
 
 
-    /* ─── Hero Banner (compact — product identity only) ──────── */
+    /* ─── Hero (cream — compact identity banner) ──────────────── */
     .hero {
-      background: var(--c-black);
+      background: var(--ps-cream);
       margin-top: 64px; /* push below fixed nav */
-      padding-top: 0;
-      padding-bottom: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
       position: relative;
       overflow: hidden;
-      /* Wavy top border instead of a full-height section */
-      border-bottom: 1px solid var(--c-border);
+      border-bottom: 1px solid var(--ps-cream-border);
     }
 
     .hero__waves {
       position: absolute;
       inset: 0;
       pointer-events: none;
-      opacity: 0.18;
+      opacity: 0.6;
     }
 
     .hero__content {
       position: relative;
       z-index: 1;
-      padding: var(--s-md) var(--s-md);
+      padding: var(--s-lg) var(--s-md);
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: var(--s-md);
-      flex-wrap: wrap;
+      gap: var(--s-xs);
+    }
+
+    .hero__eyebrow {
+      font-size: 0.85rem;
+      line-height: 1;
+      display: inline-block;
+      opacity: 0.8;
     }
 
     .hero__product-name {
       font-family: var(--font-product);
-      font-size: clamp(1.8rem, 4vw, 2.5rem);
-      color: var(--c-cream);
+      font-size: clamp(3rem, 8vw, 5rem);
+      color: var(--ps-text);
       line-height: 1.0;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
       margin: 0;
     }
 
     .hero__product-underline {
-      display: none; /* removed in compact layout */
+      display: block;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--gradient-ps);
+      width: 60%;
+      max-width: 260px;
+      margin: var(--s-xs) auto 0;
     }
 
-    .hero__eyebrow { display: none; }
-    .hero__description { display: none; }
+    .hero__description {
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: var(--ps-cream-dim);
+      margin: var(--s-xs) 0 0;
+    }
+
     .hero__cta { display: none; }
     .scroll-hint { display: none; }
 
@@ -259,8 +273,8 @@
       display: none;
       flex-direction: column;
       align-items: center;
-      gap: var(--s-lg);
-      padding: var(--s-xl) var(--s-md);
+      gap: var(--s-sm);
+      padding: var(--s-md) var(--s-md);
       text-align: center;
       max-width: 560px;
     }
@@ -933,14 +947,24 @@
   </header>
 
 
-  <!-- ─── Hero Banner (compact) ──────────────────────────────────── -->
+  <!-- ─── Hero (cream identity banner) ───────────────────────────── -->
   <section class="hero" id="hero">
+    <svg class="hero__waves" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice"
+      xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="#d5cfc4" stroke-width="1.2" fill="none">
+        <path d="M-100,60 C200,40 400,80 700,60 S1000,40 1300,60"/>
+        <path d="M-100,100 C200,80 400,120 700,100 S1000,80 1300,100"/>
+        <path d="M-100,140 C200,120 400,160 700,140 S1000,120 1300,140"/>
+        <path d="M-100,180 C200,160 400,200 700,180 S1000,160 1300,180"/>
+        <path d="M-100,220 C200,200 400,240 700,220 S1000,200 1300,220"/>
+        <path d="M-100,260 C200,240 400,280 700,260 S1000,240 1300,260"/>
+      </g>
+    </svg>
     <div class="hero__content">
+      <span class="hero__eyebrow se-wordmark">side effects</span>
       <h1 class="hero__product-name">PolySynth</h1>
-      <span style="color: var(--c-subtle); font-size: 0.8rem; font-weight: 300; letter-spacing: 2px; text-transform: uppercase;">by</span>
-      <span class="se-wordmark" style="font-size: 1.1rem;">side effects</span>
-      <span style="color: var(--c-border-strong); font-size: 1.2rem; line-height: 1; padding: 0 4px;">·</span>
-      <span style="color: var(--c-subtle); font-size: 0.82rem; font-weight: 300; letter-spacing: 0.5px;">Boutique polyphonic synthesizer</span>
+      <span class="hero__product-underline"></span>
+      <p class="hero__description">Boutique polyphonic synthesizer — play it live in your browser</p>
     </div>
   </section>
 
@@ -974,6 +998,10 @@
       <div id="demo-ready">
         <p class="demo-ready-headline">Ready to play</p>
         <p class="demo-ready-sub">Browsers require a tap before audio can start.</p>
+
+        <button type="button" id="startWebAudioButton" onclick="startWebAudio()" disabled>
+          Start playing →
+        </button>
 
         <!-- Input method panel — shows musician how to play -->
         <div class="input-methods">
@@ -1010,11 +1038,6 @@
           </div>
 
         </div>
-
-        <button type="button" id="startWebAudioButton" onclick="startWebAudio()" disabled>
-          Start playing →
-        </button>
-
       </div>
 
       <!-- State C: Active -->
@@ -1454,7 +1477,8 @@
       });
     }
 
-    checkMidi();
+    // checkMidi() is called from startWebAudio() after user gesture,
+    // so we never prompt for MIDI permission before the user has interacted.
 
     // ── Safari AudioContext Unlock ──────────────────────────────────────
     function safariUnlock(audioCtx) {
@@ -1484,6 +1508,9 @@
     function startWebAudio() {
       var actx = new (window.AudioContext || window.webkitAudioContext)();
       safariUnlock(actx);
+
+      // Request MIDI access now — inside a user gesture so no unprompted permission dialog
+      checkMidi();
 
       var btn = document.getElementById('startWebAudioButton');
       btn.disabled = true;
