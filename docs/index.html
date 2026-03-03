@@ -1,810 +1,1788 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolySynth - Audio Demos & DSP Verification</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-dark: #0a0a0f;
-            --bg-card: #12121a;
-            --bg-accent: #1a1a25;
-            --text-primary: #f0f0f0;
-            --text-secondary: #8888a0;
-            --accent-blue: #4a9eff;
-            --accent-purple: #8b5cf6;
-            --accent-green: #22c55e;
-            --border-color: #2a2a3a;
-            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-        
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        /* Hero Header */
-        .hero {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: linear-gradient(180deg, rgba(74,158,255,0.1) 0%, transparent 100%);
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 3rem;
-        }
-        
-        .hero h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-        
-        .hero .tagline {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            margin-bottom: 1.5rem;
-        }
-        
-        .hero .meta {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--bg-card);
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-        }
-        
-        .hero .meta .dot {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        /* Back link */
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--accent-blue);
-            text-decoration: none;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-            transition: color 0.2s;
-        }
-        
-        .back-link:hover {
-            color: var(--accent-purple);
-        }
-        
-        /* Info Cards */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-        }
-        
-        .info-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-        }
-        
-        .info-card h3 {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
-        }
-        
-        .info-card p {
-            font-size: 1.1rem;
-            color: var(--text-primary);
-        }
-        
-        /* Section Headers */
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .section-header h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-        
-        .section-header .count {
-            background: var(--accent-blue);
-            color: white;
-            font-size: 0.8rem;
-            font-weight: 600;
-            padding: 0.25rem 0.75rem;
-            border-radius: 50px;
-        }
-        
-        /* Demo Cards */
-        .demo-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            transition: border-color 0.2s, transform 0.2s;
-        }
-        
-        .demo-card:hover {
-            border-color: var(--accent-blue);
-            transform: translateY(-2px);
-        }
-        
-        .demo-card .header {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .demo-card .icon {
-            font-size: 2rem;
-            line-height: 1;
-        }
-        
-        .demo-card .title-group h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-        
-        .demo-card .filename {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-family: 'SF Mono', Monaco, monospace;
-            background: var(--bg-accent);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-        }
-        
-        .demo-card .description {
-            color: var(--text-secondary);
-            margin-bottom: 1.5rem;
-            font-size: 0.95rem;
-        }
-        
-        .demo-card .details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: var(--bg-accent);
-            border-radius: 8px;
-        }
-        
-        .demo-card .detail-item label {
-            display: block;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            margin-bottom: 0.25rem;
-        }
-        
-        .demo-card .detail-item span {
-            font-size: 0.9rem;
-            color: var(--text-primary);
-        }
-        
-        /* Audio Player */
-        .audio-player {
-            background: var(--bg-accent);
-            border-radius: 12px;
-            padding: 1rem;
-        }
-        
-        .audio-player audio {
-            width: 100%;
-            height: 40px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PolySynth — Side Effects Audio</title>
+  <meta name="description"
+    content="PolySynth is a boutique polyphonic synthesizer by Side Effects Audio. Play it live in your browser, then download for macOS and Windows.">
 
-        .demo-frame {
-            width: 100%;
-            min-height: 820px;
-            border: 0;
-            border-radius: 8px;
-            background: #0f1118;
-        }
-        
-        audio::-webkit-media-controls-panel {
-            background: var(--bg-card);
-        }
-        
-        /* CSV Section */
-        .csv-section {
-            margin-top: 3rem;
-        }
-        
-        .csv-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-        
-        .csv-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: border-color 0.2s;
-        }
-        
-        .csv-link:hover {
-            border-color: var(--accent-blue);
-        }
+  <!-- Design System -->
+  <link rel="stylesheet" href="design-system.css">
 
-        .download-meta {
-            color: var(--text-secondary);
-            font-size: 0.92rem;
-            margin-top: 0.75rem;
-        }
-        
-        /* Footer */
-        .footer {
-            margin-top: 4rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-        
-        .footer a {
-            color: var(--accent-blue);
-            text-decoration: none;
-        }
-        
-        /* No artifacts */
-        .no-artifacts {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: var(--bg-card);
-            border-radius: 16px;
-            color: var(--text-secondary);
-        }
-        
-        .no-artifacts .icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-    </style>
+  <!-- WAM AudioWorklet polyfill (must load before PolySynth-web.js) -->
+  <script src="web-demo/scripts/audioworklet.js"></script>
+
+  <!-- Emscripten Module configuration — must be set before PolySynth-web.js -->
+  <script>
+    var statusElement = null;
+
+    var Module = {
+      printErr: function (text) { console.error('stderr: ' + text); },
+      preRun: [],
+      postRun: function () {
+        // WASM loaded — enable the Power On button
+        var btn = document.getElementById('startWebAudioButton');
+        if (btn) btn.removeAttribute('disabled');
+        setDemoState('ready');
+      },
+      onRuntimeInitialized: function () {
+        console.log('PolySynth runtime initialized');
+      },
+      setStatus: function (text) {
+        if (!statusElement) statusElement = document.getElementById('wasm-status');
+        if (statusElement) statusElement.textContent = text;
+      },
+      totalDependencies: 0,
+      monitorRunDependencies: function (left) {
+        this.totalDependencies = Math.max(this.totalDependencies, left);
+        Module.setStatus(left
+          ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')'
+          : 'All downloads complete.');
+      }
+    };
+
+    window.onerror = function () {
+      Module.setStatus('Error loading audio engine.');
+    };
+  </script>
+
+  <style>
+    /* ─── Page Layout ─────────────────────────────────────────── */
+
+    /* Fixed Header */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 64px;
+      background: rgba(12, 12, 12, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--c-border);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+    }
+
+    .header__inner {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--s-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header__logo {
+      text-decoration: none;
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+
+    .header__nav {
+      display: flex;
+      gap: var(--s-md);
+    }
+
+    .header__link {
+      text-decoration: none;
+      color: var(--c-dim);
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: color var(--t-fast) var(--ease);
+    }
+
+    .header__link:hover { color: var(--c-cream); }
+    .header__link.active { color: var(--se-teal); }
+
+
+    /* ─── Hero (cream — compact identity banner) ──────────────── */
+    .hero {
+      background: var(--ps-cream);
+      margin-top: 64px; /* push below fixed nav */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--ps-cream-border);
+    }
+
+    .hero__waves {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .hero__content {
+      position: relative;
+      z-index: 1;
+      padding: var(--s-lg) var(--s-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--s-xs);
+    }
+
+    .hero__eyebrow {
+      font-size: 0.85rem;
+      line-height: 1;
+      display: inline-block;
+      opacity: 0.8;
+    }
+
+    .hero__product-name {
+      font-family: var(--font-product);
+      font-size: clamp(3rem, 8vw, 5rem);
+      color: var(--ps-text);
+      line-height: 1.0;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .hero__product-underline {
+      display: block;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--gradient-ps);
+      width: 60%;
+      max-width: 260px;
+      margin: var(--s-xs) auto 0;
+    }
+
+    .hero__description {
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: var(--ps-cream-dim);
+      margin: var(--s-xs) 0 0;
+    }
+
+    .hero__cta { display: none; }
+    .scroll-hint { display: none; }
+
+
+    /* ─── Demo Section (main hero) ─────────────────────────────── */
+    #demo {
+      background: var(--c-black);
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--s-lg) var(--s-md);
+      position: relative;
+      transition: min-height var(--t-slow) var(--ease);
+    }
+
+    #demo.wam-active {
+      min-height: unset;
+      align-items: flex-start;
+      padding-top: var(--s-md);
+      padding-bottom: var(--s-lg);
+    }
+
+    .demo-inner {
+      width: 100%;
+      max-width: 1024px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── CORS Warning (file:// only) ──────────────────────────── */
+    #cors-warning {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: var(--s-xl) var(--s-md);
+    }
+
+    .cors-box {
+      max-width: 480px;
+      padding: var(--s-lg) var(--s-md);
+      border: 1px solid var(--c-border-strong);
+      border-radius: var(--r-lg);
+      background: var(--c-ink);
+    }
+
+    .cors-icon {
+      font-size: 2.5rem;
+      margin-bottom: var(--s-sm);
+      color: var(--se-amber);
+    }
+
+    .cors-title {
+      font-family: var(--font-product);
+      font-size: 1.25rem;
+      color: var(--c-cream);
+      margin-bottom: var(--s-xs);
+    }
+
+    .cors-body {
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--c-dim);
+      line-height: 1.6;
+      margin-bottom: var(--s-xs);
+    }
+
+    .cors-code {
+      background: var(--c-black);
+      border: 1px solid var(--c-border-strong);
+      border-radius: var(--r-sm);
+      padding: 12px var(--s-sm);
+      font-size: 0.85rem;
+      color: var(--se-teal);
+      font-family: 'Courier New', monospace;
+      display: block;
+      margin: var(--s-sm) 0;
+      text-align: left;
+    }
+
+    .cors-link {
+      color: var(--se-teal);
+      text-decoration: underline;
+    }
+
+
+    /* ── State A: Loading ──────────────────────────────────────── */
+    #demo-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--s-sm);
+      padding: var(--s-xl) var(--s-md);
+      text-align: center;
+    }
+
+    #wasm-status {
+      font-family: var(--font-product);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--c-subtle);
+    }
+
+
+    /* ── State B: Ready ────────────────────────────────────────── */
+    #demo-ready {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--s-sm);
+      padding: var(--s-md) var(--s-md);
+      text-align: center;
+      max-width: 560px;
+    }
+
+    .demo-ready-headline {
+      font-family: var(--font-product);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      color: var(--c-cream);
+      line-height: 1.1;
+      margin-bottom: 0;
+    }
+
+    .demo-ready-sub {
+      font-size: 0.875rem;
+      font-weight: 300;
+      color: var(--c-subtle);
+      line-height: 1.6;
+      margin-top: -8px;
+    }
+
+    /* ── Input Method Panel — shown in Ready state ─────────────── */
+    .input-methods {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-xs);
+      margin-bottom: calc(-1 * var(--s-xs));
+    }
+
+    .input-method {
+      display: flex;
+      align-items: center;
+      gap: var(--s-sm);
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-md);
+      padding: 14px var(--s-sm);
+      text-align: left;
+      transition: border-color var(--t-fast) var(--ease);
+    }
+
+    .input-method.detected {
+      border-color: var(--se-teal);
+      background: rgba(45, 212, 191, 0.06);
+    }
+
+    .input-method__icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      width: 36px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .input-method__text {
+      flex: 1;
+    }
+
+    .input-method__title {
+      font-family: var(--font-product);
+      font-size: 0.8rem;
+      color: var(--c-cream);
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .input-method__desc {
+      font-size: 0.78rem;
+      font-weight: 300;
+      color: var(--c-subtle);
+      line-height: 1.4;
+    }
+
+    .input-method__status {
+      flex-shrink: 0;
+      font-size: 0.7rem;
+      font-family: var(--font-product);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--c-subtle);
+      padding: 4px 10px;
+      border-radius: var(--r-full);
+      border: 1px solid var(--c-border-strong);
+    }
+
+    .input-method.detected .input-method__status {
+      color: var(--se-teal);
+      border-color: var(--se-teal);
+      background: rgba(45, 212, 191, 0.10);
+    }
+
+    .input-method__led {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--r-full);
+      background: #2a2a2a;
+      flex-shrink: 0;
+      transition: background 0.4s var(--ease), box-shadow 0.4s var(--ease);
+    }
+
+    .input-method.midi-detecting .input-method__led {
+      background: var(--se-amber);
+      box-shadow: 0 0 8px 2px rgba(245, 166, 35, 0.55);
+      animation: midi-pulse 0.8s ease-in-out infinite alternate;
+    }
+
+    .input-method.midi-connected .input-method__led {
+      background: var(--se-teal);
+      box-shadow: 0 0 10px 2px rgba(45, 212, 191, 0.55);
+    }
+
+    /* Power On button — animated gradient, Audiowide for tech feel */
+    #startWebAudioButton {
+      font-family: var(--font-product);
+      font-size: 1rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 20px 56px;
+      border-radius: var(--r-sm);
+      border: none;
+      cursor: pointer;
+      color: #fff;
+      /* Animated gradient */
+      background: linear-gradient(135deg, #3d1f6b, #2dd4bf, #3d1f6b);
+      background-size: 200% 200%;
+      animation: gradient-shift 4s ease infinite;
+      box-shadow: 0 10px 30px rgba(61, 31, 107, 0.50);
+      transition: transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+    }
+
+    #startWebAudioButton:hover:not(:disabled) {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 18px 48px rgba(61, 31, 107, 0.65);
+    }
+
+    #startWebAudioButton:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+    }
+
+    #startWebAudioButton:disabled {
+      background: var(--c-card);
+      color: var(--c-subtle);
+      border: 1px solid var(--c-border);
+      box-shadow: none;
+      cursor: wait;
+      animation: none;
+    }
+
+
+    /* ── MIDI LED (inside input-method card) ───────────────────── */
+    /* Styles live in .input-method__led rules above */
+
+
+    /* ── State C: Active (canvas + piano) ─────────────────────── */
+    #demo-active {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      animation: fade-in 0.8s var(--ease) forwards;
+    }
+
+    .demo-canvas-wrap {
+      width: min(100%, calc((100vh - 284px) * (1024 / 768)));
+      max-width: 1024px;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      overflow: hidden;
+      border: 1px solid var(--c-border-strong);
+      border-bottom: none;
+      box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9);
+      position: relative;
+    }
+
+    canvas.pluginArea {
+      display: block;
+      /* Fit within viewport: constrain by width AND by height so the canvas
+         never requires the user to scroll to see controls below it.
+         The plugin is 1024×768; leave ~220px for header (64px) + below-canvas (156px). */
+      width: min(100%, calc((100vh - 284px) * (1024 / 768)));
+      max-width: 1024px;
+      height: auto;
+      aspect-ratio: 1024 / 768;
+      background: transparent;
+      outline: none;
+      border: none;
+      image-rendering: auto;
+    }
+
+    /* Return link — top-left of canvas */
+    .demo-return {
+      position: absolute;
+      top: var(--s-xs);
+      left: var(--s-sm);
+      font-size: 0.72rem;
+      color: var(--c-subtle);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+      padding: 4px 8px;
+      border-radius: var(--r-xs);
+      transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+      z-index: 10;
+    }
+    .demo-return:hover {
+      color: var(--c-cream);
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* Below canvas: chord buttons + virtual piano */
+    #below-canvas {
+      width: min(100%, calc((100vh - 284px) * (1024 / 768)));
+      max-width: 1024px;
+      background: #080808;
+      border: 1px solid var(--c-border-strong);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 0 0 var(--r-lg) var(--r-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--s-sm) 0 var(--s-md);
+      gap: var(--s-sm);
+      overflow: hidden;
+    }
+
+    /* Chord buttons */
+    .chord-row {
+      display: flex;
+      align-items: center;
+      gap: var(--s-xs);
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 0 var(--s-md);
+    }
+
+    .chord-label-text {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--c-subtle);
+      font-family: var(--font-product);
+      margin-right: var(--s-xs);
+    }
+
+    .chord-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--c-border-strong);
+      color: var(--c-cream);
+      font-family: var(--font-product);
+      font-size: 0.75rem;
+      padding: 8px 16px;
+      border-radius: var(--r-xs);
+      cursor: pointer;
+      transition: all var(--t-fast) var(--ease);
+      letter-spacing: 0.5px;
+    }
+
+    .chord-btn:hover {
+      background: rgba(45, 212, 191, 0.12);
+      border-color: var(--se-teal);
+      color: var(--se-teal);
+      transform: translateY(-1px);
+    }
+
+    .chord-btn:active {
+      transform: translateY(0) scale(0.97);
+      background: rgba(45, 212, 191, 0.22);
+    }
+
+    /* Virtual piano */
+    #virtual-keyboard {
+      position: relative;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .piano-key {
+      position: absolute;
+      top: 0;
+      cursor: pointer;
+      border-radius: 0 0 5px 5px;
+      transition: background 0.04s ease, box-shadow 0.04s ease;
+    }
+
+    .piano-key--white {
+      background: var(--ps-cream);
+      border: 1px solid var(--ps-cream-border);
+      border-top: none;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 6px;
+    }
+
+    .piano-key--white:hover {
+      background: #ede8de;
+    }
+
+    .piano-key--white.active {
+      background: var(--se-teal);
+      box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .piano-key--black {
+      background: #151515;
+      border: 1px solid #000;
+      border-top: none;
+      z-index: 2;
+      border-radius: 0 0 4px 4px;
+    }
+
+    .piano-key--black:hover {
+      background: #252525;
+    }
+
+    .piano-key--black.active {
+      background: var(--se-brand-purple);
+    }
+
+    .piano-key__label {
+      font-size: 0.55rem;
+      color: var(--ps-cream-border);
+      font-family: var(--font-body);
+      pointer-events: none;
+      font-weight: 400;
+    }
+
+
+    /* ─── Downloads Section ────────────────────────────────────── */
+    #downloads {
+      background: var(--se-slate);
+      color: #fff;
+    }
+
+    .dl-section-tag {
+      color: rgba(255, 255, 255, 0.60);
+    }
+
+    .dl-section-title {
+      color: #fff;
+    }
+
+    .dl-section-sub {
+      color: rgba(255, 255, 255, 0.70);
+    }
+
+    .dl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--s-md);
+      margin-top: var(--s-lg);
+    }
+
+    .dl-card__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--s-xs);
+    }
+
+    .dl-card__os {
+      font-family: var(--font-product);
+      font-size: 1.4rem;
+      color: #fff;
+    }
+
+    .dl-card__desc {
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1.5;
+      margin-bottom: var(--s-xs);
+    }
+
+    .dl-card__formats {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.50);
+      margin-bottom: var(--s-sm);
+      font-weight: 400;
+    }
+
+    .dl-chip {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: rgba(255, 255, 255, 0.80);
+    }
+
+    #version-label {
+      text-align: center;
+      margin-top: var(--s-md);
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.40);
+    }
+
+
+    /* ─── Features Section ─────────────────────────────────────── */
+    #features {
+      background: var(--ps-cream);
+      color: var(--ps-text);
+    }
+
+    .features-tag { color: rgba(44, 44, 44, 0.55); }
+    .features-title { color: var(--ps-text); }
+    .features-sub { color: var(--ps-cream-dim); }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--s-md);
+      margin-top: var(--s-lg);
+    }
+
+    .feature-icon {
+      font-size: 1.25rem;
+      margin-bottom: var(--s-xs);
+      color: var(--se-teal);
+      display: block;
+    }
+
+
+    /* ─── SEA_DSP Section ──────────────────────────────────────── */
+    #sea-dsp {
+      background: var(--c-ink);
+    }
+
+    .sea-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-lg);
+      align-items: start;
+      margin-top: var(--s-lg);
+    }
+
+    .sea-dsp-name {
+      font-family: var(--font-product);
+      font-size: clamp(2rem, 5vw, 3rem);
+      color: var(--c-cream);
+      margin: var(--s-xs) 0 var(--s-md);
+      line-height: 1;
+    }
+
+    .sea-body {
+      font-size: 1rem;
+      font-weight: 300;
+      color: var(--c-dim);
+      line-height: 1.8;
+      margin-bottom: var(--s-sm);
+    }
+
+    .spec-card {
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-md);
+      padding: var(--s-md);
+    }
+
+    .spec-card-title {
+      font-family: var(--font-product);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--c-dim);
+      margin-bottom: var(--s-sm);
+    }
+
+    .spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--c-border);
+      font-size: 0.875rem;
+    }
+
+    .spec-row:last-child { border-bottom: none; }
+
+    .spec-key {
+      font-weight: 400;
+      color: var(--c-dim);
+    }
+
+    .spec-val {
+      font-family: var(--font-product);
+      font-size: 0.78rem;
+      color: var(--se-teal);
+    }
+
+
+    /* ─── Audio Samples Section ────────────────────────────────── */
+    #audio-samples {
+      background: var(--c-black);
+    }
+
+    .samples-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--s-sm);
+      margin-top: var(--s-lg);
+    }
+
+    .sample-name {
+      font-family: var(--font-product);
+      font-size: 0.82rem;
+      color: var(--c-cream);
+      letter-spacing: 0.5px;
+      margin-bottom: var(--s-xs);
+    }
+
+    /* CSS-only static waveform bars */
+    .waveform {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 28px;
+      margin-bottom: var(--s-xs);
+    }
+
+    .waveform-bar {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--se-teal);
+      opacity: 0.50;
+    }
+
+    /* Unique heights per bar index — organic waveform look */
+    .waveform-bar:nth-child(1)  { height: 25%; }
+    .waveform-bar:nth-child(2)  { height: 55%; }
+    .waveform-bar:nth-child(3)  { height: 80%; }
+    .waveform-bar:nth-child(4)  { height: 100%; }
+    .waveform-bar:nth-child(5)  { height: 70%; }
+    .waveform-bar:nth-child(6)  { height: 90%; }
+    .waveform-bar:nth-child(7)  { height: 60%; }
+    .waveform-bar:nth-child(8)  { height: 40%; }
+    .waveform-bar:nth-child(9)  { height: 75%; }
+    .waveform-bar:nth-child(10) { height: 95%; }
+    .waveform-bar:nth-child(11) { height: 85%; }
+    .waveform-bar:nth-child(12) { height: 50%; }
+    .waveform-bar:nth-child(13) { height: 100%; }
+    .waveform-bar:nth-child(14) { height: 65%; }
+    .waveform-bar:nth-child(15) { height: 45%; }
+    .waveform-bar:nth-child(16) { height: 78%; }
+    .waveform-bar:nth-child(17) { height: 30%; }
+    .waveform-bar:nth-child(18) { height: 55%; }
+    .waveform-bar:nth-child(19) { height: 20%; }
+    .waveform-bar:nth-child(20) { height: 10%; }
+
+    audio {
+      width: 100%;
+      height: 28px;
+      accent-color: var(--se-teal);
+    }
+
+
+    /* ─── About Section ────────────────────────────────────────── */
+    #about {
+      background: var(--se-brand-purple);
+      text-align: center;
+    }
+
+    .about-wordmark {
+      font-size: 2.25rem;
+      margin-bottom: var(--s-sm);
+      display: inline-block;
+    }
+
+    .about-sub {
+      font-size: 1.1rem;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.70);
+      margin-bottom: var(--s-md);
+    }
+
+    .about-bio {
+      font-size: 1rem;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.80);
+      line-height: 1.8;
+      max-width: 640px;
+      margin: 0 auto var(--s-lg);
+    }
+
+    .about-links {
+      display: flex;
+      justify-content: center;
+      gap: var(--s-md);
+    }
+
+    .about-link {
+      color: rgba(255, 255, 255, 0.60);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color var(--t-fast) var(--ease);
+    }
+
+    .about-link:hover { color: var(--se-teal); }
+
+
+    /* ─── Footer ───────────────────────────────────────────────── */
+    .footer {
+      background: var(--c-black);
+      border-top: 1px solid var(--c-border);
+      padding: var(--s-xl) 0 var(--s-lg);
+      text-align: center;
+    }
+
+    .footer__logo {
+      font-size: 1.75rem;
+      line-height: 1;
+      margin-bottom: var(--s-md);
+      display: inline-block;
+      text-decoration: none;
+    }
+
+    .footer__links {
+      display: flex;
+      justify-content: center;
+      gap: var(--s-md);
+      margin-bottom: var(--s-md);
+      flex-wrap: wrap;
+    }
+
+    .footer__link {
+      color: var(--c-dim);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color var(--t-fast) var(--ease);
+    }
+
+    .footer__link:hover { color: var(--c-cream); }
+
+    .footer__credit {
+      font-size: 0.75rem;
+      color: var(--c-subtle);
+    }
+
+
+    /* ─── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .header__nav { display: none; }
+      .ps-wordmark { display: none; }
+      .hero { min-height: 100svh; }
+
+      .sea-layout {
+        grid-template-columns: 1fr;
+        gap: var(--s-md);
+      }
+
+      .chord-btn { padding: 6px 12px; font-size: 0.70rem; }
+    }
+
+    @media (max-width: 480px) {
+      .chord-label-text { display: none; }
+    }
+  </style>
 </head>
+
 <body>
-    <div class="hero">
-        <h1>🎹 PolySynth Audio Labs</h1>
-        <p class="tagline">DSP Verification & Audio Demos</p>
-        <div class="meta">
-            <span class="dot"></span>
-            <span>Generated February 09, 2026 at 12:40</span>
-        </div>
+
+  <!-- ─── Header ─────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="#" class="header__logo se-wordmark">side effects</a>
+      <nav class="header__nav">
+        <a href="#demo" class="header__link">Demo</a>
+        <a href="#downloads" class="header__link">Downloads</a>
+        <a href="#audio-samples" class="header__link">Listen</a>
+        <a href="https://github.com/ashokfernandez/PolySynth" class="header__link" target="_blank">GitHub</a>
+      </nav>
+      <a href="#hero" class="ps-wordmark">
+        <span class="ps-wordmark__name">PolySynth</span>
+        <span class="ps-wordmark__underline"></span>
+      </a>
     </div>
-    
+  </header>
+
+
+  <!-- ─── Hero (cream identity banner) ───────────────────────────── -->
+  <section class="hero" id="hero">
+    <svg class="hero__waves" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice"
+      xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="#d5cfc4" stroke-width="1.2" fill="none">
+        <path d="M-100,60 C200,40 400,80 700,60 S1000,40 1300,60"/>
+        <path d="M-100,100 C200,80 400,120 700,100 S1000,80 1300,100"/>
+        <path d="M-100,140 C200,120 400,160 700,140 S1000,120 1300,140"/>
+        <path d="M-100,180 C200,160 400,200 700,180 S1000,160 1300,180"/>
+        <path d="M-100,220 C200,200 400,240 700,220 S1000,200 1300,220"/>
+        <path d="M-100,260 C200,240 400,280 700,260 S1000,240 1300,260"/>
+      </g>
+    </svg>
+    <div class="hero__content">
+      <span class="hero__eyebrow se-wordmark">side effects</span>
+      <h1 class="hero__product-name">PolySynth</h1>
+      <span class="hero__product-underline"></span>
+      <p class="hero__description">Boutique polyphonic synthesizer — play it live in your browser</p>
+    </div>
+  </section>
+
+
+  <!-- ─── Demo ────────────────────────────────────────────────────── -->
+  <section id="demo">
+    <div class="demo-inner">
+
+      <!-- CORS Warning (shown only when opened via file://) -->
+      <div id="cors-warning">
+        <div class="cors-box">
+          <div class="cors-icon">⚠</div>
+          <h2 class="cors-title">Local server required</h2>
+          <p class="cors-body">
+            The audio engine can't load over <code>file://</code>. Serve the docs folder with a local HTTP server:
+          </p>
+          <code class="cors-code">python3 -m http.server 8080 --directory docs/</code>
+          <p class="cors-body">
+            Then open <a href="http://localhost:8080" class="cors-link">localhost:8080</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- State A: Loading -->
+      <div id="demo-loading">
+        <div class="spinner"></div>
+        <span id="wasm-status">Warming up the engine...</span>
+      </div>
+
+      <!-- State B: Ready -->
+      <div id="demo-ready">
+        <p class="demo-ready-headline">Ready to play</p>
+        <p class="demo-ready-sub">Browsers require a tap before audio can start.</p>
+
+        <button type="button" id="startWebAudioButton" onclick="startWebAudio()" disabled>
+          Start playing →
+        </button>
+
+        <!-- Input method panel — shows musician how to play -->
+        <div class="input-methods">
+
+          <!-- MIDI keyboard row -->
+          <div class="input-method" id="midi-method">
+            <div class="input-method__led" id="midi-led"></div>
+            <div class="input-method__icon">🎹</div>
+            <div class="input-method__text">
+              <div class="input-method__title">USB / MIDI Keyboard</div>
+              <div class="input-method__desc" id="midi-method-desc">Plug in before starting for full hardware control</div>
+            </div>
+            <div class="input-method__status" id="midi-status">Not detected</div>
+          </div>
+
+          <!-- Virtual piano row -->
+          <div class="input-method detected">
+            <div class="input-method__icon">🖱</div>
+            <div class="input-method__text">
+              <div class="input-method__title">Virtual Piano</div>
+              <div class="input-method__desc">Click or tap the keys below the synth to play</div>
+            </div>
+            <div class="input-method__status" style="color: var(--se-teal); border-color: var(--se-teal); background: rgba(45,212,191,0.10);">Ready</div>
+          </div>
+
+          <!-- Chord buttons row -->
+          <div class="input-method detected">
+            <div class="input-method__icon">♩</div>
+            <div class="input-method__text">
+              <div class="input-method__title">Chord Buttons</div>
+              <div class="input-method__desc">One-tap chord demo — C, F, G7, Am, Em</div>
+            </div>
+            <div class="input-method__status" style="color: var(--se-teal); border-color: var(--se-teal); background: rgba(45,212,191,0.10);">Ready</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- State C: Active -->
+      <div id="demo-active">
+
+        <!-- Canvas wrapper -->
+        <div class="demo-canvas-wrap">
+          <button class="demo-return" onclick="resetDemo()" title="Return to start">◀ Reset</button>
+          <canvas class="pluginArea" id="canvas" width="1024" height="768"
+            oncontextmenu="event.preventDefault()"></canvas>
+        </div>
+
+        <!-- Controls below canvas -->
+        <div id="below-canvas">
+
+          <!-- Chord demo buttons -->
+          <div class="chord-row">
+            <span class="chord-label-text">Play:</span>
+            <button class="chord-btn" onclick="playChord('cmaj')">C</button>
+            <button class="chord-btn" onclick="playChord('fmaj')">F</button>
+            <button class="chord-btn" onclick="playChord('gdom7')">G7</button>
+            <button class="chord-btn" onclick="playChord('amin')">Am</button>
+            <button class="chord-btn" onclick="playChord('emin')">Em</button>
+          </div>
+
+          <!-- Virtual piano keyboard -->
+          <div id="virtual-keyboard"></div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ─── Downloads ───────────────────────────────────────────────── -->
+  <section id="downloads">
     <div class="container">
-        <a href="https://github.com/ashokfernandez/PolySynth" class="back-link">
-            ← Back to Repository
-        </a>
+      <div data-reveal>
+        <span class="section-tag dl-section-tag">Plugin</span>
+        <h2 class="section-title dl-section-title">Get PolySynth</h2>
+        <p class="section-sub dl-section-sub">Free download for macOS and Windows.</p>
+      </div>
 
-        <div class="csv-list" style="margin-bottom:1.5rem;">
-            <a class="csv-link" href="#downloads">⬇️ Downloads</a>
-            <a class="csv-link" href="#web-demo">🎛️ Web Demo</a>
-            <a class="csv-link" href="#audio-labs">🎧 Audio Labs</a>
-            <a class="csv-link" href="audio-labs.html">📄 Audio-only Page</a>
-            <a class="csv-link" href="component-gallery/index.html">🧩 Component Gallery</a>
-        </div>
-
-        <div id="downloads" class="demo-card" style="margin-bottom:2rem;">
-            <div class="header">
-                <span class="icon">⬇️</span>
-                <div class="title-group">
-                    <h3>Download Desktop Version</h3>
-                    <span class="filename">docs/downloads.json</span>
-                </div>
+      <div class="dl-grid">
+        <!-- macOS -->
+        <div class="card-download" data-reveal data-reveal-delay="1">
+          <div>
+            <div class="dl-card__head">
+              <span class="dl-card__os">macOS</span>
+              <span class="chip dl-chip">Universal</span>
             </div>
-            <p class="description">Latest release binaries are fetched from GitHub Releases. Buttons update automatically when a new release tag is published.</p>
-            <div class="csv-list">
-                <a id="download-macos" class="csv-link" href="#" hidden>🍎 Download macOS Installer</a>
-                <a id="download-windows" class="csv-link" href="#" hidden>🪟 Download Windows VST3 Zip</a>
-                <a id="download-release-page" class="csv-link" href="https://github.com/ashokfernandez/PolySynth/releases/latest" target="_blank" rel="noopener noreferrer">📦 Open GitHub Releases</a>
-            </div>
-            <div id="download-meta" class="download-meta">Loading latest release metadata...</div>
+            <p class="dl-card__desc">Native performance on Apple Silicon and Intel. Installer package.</p>
+            <p class="dl-card__formats">VST3 · AU · Standalone</p>
+          </div>
+          <div>
+            <a id="download-macos" class="btn btn-download" href="#" hidden>Download for Mac</a>
+            <span id="mac-loader" class="dl-section-sub" style="font-size:0.8rem;">Detecting latest release...</span>
+          </div>
         </div>
 
-        <div id="web-demo" class="demo-card" style="margin-bottom:2rem;">
-            <div class="header">
-                <span class="icon">🎛️</span>
-                <div class="title-group">
-                    <h3>Latest PolySynth Web Demo</h3>
-                    <span class="filename">docs/web-demo/index.html</span>
-                </div>
+        <!-- Windows -->
+        <div class="card-download" data-reveal data-reveal-delay="2">
+          <div>
+            <div class="dl-card__head">
+              <span class="dl-card__os">Windows</span>
+              <span class="chip dl-chip">x64</span>
             </div>
-            <p class="description">This iframe hosts the latest web plugin build published by CI to GitHub Pages.</p>
-            <iframe class="demo-frame" src="web-demo/index.html" title="PolySynth Web Demo"></iframe>
+            <p class="dl-card__desc">Optimised VST3 binary and Standalone application. Zip archive.</p>
+            <p class="dl-card__formats">VST3 · Standalone</p>
+          </div>
+          <div>
+            <a id="download-windows" class="btn btn-download" href="#" hidden>Download for Windows</a>
+            <span id="win-loader" class="dl-section-sub" style="font-size:0.8rem;">Detecting latest release...</span>
+          </div>
         </div>
-        
-        <div id="audio-labs" class="info-grid">
-            <div class="info-card">
-                <h3>What is this?</h3>
-                <p>Audio samples generated directly from the C++ DSP engine during CI builds. These verify that our oscillators, filters, and envelopes are working correctly.</p>
-            </div>
-            <div class="info-card">
-                <h3>How to use</h3>
-                <p>Click play on any sample to hear it. Listen for clean audio without clicks, pops, or distortion. Each demo tests a specific DSP component.</p>
-            </div>
-            <div class="info-card">
-                <h3>Technical details</h3>
-                <p>All samples are rendered at 44.1kHz, 16-bit. The synth engine runs headless without any UI or DAW dependencies.</p>
-            </div>
-        </div>
-        <div class="section-header">
-            <h2>🎧 Audio Demos</h2>
-            <span class="count">13 samples</span>
-        </div>
+      </div>
 
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🎹</span>
-                <div class="title-group">
-                    <h3>Polyphonic Engine</h3>
-                    <span class="filename">demo_engine_poly.wav</span>
-                </div>
-            </div>
-            <p class="description">Multiple voices playing simultaneously, showcasing the voice allocation and mixing. Notes are triggered in sequence to test polyphony.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>5-voice polyphony with round-robin allocation.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Clean separation between voices, no clicks or pops</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_engine_poly.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🎵</span>
-                <div class="title-group">
-                    <h3>Sawtooth Oscillator</h3>
-                    <span class="filename">demo_engine_saw.wav</span>
-                </div>
-            </div>
-            <p class="description">A pure sawtooth wave demonstrating the fundamental oscillator. The sawtooth is the most harmonically rich basic waveform, containing all harmonics.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Band-limited sawtooth using BLIT synthesis to prevent aliasing.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Bright, buzzy tone with no aliasing artifacts at high frequencies</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_engine_saw.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🎹</span>
-                <div class="title-group">
-                    <h3>Factory Presets</h3>
-                    <span class="filename">demo_factory_presets.wav</span>
-                </div>
-            </div>
-            <p class="description">A musical phrase played with each of the 3 factory presets: Warm Pad (soft), Bright Lead (punchy), Dark Bass (growly).</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>C major arpeggio with preset-specific envelope/filter settings.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Distinct character of each preset, same notes sound very different</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_factory_presets.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🔊</span>
-                <div class="title-group">
-                    <h3>✨ Filter Envelope</h3>
-                    <span class="filename">demo_filter_envelope.wav</span>
-                </div>
-            </div>
-            <p class="description">Classic synth plucks and stabs created by the filter envelope. The envelope opens and closes the filter over time.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Filter cutoff modulated by ADSR: Pluck, Stab, Swell, Long Pluck.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Percussive attacks, the 'bwow' of filter movement</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_filter_envelope.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🔊</span>
-                <div class="title-group">
-                    <h3>🌀 Filter Resonance</h3>
-                    <span class="filename">demo_filter_resonance.wav</span>
-                </div>
-            </div>
-            <p class="description">The same note filtered at increasing resonance (Q) values. Higher resonance creates a peak at the cutoff frequency.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Low-pass filter at 800Hz, Q values: 1 → 2 → 4 → 8.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Increasingly 'peaky' sound, ringing quality at high Q</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_filter_resonance.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🎛️</span>
-                <div class="title-group">
-                    <h3>Filter Sweep</h3>
-                    <span class="filename">demo_filter_sweep.wav</span>
-                </div>
-            </div>
-            <p class="description">The resonant low-pass filter sweeping from low to high cutoff frequency. Demonstrates the classic 'opening filter' sound.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>24dB/oct resonant LPF with cutoff modulation.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Smooth frequency sweep, resonance peak near cutoff</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_filter_sweep.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🔊</span>
-                <div class="title-group">
-                    <h3>🔈 Filter Wobble Bass</h3>
-                    <span class="filename">demo_lfo_filter_wobble.wav</span>
-                </div>
-            </div>
-            <p class="description">Classic 'dubstep wobble' sound - LFO modulating the filter cutoff. Rate increases over time for building tension.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Sine LFO → filter cutoff (100-3000Hz), rate 1Hz→7Hz.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Rhythmic 'wub wub' sound, increasingly intense</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_lfo_filter_wobble.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🔊</span>
-                <div class="title-group">
-                    <h3>📳 LFO Tremolo</h3>
-                    <span class="filename">demo_lfo_tremolo.wav</span>
-                </div>
-            </div>
-            <p class="description">The LFO modulating amplitude for tremolo effect. Rate increases from slow (2Hz) to fast (12Hz) helicopter effect.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Sine LFO with rate sweep 2Hz→12Hz over 4 seconds.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Slow pulse → medium wobble → fast flutter</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_lfo_tremolo.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🔊</span>
-                <div class="title-group">
-                    <h3>〰️ LFO Vibrato</h3>
-                    <span class="filename">demo_lfo_vibrato.wav</span>
-                </div>
-            </div>
-            <p class="description">The LFO modulating pitch to create vibrato. Hear all LFO shapes: Sine, Triangle, Square (trill), and Saw.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>5Hz LFO with 3% pitch depth, all 4 waveform shapes.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Smooth vibrato (sine), angular vibrato (square), rising sweep (saw)</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_lfo_vibrato.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🔊</span>
-                <div class="title-group">
-                    <h3>🎚️ Oscillator Mixing</h3>
-                    <span class="filename">demo_osc_mix.wav</span>
-                </div>
-            </div>
-            <p class="description">Two oscillators blended together - sawtooth and slightly detuned square. Demonstrates the classic 'thick' synth sound.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Osc A (saw) + Osc B (square, +5 cents detune), crossfade mix.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Thickening effect when both oscillators play, beating from detune</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_osc_mix.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🎶</span>
-                <div class="title-group">
-                    <h3>Chord Progressions</h3>
-                    <span class="filename">demo_poly_chords.wav</span>
-                </div>
-            </div>
-            <p class="description">Full polyphonic chords demonstrating the synth in a musical context. Multiple notes held together create rich harmonic content.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Simultaneous voice triggering with harmonic intervals.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Chord clarity, voice blending, no audio artifacts</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_poly_chords.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🔊</span>
-                <div class="title-group">
-                    <h3>📐 Pulse Width Modulation</h3>
-                    <span class="filename">demo_pulse_width.wav</span>
-                </div>
-            </div>
-            <p class="description">A square wave with the pulse width sweeping from thin (10%) to fat (90%). Classic PWM creates movement and thickness.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Square wave with pulse width modulated over 4 seconds.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Thin nasal tone → fat hollow tone, phasing effect in the middle</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_pulse_width.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-        <div class="demo-card">
-            <div class="header">
-                <span class="icon">🔊</span>
-                <div class="title-group">
-                    <h3>🔊 Waveform Comparison</h3>
-                    <span class="filename">demo_waveforms.wav</span>
-                </div>
-            </div>
-            <p class="description">Hear all four basic waveforms played in sequence: Sawtooth, Square, Triangle, and Sine. Each has distinct harmonic character.</p>
-            <div class="details">
-                <div class="detail-item">
-                    <label>Technical</label>
-                    <span>Same note (A3) played with each waveform type.</span>
-                </div>
-                <div class="detail-item">
-                    <label>Listen for</label>
-                    <span>Sawtooth is brightest, Square has hollow quality, Triangle is soft, Sine is pure</span>
-                </div>
-            </div>
-            <div class="audio-player">
-                <audio controls preload="metadata">
-                    <source src="audio/demo_waveforms.wav" type="audio/wav">
-                    Your browser does not support audio playback.
-                </audio>
-            </div>
-        </div>
-
-
-        <div class="csv-section">
-            <div class="section-header">
-                <h2>📊 Data Files</h2>
-                <span class="count">1 files</span>
-            </div>
-            <div class="csv-list">
-                <a href="audio/demo_adsr.csv" class="csv-link">📄 demo_adsr.csv</a>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>
-                Generated by the PolySynth CI pipeline.<br>
-                <a href="https://github.com/ashokfernandez/PolySynth">View source on GitHub</a>
-            </p>
-        </div>
+      <p id="version-label"></p>
     </div>
-    <script>
-        (async () => {
-            const meta = document.getElementById('download-meta');
-            const macLink = document.getElementById('download-macos');
-            const winLink = document.getElementById('download-windows');
-            const releasesLink = document.getElementById('download-release-page');
+  </section>
 
-            const guessOS = () => {
-                const ua = navigator.userAgent.toLowerCase();
-                if (ua.includes('mac')) return 'macos';
-                if (ua.includes('win')) return 'windows';
-                return 'unknown';
+
+  <!-- ─── Features ────────────────────────────────────────────────── -->
+  <section id="features">
+    <div class="container">
+      <div data-reveal>
+        <span class="section-tag features-tag gradient-text-product">About</span>
+        <h2 class="section-title features-title">What's inside</h2>
+        <p class="section-sub features-sub">Professional-grade synthesis in a boutique package.</p>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-box" data-reveal data-reveal-delay="1">
+          <span class="feature-icon">◎</span>
+          <h3>Dual Oscillator</h3>
+          <p>Band-limited waveforms with cross-modulation, hard sync, and per-voice detuning.</p>
+        </div>
+        <div class="feature-box" data-reveal data-reveal-delay="2">
+          <span class="feature-icon">∿</span>
+          <h3>24dB Filter</h3>
+          <p>Zero-delay feedback state-variable filter. Self-oscillating. High resonance stability.</p>
+        </div>
+        <div class="feature-box" data-reveal data-reveal-delay="3">
+          <span class="feature-icon">⌇</span>
+          <h3>4-Stage ADSR</h3>
+          <p>Independent envelope control on amp and filter. Shape your sound in time.</p>
+        </div>
+        <div class="feature-box" data-reveal data-reveal-delay="4">
+          <span class="feature-icon">~</span>
+          <h3>LFO Modulation</h3>
+          <p>Route to pitch, filter, or amplitude. Configurable waveform and rate.</p>
+        </div>
+        <div class="feature-box" data-reveal data-reveal-delay="1">
+          <span class="feature-icon">⋯</span>
+          <h3>8-Voice Polyphony</h3>
+          <p>Configurable voice allocation and stealing. Unison and detune modes.</p>
+        </div>
+        <div class="feature-box" data-reveal data-reveal-delay="2">
+          <span class="feature-icon">✓</span>
+          <h3>CI-Verified DSP</h3>
+          <p>Every line of audio code verified against golden-master WAV files on every commit.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── SEA_DSP ──────────────────────────────────────────────────── -->
+  <section id="sea-dsp">
+    <div class="container">
+      <div data-reveal>
+        <span class="accent-bar accent-bar--brand"></span>
+        <span class="section-tag section-tag--brand">Proprietary Engine</span>
+      </div>
+
+      <div class="sea-layout">
+        <div>
+          <h2 class="sea-dsp-name">SEA_DSP</h2>
+          <p class="sea-body">
+            PolySynth runs on SEA_DSP — a bespoke real-time audio engine built from scratch.
+            Lock-free, heap-free, and thread-safe in the audio path.
+          </p>
+          <p class="sea-body">
+            Every parameter change, every voice, every filter coefficient is verified against
+            golden-master WAV files in headless CI. What you hear today is what ships.
+          </p>
+          <a href="https://github.com/ashokfernandez/PolySynth" class="btn btn-outline"
+            target="_blank" style="margin-top: var(--s-sm);">
+            View source on GitHub →
+          </a>
+        </div>
+
+        <div class="spec-card" data-reveal data-reveal-delay="1">
+          <p class="spec-card-title">Specifications</p>
+          <div class="spec-row">
+            <span class="spec-key">Real-time safe</span>
+            <span class="spec-val">Lock-free · Heap-free</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-key">Voices</span>
+            <span class="spec-val">8 polyphonic</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-key">Filter type</span>
+            <span class="spec-val">ZDF State-Variable</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-key">Waveforms</span>
+            <span class="spec-val">Saw · Square · Sine · Tri</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-key">Test coverage</span>
+            <span class="spec-val">Golden master WAV</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-key">Platforms</span>
+            <span class="spec-val">macOS · Windows · Web</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── Audio Samples ────────────────────────────────────────────── -->
+  <section id="audio-samples">
+    <div class="container">
+      <div data-reveal>
+        <span class="section-tag section-tag--brand gradient-text-product">Listen</span>
+        <h2 class="section-title">Hear it for yourself</h2>
+        <p class="section-sub" style="color: var(--c-dim);">
+          Unprocessed output from the synthesis engine. No reverb, no mastering.
+        </p>
+      </div>
+
+      <div class="samples-grid">
+        <!-- 13 real WAV files from docs/audio/ (CSV excluded) -->
+        <div class="card-sample" data-reveal>
+          <p class="sample-name">Sawtooth Oscillator</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            <div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_sawtooth.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal data-reveal-delay="1">
+          <p class="sample-name">Waveform Comparison</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_waveforms.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal data-reveal-delay="2">
+          <p class="sample-name">Oscillator Mix</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_osc_mix.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal>
+          <p class="sample-name">Pulse Width Mod</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_pulse_width.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal data-reveal-delay="1">
+          <p class="sample-name">Filter Sweep</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_filter_sweep.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal data-reveal-delay="2">
+          <p class="sample-name">Filter Resonance</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_filter_resonance.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal>
+          <p class="sample-name">Filter Envelope</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_filter_envelope.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal data-reveal-delay="1">
+          <p class="sample-name">LFO → Filter</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_lfo_filter_wobble.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal data-reveal-delay="2">
+          <p class="sample-name">LFO Vibrato</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_lfo_vibrato.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal>
+          <p class="sample-name">LFO Tremolo</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_lfo_tremolo.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal data-reveal-delay="1">
+          <p class="sample-name">Polyphonic Chords</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_poly_chords.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal data-reveal-delay="2">
+          <p class="sample-name">Engine Polyphony</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_engine_poly.wav"></audio>
+        </div>
+
+        <div class="card-sample" data-reveal>
+          <p class="sample-name">Factory Presets</p>
+          <div class="waveform">
+            <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+          </div>
+          <audio controls src="audio/demo_factory_presets.wav"></audio>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── About ────────────────────────────────────────────────────── -->
+  <section id="about">
+    <div class="container">
+      <a href="https://www.instagram.com/side.effects.audio" class="about-wordmark se-wordmark--on-purple"
+        target="_blank">side effects</a>
+      <p class="about-sub">Independent audio software. Made with care.</p>
+      <p class="about-bio">
+        Side Effects Audio is a small independent studio building custom audio tools and effects.
+        PolySynth is an ongoing project exploring high-quality polyphonic synthesis in software —
+        designed to sound great, built to last, and verified at every commit.
+      </p>
+      <div class="about-links">
+        <a href="https://www.instagram.com/side.effects.audio" class="about-link" target="_blank">Instagram</a>
+        <a href="https://github.com/ashokfernandez/PolySynth" class="about-link" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ─── Footer ───────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container">
+      <a href="#" class="footer__logo se-wordmark">side effects</a>
+      <div class="footer__links">
+        <a href="#demo" class="footer__link">Demo</a>
+        <a href="#downloads" class="footer__link">Downloads</a>
+        <a href="#audio-samples" class="footer__link">Listen</a>
+        <a href="https://www.instagram.com/side.effects.audio" class="footer__link" target="_blank">Instagram</a>
+        <a href="https://github.com/ashokfernandez/PolySynth" class="footer__link" target="_blank">GitHub</a>
+      </div>
+      <p class="footer__credit">&copy; 2026 Side Effects Audio. All rights reserved.</p>
+    </div>
+  </footer>
+
+
+  <!-- ─── Scripts ──────────────────────────────────────────────────── -->
+  <script>
+    // ── CORS / file:// Detection ───────────────────────────────────────
+    if (location.protocol === 'file:') {
+      document.getElementById('cors-warning').style.display = 'flex';
+      document.getElementById('demo-loading').style.display = 'none';
+    }
+
+    // ── Demo State Machine ─────────────────────────────────────────────
+    // States: 'loading' | 'ready' | 'active'
+    function setDemoState(state) {
+      document.getElementById('demo-loading').style.display = state === 'loading' ? 'flex' : 'none';
+      document.getElementById('demo-ready').style.display   = state === 'ready'   ? 'flex' : 'none';
+      document.getElementById('demo-active').style.display  = state === 'active'  ? 'flex' : 'none';
+
+      if (state === 'active') {
+        document.getElementById('demo').classList.add('wam-active');
+      } else {
+        document.getElementById('demo').classList.remove('wam-active');
+      }
+    }
+
+    // ── MIDI Discovery ─────────────────────────────────────────────────
+    var midiAccess = null;
+
+    function setMidiState(state, deviceName) {
+      var row    = document.getElementById('midi-method');
+      var led    = document.getElementById('midi-led');
+      var desc   = document.getElementById('midi-method-desc');
+      var status = document.getElementById('midi-status');
+      if (!row) return;
+
+      // Reset classes
+      row.classList.remove('detected', 'midi-detecting', 'midi-connected');
+      led.style.cssText = '';
+
+      if (state === 'detecting') {
+        row.classList.add('midi-detecting');
+        desc.textContent   = 'Detecting connected devices…';
+        status.textContent = 'Detecting';
+        status.style.cssText = '';
+      } else if (state === 'connected') {
+        row.classList.add('detected', 'midi-connected');
+        desc.textContent   = deviceName || 'MIDI Device';
+        status.textContent = 'Connected';
+        status.style.color = 'var(--se-teal)';
+        status.style.borderColor = 'var(--se-teal)';
+        status.style.background  = 'rgba(45,212,191,0.10)';
+      } else if (state === 'error') {
+        desc.textContent   = 'MIDI access denied by browser';
+        status.textContent = 'Denied';
+        status.style.cssText = '';
+      } else {
+        // disconnected / unsupported
+        desc.textContent   = 'Plug in before starting for full hardware control';
+        status.textContent = 'Not detected';
+        status.style.cssText = '';
+      }
+    }
+
+    function checkMidi() {
+      if (!navigator.requestMIDIAccess) {
+        setMidiState('disconnected');
+        return;
+      }
+      setMidiState('detecting');
+      navigator.requestMIDIAccess().then(function (midi) {
+        midiAccess = midi;
+        var inputs = Array.from(midi.inputs.values());
+        if (inputs.length > 0) {
+          setMidiState('connected', inputs[0].name);
+          // Wire hardware MIDI to WAM if already active
+          inputs.forEach(function (input) {
+            input.onmidimessage = function (msg) {
+              if (PolySynth_WAM) {
+                PolySynth_WAM.onMidi(msg.data);
+              }
             };
+          });
+        } else {
+          setMidiState('disconnected');
+        }
+        // Live connection/disconnection tracking
+        midi.onstatechange = function () { checkMidi(); };
+      }).catch(function () {
+        setMidiState('error');
+      });
+    }
 
-            try {
-                const response = await fetch('downloads.json', { cache: 'no-store' });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                const platforms = data.platforms || {};
-                const release = data.release || null;
-                const os = guessOS();
+    // checkMidi() is called from startWebAudio() after user gesture,
+    // so we never prompt for MIDI permission before the user has interacted.
 
-                if (platforms.macos) {
-                    macLink.href = platforms.macos;
-                    macLink.hidden = false;
-                }
-                if (platforms.windows) {
-                    winLink.href = platforms.windows;
-                    winLink.hidden = false;
-                }
+    // ── Safari AudioContext Unlock ──────────────────────────────────────
+    function safariUnlock(audioCtx) {
+      if (audioCtx.state !== 'suspended') return;
+      var events = ['touchstart', 'touchend', 'mousedown', 'keydown'];
+      events.forEach(function (e) { document.body.addEventListener(e, unlock, false); });
+      function unlock() { audioCtx.resume().then(clean); }
+      function clean()  { events.forEach(function (e) { document.body.removeEventListener(e, unlock); }); }
+    }
 
-                if (release && release.html_url) {
-                    releasesLink.href = release.html_url;
-                }
+    // ── WAM Bootstrap ──────────────────────────────────────────────────
+    var PolySynth_WAM = null;
 
-                if (release && release.tag) {
-                    meta.textContent = `Latest release: ${release.tag}${os === 'macos' ? ' (macOS recommended below)' : os === 'windows' ? ' (Windows recommended below)' : ''}`;
-                } else {
-                    meta.textContent = 'Latest release metadata loaded.';
-                }
+    function connectionsDone() {
+      setDemoState('active');
+      buildPiano();
+      // Re-wire MIDI hardware if connected
+      if (midiAccess) {
+        Array.from(midiAccess.inputs.values()).forEach(function (input) {
+          input.onmidimessage = function (msg) {
+            if (PolySynth_WAM) PolySynth_WAM.onMidi(msg.data);
+          };
+        });
+      }
+    }
 
-                if (macLink.hidden && winLink.hidden) {
-                    meta.textContent = 'No downloadable assets were found in the latest release yet.';
+    function startWebAudio() {
+      var actx = new (window.AudioContext || window.webkitAudioContext)();
+      safariUnlock(actx);
+
+      // Request MIDI access now — inside a user gesture so no unprompted permission dialog
+      checkMidi();
+
+      var btn = document.getElementById('startWebAudioButton');
+      btn.disabled = true;
+      btn.textContent = 'Initializing...';
+
+      AWPF.polyfill(actx).then(function () {
+        var s1 = document.createElement('script');
+        s1.src = 'web-demo/scripts/wam-controller.js';
+        s1.onload = function () {
+          var s2 = document.createElement('script');
+          s2.src = 'web-demo/scripts/PolySynth-awn.js';
+          s2.onload = function () {
+            var inputBuses  = [];
+            var outputBuses = [2];
+            var options = {
+              numberOfInputs: inputBuses.length, inputChannelCount: inputBuses,
+              numberOfOutputs: outputBuses.length, outputChannelCount: outputBuses,
+              processorOptions: { inputChannelCount: inputBuses }
+            };
+            // PolySynth-awn.js uses a relative origin ("./scripts/…") which is
+            // correct for web-demo/index.html but resolves wrong from the root.
+            // Load the three AudioWorklet modules manually with the correct prefix.
+            var base = 'web-demo/scripts/';
+            actx.audioWorklet.addModule(base + 'PolySynth-wam.js')
+              .then(function () { return actx.audioWorklet.addModule(base + 'wam-processor.js'); })
+              .then(function () { return actx.audioWorklet.addModule(base + 'PolySynth-awp.js'); })
+              .then(function () {
+                PolySynth_WAM = new PolySynthController(actx, options);
+                if (PolySynth_WAM) {
+                  PolySynth_WAM.connect(actx.destination);
+                  connectionsDone();
                 }
-            } catch (error) {
-                meta.textContent = 'Latest release metadata unavailable. Use GitHub Releases link.';
-            }
-        })();
-    </script>
+              }).catch(function (e) {
+                console.error('PolySynthController failure:', e);
+                btn.textContent = 'Error — reload page';
+                btn.disabled = false;
+              });
+          };
+          document.head.appendChild(s2);
+        };
+        document.head.appendChild(s1);
+      });
+    }
+
+    function resetDemo() {
+      // Return to ready state — WAM stays loaded but canvas is hidden
+      setDemoState('ready');
+    }
+
+    // ── MIDI Routing ───────────────────────────────────────────────────
+    function sendNoteOn(note, velocity) {
+      if (!PolySynth_WAM) return;
+      PolySynth_WAM.onMidi(new Uint8Array([0x90, note, velocity]));
+    }
+
+    function sendNoteOff(note) {
+      if (!PolySynth_WAM) return;
+      PolySynth_WAM.onMidi(new Uint8Array([0x80, note, 0]));
+    }
+
+    // ── Chord Buttons ──────────────────────────────────────────────────
+    var CHORDS = {
+      cmaj:  [60, 64, 67],
+      fmaj:  [65, 69, 72],
+      gdom7: [67, 71, 74, 77],
+      amin:  [57, 60, 64],
+      emin:  [64, 67, 71]
+    };
+
+    // Track active chord notes for clean release
+    var activeChordNotes = [];
+    var chordReleaseTimer = null;
+
+    function playChord(name) {
+      if (!PolySynth_WAM) return;
+
+      // Release any currently held chord
+      if (chordReleaseTimer) { clearTimeout(chordReleaseTimer); chordReleaseTimer = null; }
+      activeChordNotes.forEach(function (n) { sendNoteOff(n); });
+
+      var notes = CHORDS[name] || [];
+      activeChordNotes = notes.slice();
+
+      // Strum: send notes 5ms apart for a slightly organic feel
+      notes.forEach(function (note, i) {
+        setTimeout(function () { sendNoteOn(note, 85); }, i * 5);
+      });
+
+      // Auto-release after 1.5 seconds
+      chordReleaseTimer = setTimeout(function () {
+        notes.forEach(function (note) { sendNoteOff(note); });
+        activeChordNotes = [];
+        chordReleaseTimer = null;
+      }, 1500);
+    }
+
+    // ── Virtual Piano ──────────────────────────────────────────────────
+    // C3–B4 (2 octaves). Pure CSS/JS — no CDN dependency.
+    var PIANO_NOTES = [
+      // Octave 3
+      { midi: 48, black: false, label: 'C3' },
+      { midi: 49, black: true  },
+      { midi: 50, black: false, label: 'D3' },
+      { midi: 51, black: true  },
+      { midi: 52, black: false, label: 'E3' },
+      { midi: 53, black: false, label: 'F3' },
+      { midi: 54, black: true  },
+      { midi: 55, black: false, label: 'G3' },
+      { midi: 56, black: true  },
+      { midi: 57, black: false, label: 'A3' },
+      { midi: 58, black: true  },
+      { midi: 59, black: false, label: 'B3' },
+      // Octave 4
+      { midi: 60, black: false, label: 'C4' },
+      { midi: 61, black: true  },
+      { midi: 62, black: false, label: 'D4' },
+      { midi: 63, black: true  },
+      { midi: 64, black: false, label: 'E4' },
+      { midi: 65, black: false, label: 'F4' },
+      { midi: 66, black: true  },
+      { midi: 67, black: false, label: 'G4' },
+      { midi: 68, black: true  },
+      { midi: 69, black: false, label: 'A4' },
+      { midi: 70, black: true  },
+      { midi: 71, black: false, label: 'B4' }
+    ];
+
+    function buildPiano() {
+      var container = document.getElementById('virtual-keyboard');
+      if (!container || container.childElementCount > 0) return;
+
+      var WHITE_W = 48, WHITE_H = 140;
+      var BLACK_W = 30, BLACK_H = 88;
+
+      var whiteIndex = 0;
+
+      PIANO_NOTES.forEach(function (note) {
+        var key = document.createElement('div');
+        key.className = note.black
+          ? 'piano-key piano-key--black'
+          : 'piano-key piano-key--white';
+        key.dataset.midi = note.midi;
+
+        if (!note.black) {
+          key.style.left   = (whiteIndex * WHITE_W) + 'px';
+          key.style.width  = (WHITE_W - 2) + 'px';
+          key.style.height = WHITE_H + 'px';
+          if (note.label) {
+            var lbl = document.createElement('span');
+            lbl.className = 'piano-key__label';
+            lbl.textContent = note.label;
+            key.appendChild(lbl);
+          }
+          whiteIndex++;
+        } else {
+          key.style.left   = (whiteIndex * WHITE_W - BLACK_W / 2) + 'px';
+          key.style.width  = BLACK_W + 'px';
+          key.style.height = BLACK_H + 'px';
+        }
+
+        // Mouse events
+        key.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          sendNoteOn(note.midi, 100);
+          key.classList.add('active');
+        });
+        key.addEventListener('mouseup',    function () { sendNoteOff(note.midi); key.classList.remove('active'); });
+        key.addEventListener('mouseleave', function () { sendNoteOff(note.midi); key.classList.remove('active'); });
+
+        // Touch events
+        key.addEventListener('touchstart', function (e) {
+          e.preventDefault();
+          sendNoteOn(note.midi, 100);
+          key.classList.add('active');
+        }, { passive: false });
+        key.addEventListener('touchend', function () {
+          sendNoteOff(note.midi);
+          key.classList.remove('active');
+        });
+
+        container.appendChild(key);
+      });
+
+      // Total width = 14 white keys (C3–B3 = 7, C4–B4 = 7)
+      container.style.width  = (14 * WHITE_W) + 'px';
+      container.style.height = WHITE_H + 'px';
+    }
+
+    // ── Scroll Reveal ──────────────────────────────────────────────────
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('[data-reveal]').forEach(function (el) {
+      revealObserver.observe(el);
+    });
+
+    // ── Active Nav Link ────────────────────────────────────────────────
+    var sections = document.querySelectorAll('section[id]');
+    var navLinks = document.querySelectorAll('.header__link[href^="#"]');
+
+    var navObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          navLinks.forEach(function (link) { link.classList.remove('active'); });
+          var activeLink = document.querySelector('.header__link[href="#' + entry.target.id + '"]');
+          if (activeLink) activeLink.classList.add('active');
+        }
+      });
+    }, { threshold: 0.4 });
+
+    sections.forEach(function (s) { navObserver.observe(s); });
+
+    // ── GitHub Release Fetch ───────────────────────────────────────────
+    (async function () {
+      var macBtn  = document.getElementById('download-macos');
+      var winBtn  = document.getElementById('download-windows');
+      var macLdr  = document.getElementById('mac-loader');
+      var winLdr  = document.getElementById('win-loader');
+      var version = document.getElementById('version-label');
+      var REPO = 'ashokfernandez/PolySynth';
+
+      try {
+        var r = await fetch('https://api.github.com/repos/' + REPO + '/releases/latest');
+        if (!r.ok) throw new Error('API fail');
+        var d = await r.json();
+
+        version.textContent = 'Latest release: ' + d.tag_name;
+
+        d.assets.forEach(function (asset) {
+          var name = asset.name.toLowerCase();
+          var url  = asset.browser_download_url;
+          if (name.includes('mac') || name.endsWith('.pkg')) {
+            macBtn.href = url; macBtn.hidden = false; macLdr.hidden = true;
+          }
+          if (name.includes('win') || name.includes('windows') || (name.includes('vst3') && name.endsWith('.zip'))) {
+            winBtn.href = url; winBtn.hidden = false; winLdr.hidden = true;
+          }
+        });
+      } catch (e) {
+        console.warn('Release fetch failed.');
+        macLdr.textContent = 'Visit GitHub for the latest build';
+        winLdr.textContent = 'Visit GitHub for the latest build';
+      }
+    })();
+  </script>
+
+  <!-- Assign canvas to Module before WASM runtime starts -->
+  <script>
+    Module.canvas = document.getElementById('canvas');
+    Module.canvas.addEventListener('webglcontextlost', function (e) {
+      alert('WebGL context lost. Reloading.');
+      location.reload();
+    }, false);
+  </script>
+
+  <!-- WAM WASM + compiled C++ engine — must be last -->
+  <script src="web-demo/scripts/PolySynth-web.js"></script>
+
 </body>
+
 </html>
