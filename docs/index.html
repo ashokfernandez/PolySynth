@@ -439,7 +439,7 @@
     }
 
     .demo-canvas-wrap {
-      width: 100%;
+      width: min(100%, calc((100vh - 284px) * (1024 / 768)));
       max-width: 1024px;
       border-radius: var(--r-lg) var(--r-lg) 0 0;
       overflow: hidden;
@@ -451,7 +451,10 @@
 
     canvas.pluginArea {
       display: block;
-      width: 100%;
+      /* Fit within viewport: constrain by width AND by height so the canvas
+         never requires the user to scroll to see controls below it.
+         The plugin is 1024×768; leave ~220px for header (64px) + below-canvas (156px). */
+      width: min(100%, calc((100vh - 284px) * (1024 / 768)));
       max-width: 1024px;
       height: auto;
       aspect-ratio: 1024 / 768;
@@ -484,7 +487,7 @@
 
     /* Below canvas: chord buttons + virtual piano */
     #below-canvas {
-      width: 100%;
+      width: min(100%, calc((100vh - 284px) * (1024 / 768)));
       max-width: 1024px;
       background: #080808;
       border: 1px solid var(--c-border-strong);
@@ -915,6 +918,7 @@
     /* ─── Responsive ───────────────────────────────────────────── */
     @media (max-width: 768px) {
       .header__nav { display: none; }
+      .ps-wordmark { display: none; }
       .hero { min-height: 100svh; }
 
       .sea-layout {
@@ -943,6 +947,10 @@
         <a href="#audio-samples" class="header__link">Listen</a>
         <a href="https://github.com/ashokfernandez/PolySynth" class="header__link" target="_blank">GitHub</a>
       </nav>
+      <a href="#hero" class="ps-wordmark">
+        <span class="ps-wordmark__name">PolySynth</span>
+        <span class="ps-wordmark__underline"></span>
+      </a>
     </div>
   </header>
 
