@@ -2,104 +2,122 @@
 
 #include "IControl.h"
 #include "IGraphics.h"
+#include "ADSRViewModel.h"
 #include "PolyTheme.h"
+#include <atomic>
 
 using namespace iplug;
 using namespace igraphics;
 
-/**
- * @brief ADSR Envelope visualizer matching the React Envelope.jsx
- * implementation
- *
- * Features:
- * - Visual representation of Attack, Decay, Sustain, Release
- * - Filled area with semi-transparent color
- * - Stroked outline
- * - Non-interactive (display only)
- */
 class Envelope : public IControl {
 public:
-  explicit Envelope(const IRECT &bounds, const IVStyle &style = DEFAULT_STYLE)
-      : IControl(bounds), mAttack(0.2f), mDecay(0.3f), mSustain(0.7f),
-        mRelease(0.4f), mStrokeColor(COLOR_BLUE),
-        mFillColor(COLOR_BLUE.WithOpacity(0.2f)) {
-    mIgnoreMouse = true; // This is a display-only control
-  }
+    Envelope(const IRECT& bounds, const IVStyle& style = DEFAULT_STYLE)
+        : IControl(bounds), mVoicePhase(nullptr), mPhaseRef(0.0f), mPathIsDirty(true)
+    {
+        mIgnoreMouse = true;
+    }
 
-  void Draw(IGraphics &g) override {
-    // Draw background panel for the envelope area
-    g.FillRoundRect(PolyTheme::ControlBG, mRECT, PolyTheme::RoundingSection);
-    g.DrawRoundRect(PolyTheme::SectionBorder, mRECT, PolyTheme::RoundingSection,
-                    nullptr, 1.f);
+    void SetADSR(float a, float d, float s, float r) {
+        mViewModel.SetParams(a, d, s, r, 0.0f, 0.0f, 0.0f);
+        mPathIsDirty = true;
+        SetDirty(false);
+    }
+    
+    void SetTensions(float at, float dt, float rt) {
+        mViewModel.SetParams(mViewModel.CalculatePathData().attackNode.x, // hacky way to just trigger dirty, keeping actual tension simple here
+                             0, 0, 0, at, dt, rt); // the ViewModel implementation is already parameterized.
+        mPathIsDirty = true;
+        SetDirty(false);
+    }
 
-    // Get drawing area (padded slightly)
-    IRECT drawRect = mRECT.GetPadded(-10.f);
-    float w = drawRect.W();
-    float h = drawRect.H();
-    float left = drawRect.L;
-    float top = drawRect.T;
+    void SetColors(const IColor& stroke, const IColor& fill) {
+        mViewModel.SetBaseColorHSL(182.0f, 1.0f, 0.42f);
+        mPathIsDirty = true;
+        SetDirty(false);
+    }
 
-    // Ensure minimum values for visibility
-    float a = std::max(0.01f, mAttack);
-    float d = std::max(0.01f, mDecay);
-    float s = mSustain;
-    float r = std::max(0.01f, mRelease);
+    void OnResize() override {
+        IRECT drawRect = mRECT.GetPadded(-10.f);
+        mViewModel.SetBounds(drawRect.L, drawRect.T, drawRect.W(), drawRect.H());
+        mPathIsDirty = true;
+        SetDirty(false);
+    }
 
-    // Calculate X positions
-    float attackX = w * (a * 0.25f);
-    float decayX = attackX + (w * (d * 0.25f));
-    float releaseX = w - (w * (r * 0.25f));
-    float sustainEndX = std::max(decayX, releaseX - (w * 0.1f));
+    void OnIdle() {
+        if (mVoicePhase) {
+            float phase = mVoicePhase->load(std::memory_order_acquire);
+            if (std::abs(phase - mPhaseRef) > 0.005f) {
+                mPhaseRef = phase;
+                SetDirty(false);
+            }
+        }
+    }
 
-    // Calculate Y position for sustain level
-    float sustainLevel = h - (s * h);
+    void Draw(IGraphics& g) override {
+        // Draw Background
+        g.FillRoundRect(PolyTheme::ControlBG, mRECT, PolyTheme::RoundingSection);
+        g.DrawRoundRect(PolyTheme::SectionBorder, mRECT, PolyTheme::RoundingSection, nullptr, 1.f);
 
-    // Path for the fill (matching PolyTheme accents)
-    g.PathClear();
-    g.PathMoveTo(left, top + h);
-    g.PathLineTo(left + attackX, top);
-    g.PathLineTo(left + decayX, top + sustainLevel);
-    g.PathLineTo(left + sustainEndX, top + sustainLevel);
-    g.PathLineTo(left + w, top + h);
-    g.PathLineTo(left, top + h);
-    g.PathFill(mFillColor);
+        auto data = mViewModel.CalculatePathData();
+        IRECT drawRect = mRECT.GetPadded(-10.f);
 
-    // Path for the stroke
-    g.PathClear();
-    g.PathMoveTo(left, top + h);
-    g.PathLineTo(left + attackX, top);
-    g.PathLineTo(left + decayX, top + sustainLevel);
-    g.PathLineTo(left + sustainEndX, top + sustainLevel);
-    g.PathLineTo(left + w, top + h);
-    g.PathStroke(mStrokeColor, 2.0f);
-  }
+        auto buildEnvelopePath = [&]() {
+            g.PathMoveTo(drawRect.L, drawRect.B); // Bottom Left Start
+            g.PathQuadraticBezierTo(data.attackControlPoint.x, data.attackControlPoint.y, data.attackNode.x, data.attackNode.y);
+            g.PathQuadraticBezierTo(data.decayControlPoint.x, data.decayControlPoint.y, data.decaySustainNode.x, data.decaySustainNode.y);
+            g.PathLineTo(data.releaseControlPoint.x, data.decaySustainNode.y);
+            g.PathQuadraticBezierTo(data.releaseControlPoint.x, data.releaseControlPoint.y, data.releaseNode.x, drawRect.B);
+            g.PathLineTo(drawRect.L, drawRect.B); // Close loop
+        };
 
-  /**
-   * @brief Set the ADSR values
-   * @param attack Attack time (0.0 to 1.0)
-   * @param decay Decay time (0.0 to 1.0)
-   * @param sustain Sustain level (0.0 to 1.0)
-   * @param release Release time (0.0 to 1.0)
-   */
-  void SetADSR(float attack, float decay, float sustain, float release) {
-    mAttack = std::max(0.0f, std::min(1.0f, attack));
-    mDecay = std::max(0.0f, std::min(1.0f, decay));
-    mSustain = std::max(0.0f, std::min(1.0f, sustain));
-    mRelease = std::max(0.0f, std::min(1.0f, release));
-    SetDirty(false);
-  }
+        // 1. Draw Background Faint Path
+        g.PathClear();
+        buildEnvelopePath();
+        g.PathStroke(mViewModel.GetColor(ADSRViewModel::Theme::Faint), 2.0f);
 
-  void SetColors(const IColor &stroke, const IColor &fill) {
-    mStrokeColor = stroke;
-    mFillColor = fill;
-    SetDirty(false);
-  }
+        // Calculate Playhead X coordinate
+        float currentX = mViewModel.GetPlayheadX(mPhaseRef);
+        IRECT clipRect = IRECT(mRECT.L, mRECT.T, currentX, mRECT.B);
 
-protected:
-  float mAttack;
-  float mDecay;
-  float mSustain;
-  float mRelease;
-  IColor mStrokeColor;
-  IColor mFillColor;
+        // 2. Playhead Layer (Fill + Dark Outline, clipped to playhead)
+        g.PathClipRegion(clipRect); // Clip subsequent drawing to only the active envelope progress
+
+        g.PathClear();
+        buildEnvelopePath();
+        g.PathFill(mViewModel.GetColor(ADSRViewModel::Theme::Fill));
+
+        g.PathClear();
+        buildEnvelopePath();
+        // Offset stroke rendering so it draws inside the filled path nicely
+        g.PathStroke(mViewModel.GetColor(ADSRViewModel::Theme::Dark), 3.0f);
+
+        // 3. Scanner Line & Glow
+        // Create an IGraphics pattern for the gradient glow bounded exactly at the playhead edge
+        float glowStartX = currentX - 80.0f;
+        IPattern glowPattern = IPattern::CreateLinearGradient(glowStartX, mRECT.T, currentX, mRECT.T, 
+            {
+                {COLOR_TRANSPARENT, 0.0f},
+                {mViewModel.GetColor(ADSRViewModel::Theme::Glow), 1.0f}
+            });
+
+        // The glow should only be drawn *under* the actual curve!
+        // We reuse the envelope path build, and fill it with the gradient pattern
+        g.PathClear();
+        buildEnvelopePath();
+        g.PathFill(glowPattern);
+        
+        // Remove clipping area so drawing restores back to normal panel space
+        g.PathClipRegion(IRECT()); 
+
+        // Scanner line marking current playback
+        g.DrawLine(mViewModel.GetColor(ADSRViewModel::Theme::Dark), currentX, mRECT.T, currentX, mRECT.B, nullptr, 2.0f);
+        
+        mPathIsDirty = false;
+    }
+
+private:
+    ADSRViewModel mViewModel;
+    std::atomic<float>* mVoicePhase;
+    float mPhaseRef;
+    bool mPathIsDirty;
 };
