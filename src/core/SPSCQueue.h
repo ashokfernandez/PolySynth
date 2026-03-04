@@ -41,7 +41,7 @@ public:
 
 private:
   // Buffer has Capacity+1 slots to distinguish full from empty.
-  T mBuffer[Capacity + 1];
+  T mBuffer[Capacity + 1] = {};
   alignas(64) std::atomic<size_t> mHead;
   alignas(64) std::atomic<size_t> mTail;
 };

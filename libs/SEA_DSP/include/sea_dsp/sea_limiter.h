@@ -78,8 +78,8 @@ public:
 
 private:
   struct PeakEntry {
-    int64_t index;
-    T value;
+    int64_t index = 0;
+    T value = T(0);
   };
 
   static constexpr int kMaxBufferSize = 16384;

@@ -17,7 +17,7 @@ static constexpr int kMaxEnvelopeVoices = 16;
 
 class Envelope : public IControl {
 public:
-    Envelope(const IRECT& bounds, const IVStyle& /*style*/ = DEFAULT_STYLE)
+    explicit Envelope(const IRECT& bounds, const IVStyle& /*style*/ = DEFAULT_STYLE)
         : IControl(bounds)
     {
         mIgnoreMouse = true;
