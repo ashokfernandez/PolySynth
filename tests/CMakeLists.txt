@@ -76,6 +76,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_Portamento.cpp
     unit/Test_StereoPanning.cpp
     unit/Test_VoiceManager_Features.cpp
+    unit/Test_ADSRViewModel.cpp
     ../src/core/PresetManager.cpp
 )
 

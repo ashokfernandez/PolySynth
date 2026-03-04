@@ -187,4 +187,5 @@ private:
   std::atomic<int> mVisualActiveVoiceCount{0};
   std::atomic<uint64_t> mVisualHeldNotesLow{0};
   std::atomic<uint64_t> mVisualHeldNotesHigh{0};
+
 };

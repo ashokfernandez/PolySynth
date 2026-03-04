@@ -11,6 +11,7 @@ You MUST use `just` as the default interface for local development and verificat
 * Full docs hub: `docs/README.md`
 * Planning hub: `plans/README.md`
 * Machine-focused agent files: `.agent/README.md`
+* **Learnings (read before, write after):** `learnings/README.md`
 
 **Core Commands:**
 * `just` - list available tasks
@@ -49,7 +50,26 @@ All other commands (cmake, just, bash scripts, etc.) run as normal. Commands alr
 
 > **Claude Code agents**: the auto-rewrite hook at `~/.claude/hooks/rtk-rewrite.sh` handles this transparently — no manual prefixing needed.
 
-## 🛑 3. ABSOLUTE CONSTRAINTS (The "Never" List)
+## 📚 3. LEARNINGS — READ BEFORE, WRITE AFTER
+
+The `learnings/` directory is a curated knowledge base of hard-won lessons from
+this codebase.  It is written by agents, for agents.
+
+* **Before starting any non-trivial task**, check `learnings/README.md` for a
+  relevant topic file and read it.  Skipping this step repeats mistakes that
+  already cost hours.
+
+* **After solving a non-trivial problem**, you MUST add an entry to the
+  appropriate file in `learnings/` (or create a new file if the topic is new).
+  Use the format documented in `learnings/README.md`.  Do not wait to be asked.
+
+Key topic files:
+* `learnings/html_to_cpp_ui.md` — HTML Canvas → iPlug2/Skia translation
+* `learnings/iplug2_threading.md` — Audio↔UI thread boundary patterns
+
+---
+
+## 🛑 4. ABSOLUTE CONSTRAINTS (The "Never" List)
 
 * **NO HEAP ALLOCATION IN AUDIO PATH:** You MUST NOT allocate memory on the heap in the hot path (e.g., inside `Process()` methods). Rely exclusively on stack-allocated arrays or `std::array` to ensure real-time safety.
 * **NO LLM ARTIFACTS IN CODE:** You MUST NOT commit your reasoning traces, stream-of-consciousness remarks, or "thinking out loud" comments (e.g., "Let's check if kPi is defined...") into production source files. Keep your reasoning in the PR description or your internal scratchpad.

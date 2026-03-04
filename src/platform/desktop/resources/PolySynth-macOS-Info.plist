@@ -7,11 +7,11 @@
 	<key>CFBundleExecutable</key>
 	<string>PolySynth</string>
 	<key>CFBundleGetInfoString</key>
-	<string>PolySynth v1.0.0 Copyright 2025 Acme Inc</string>
+	<string>PolySynth v1.0.1 Copyright 2025 Side Effects</string>
 	<key>CFBundleIconFile</key>
 	<string>PolySynth.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.PolySynth.app.PolySynth</string>
+	<string>com.SideEffects.app.PolySynth</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -19,11 +19,11 @@
 	<key>CFBundlePackageType</key>
 	<string>BNDL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>1.0.1</string>
 	<key>CFBundleSignature</key>
-	<string>PmBl</string>
+	<string>aYva</string>
 	<key>CFBundleVersion</key>
-	<string>1.0.0</string>
+	<string>1.0.1</string>
 	<key>CSResourcesFileMapped</key>
 	<true/>
 	<key>LSApplicationCategoryType</key>
