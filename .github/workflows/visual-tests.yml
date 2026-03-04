@@ -57,6 +57,14 @@ jobs:
           path: tests/Visual/output/
           if-no-files-found: ignore
 
+      - name: Upload current captures on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vrt-current-captures
+          path: tests/Visual/current/
+          if-no-files-found: ignore
+
       - name: Show ccache stats
         if: always()
         run: ccache -s
