@@ -15,7 +15,8 @@ void DemoSequencer::SetMode(Mode mode, double sampleRate, PolySynthDSP &dsp) {
   dsp.Reset(sampleRate, 0);
 }
 
-void DemoSequencer::Process(int nFrames, double sampleRate, PolySynthDSP &dsp) {
+void DemoSequencer::Process(int nFrames, double sampleRate, PolySynthDSP &dsp,
+                            const std::function<void(const IMidiMsg&)>& uiCallback) {
   if (mMode == Mode::Off || sampleRate <= 0.0)
     return;
 
@@ -37,9 +38,11 @@ void DemoSequencer::Process(int nFrames, double sampleRate, PolySynthDSP &dsp) {
       if (mNoteIndex > 0) {
         msg.MakeNoteOffMsg(prevNote, 0);
         dsp.ProcessMidiMsg(msg);
+        if (uiCallback) uiCallback(msg);
       }
       msg.MakeNoteOnMsg(currNote, 100, 0);
       dsp.ProcessMidiMsg(msg);
+      if (uiCallback) uiCallback(msg);
     } else if (mMode == Mode::Poly || mMode == Mode::FX) {
       const int chords[4][3] = {
           {60, 64, 67}, // C
@@ -55,11 +58,13 @@ void DemoSequencer::Process(int nFrames, double sampleRate, PolySynthDSP &dsp) {
         for (int i = 0; i < 3; i++) {
           msg.MakeNoteOffMsg(chords[prevIdx][i], 0);
           dsp.ProcessMidiMsg(msg);
+          if (uiCallback) uiCallback(msg);
         }
       }
       for (int i = 0; i < 3; i++) {
         msg.MakeNoteOnMsg(chords[currIdx][i], 90, 0);
         dsp.ProcessMidiMsg(msg);
+        if (uiCallback) uiCallback(msg);
       }
     }
   }

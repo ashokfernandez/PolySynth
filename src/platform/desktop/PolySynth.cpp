@@ -258,6 +258,12 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 
 #if IPLUG_EDITOR
 void PolySynthPlugin::OnUIOpen() {
+  // Initialise voice-tracking tables so every slot starts free.
+  std::fill(mNoteToUISlot, mNoteToUISlot + 128, -1);
+  std::fill(mUISlotNote,    mUISlotNote    + kUIMaxVoices, -1);
+  std::fill(mUISlotReleased, mUISlotReleased + kUIMaxVoices, false);
+  mUIMaxVoices = GetParam(kParamPolyphonyLimit)->Int();
+
   PopulatePresetMenu();
 #if IPLUG_DSP
   SyncUIState();
@@ -293,7 +299,8 @@ void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
   }
 
   if (paramIdx == kParamAttack || paramIdx == kParamDecay ||
-      paramIdx == kParamSustain || paramIdx == kParamRelease) {
+      paramIdx == kParamSustain || paramIdx == kParamRelease ||
+      paramIdx == kParamPolyphonyLimit) {
     if (GetUI()) {
       Envelope *pEnvelope = dynamic_cast<Envelope *>(
           GetUI()->GetControlWithTag(kCtrlTagEnvelope));
@@ -302,6 +309,8 @@ void PolySynthPlugin::OnParamChangeUI(int paramIdx, EParamSource source) {
                            GetParam(kParamDecay)->Value() / 1000.f,
                            GetParam(kParamSustain)->Value() / 100.f,
                            GetParam(kParamRelease)->Value() / 1000.f);
+        if (paramIdx == kParamPolyphonyLimit)
+          mUIMaxVoices = GetParam(kParamPolyphonyLimit)->Int();
       }
     }
   }
@@ -775,7 +784,8 @@ void PolySynthPlugin::BuildFooter(IGraphics *g, const IRECT &bounds,
 #if IPLUG_DSP
 void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
                                    int nFrames) {
-  mDemoSequencer.Process(nFrames, GetSampleRate(), mDSP);
+  mDemoSequencer.Process(nFrames, GetSampleRate(), mDSP,
+                         [this](const IMidiMsg& msg) { SendMidiMsgFromDelegate(msg); });
   mDSP.UpdateState(mState);
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
 }
@@ -817,7 +827,91 @@ void PolySynthPlugin::OnReset() {
 }
 void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
   mDSP.ProcessMidiMsg(msg);
+  SendMidiMsgFromDelegate(msg); // Forward to UI thread for envelope animation
 }
+
+#if IPLUG_EDITOR
+void PolySynthPlugin::OnMidiMsgUI(const IMidiMsg &msg) {
+  auto *pUI = GetUI();
+  if (!pUI) return;
+  auto *pEnv = dynamic_cast<Envelope *>(pUI->GetControlWithTag(kCtrlTagEnvelope));
+  if (!pEnv) return;
+
+  using Clock = std::chrono::steady_clock;
+  const int status = msg.StatusMsg();
+
+  if (status == IMidiMsg::kNoteOn && msg.Velocity() > 0) {
+    const int note = msg.NoteNumber();
+
+    // Count currently occupied slots (sustaining + releasing).
+    int count = 0;
+    for (int i = 0; i < kUIMaxVoices; i++)
+      if (mUISlotNote[i] >= 0) count++;
+
+    // Voice steal: keep occupied slots within the polyphony limit.
+    // Prefer stealing the oldest-released slot first (it's already fading),
+    // then fall back to the oldest-sustaining slot.
+    while (mUIMaxVoices > 0 && count >= mUIMaxVoices) {
+      int toSteal = -1;
+
+      // Pass 1 — oldest released
+      for (int i = 0; i < kUIMaxVoices; i++) {
+        if (mUISlotNote[i] < 0 || !mUISlotReleased[i]) continue;
+        if (toSteal < 0 || mUISlotOffTime[i] < mUISlotOffTime[toSteal])
+          toSteal = i;
+      }
+      // Pass 2 — oldest sustaining
+      if (toSteal < 0) {
+        for (int i = 0; i < kUIMaxVoices; i++) {
+          if (mUISlotNote[i] < 0) continue;
+          if (toSteal < 0 || mUISlotOnTime[i] < mUISlotOnTime[toSteal])
+            toSteal = i;
+        }
+      }
+      if (toSteal < 0) break;
+
+      const int stolenNote = mUISlotNote[toSteal];
+      if (stolenNote >= 0 && stolenNote < 128 && mNoteToUISlot[stolenNote] == toSteal)
+        mNoteToUISlot[stolenNote] = -1;
+      mUISlotNote[toSteal] = -1;
+      count--;
+    }
+
+    // Reuse this note's existing slot if it was retriggered, otherwise find a free one.
+    int slot = (note >= 0 && note < 128) ? mNoteToUISlot[note] : -1;
+    if (slot < 0) {
+      for (int i = 0; i < kUIMaxVoices; i++) {
+        if (mUISlotNote[i] < 0) { slot = i; break; }
+      }
+    }
+    if (slot < 0) return; // No slot available (shouldn't happen after stealing)
+
+    // Evict any previous occupant of this slot from the note→slot map.
+    const int prevNote = mUISlotNote[slot];
+    if (prevNote >= 0 && prevNote < 128 && prevNote != note)
+      mNoteToUISlot[prevNote] = -1;
+
+    mNoteToUISlot[note]   = slot;
+    mUISlotNote[slot]     = note;
+    mUISlotReleased[slot] = false;
+    mUISlotOnTime[slot]   = Clock::now();
+    pEnv->OnVoiceOn(slot);
+
+  } else if (status == IMidiMsg::kNoteOff ||
+             (status == IMidiMsg::kNoteOn && msg.Velocity() == 0)) {
+    const int note = msg.NoteNumber();
+    const int slot = (note >= 0 && note < 128) ? mNoteToUISlot[note] : -1;
+    if (slot < 0) return;
+
+    mUISlotReleased[slot] = true;
+    mUISlotOffTime[slot]  = Clock::now();
+    mNoteToUISlot[note]   = -1;
+    // Keep mUISlotNote[slot] set so the slot is visible as "released"
+    // and is preferred for stealing over sustaining slots.
+    pEnv->OnVoiceOff(slot);
+  }
+}
+#endif
 
 void PolySynthPlugin::OnParamChange(int paramIdx) {
   if (mIsUpdatingUI)
@@ -1077,11 +1171,17 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
     IMidiMsg msg;
     msg.MakeNoteOnMsg(ctrlTag, 100, 0);
     mDSP.ProcessMidiMsg(msg);
+#if IPLUG_EDITOR
+    OnMidiMsgUI(msg); // routes through plugin voice tracking → OnVoiceOn(slot)
+#endif
     return true;
   } else if (msgTag == kMsgTagNoteOff) {
     IMidiMsg msg;
     msg.MakeNoteOffMsg(ctrlTag, 0);
     mDSP.ProcessMidiMsg(msg);
+#if IPLUG_EDITOR
+    OnMidiMsgUI(msg); // routes through plugin voice tracking → OnVoiceOff(slot)
+#endif
     return true;
   }
   return false;

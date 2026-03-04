@@ -37,6 +37,18 @@ TEST_CASE("ADSRViewModel generates correct geometric nodes and curves",
   REQUIRE(pathData.attackNode.x == 25.0f);
   REQUIRE(pathData.attackControlPoint.y >
           pathData.attackNode.y); // Verifying convex curve
+
+  // Zero tension produces straight line (control point is on the segment midpoint):
+  model.SetParams(0.25f, 0.25f, 0.5f, 0.5f, 0.0f, 0.0f, 0.0f);
+  pathData = model.CalculatePathData();
+  // Attack: from (0,100) to (25,0), midpoint is (12.5, 50)
+  REQUIRE(pathData.attackControlPoint.x == Approx(12.5f));
+  REQUIRE(pathData.attackControlPoint.y == Approx(50.0f));
+
+  // releaseStartNode: with Attack=0.25, Decay=0.25, Release=0.5 on 100x100 bounds
+  // decayX = 50, releaseStartX = max(50, 100*(1-0.5)) = 50
+  REQUIRE(pathData.releaseStartNode.x == Approx(50.0f));
+  REQUIRE(pathData.releaseStartNode.y == Approx(50.0f)); // sustainY = 100 - 0.5*100
 }
 
 TEST_CASE("ADSRViewModel Dynamic Color System Tests", "[adsr_color]") {

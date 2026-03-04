@@ -2,6 +2,7 @@
 #include "../../core/SynthState.h"
 #include "DemoSequencer.h"
 #include "IPlug_include_in_plug_hdr.h"
+#include <chrono>
 
 #if !IPLUG_DSP && !IPLUG_EDITOR
 #error "PolySynth requires at least one of IPLUG_DSP or IPLUG_EDITOR"
@@ -120,6 +121,7 @@ public:
 #if IPLUG_EDITOR
   void OnUIOpen() override;
   void OnParamChangeUI(int paramIdx, iplug::EParamSource source) override;
+  void OnMidiMsgUI(const iplug::IMidiMsg& msg) override;
   void OnLayout(iplug::igraphics::IGraphics *pGraphics);
   void PopulatePresetMenu();
 
@@ -178,4 +180,17 @@ private:
 private:
   PolySynthCore::SynthState mState;
   bool mIsDirty = false;
+
+#if IPLUG_EDITOR
+  // Voice tracking for envelope animation — UI thread only.
+  // The plugin owns all MIDI→slot mapping and voice-stealing logic;
+  // the Envelope control receives only slot indices via OnVoiceOn/Off.
+  static constexpr int kUIMaxVoices = 16; // must be >= kParamPolyphonyLimit max
+  int  mNoteToUISlot[128];                // MIDI note → slot index (-1 = unassigned)
+  int  mUISlotNote[kUIMaxVoices];         // slot index → MIDI note (-1 = free)
+  bool mUISlotReleased[kUIMaxVoices];     // true while slot is in release phase
+  std::chrono::steady_clock::time_point mUISlotOnTime[kUIMaxVoices];
+  std::chrono::steady_clock::time_point mUISlotOffTime[kUIMaxVoices];
+  int  mUIMaxVoices = 8;                  // updated from kParamPolyphonyLimit
+#endif
 };

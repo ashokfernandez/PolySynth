@@ -1,5 +1,7 @@
 # Planning Index
 
+> Looking for hard-won lessons and common patterns? See [`learnings/`](../learnings/README.md).
+
 This folder contains strategy docs, execution plans, and archived planning artifacts.
 
 ## Active Plans

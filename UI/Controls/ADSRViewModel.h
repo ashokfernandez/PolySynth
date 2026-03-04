@@ -16,6 +16,7 @@ struct ADSRPathData {
   Point attackControlPoint;
   Point decaySustainNode;
   Point decayControlPoint;
+  Point releaseStartNode;
   Point releaseNode;
   Point releaseControlPoint;
 };
@@ -65,35 +66,47 @@ public:
       return data;
     }
 
-    float attackDur = std::max(0.001f, mAttack);
-    float decayDur = std::max(0.001f, mDecay);
-    float releaseDur = std::max(0.001f, mRelease);
+    // Proportional time scaling: A + D + R fill the display proportionally,
+    // with a fixed 20% slot reserved for the sustain plateau.
+    float T_total   = std::max(0.001f, mAttack + mDecay + mRelease);
+    float T_display = T_total * 1.25f;   // sustain slot = 25% of T_total = 20% of display
+    float scale     = w / T_display;
 
-    float attackX =
-        (mAttack == 0.0f) ? mBounds.L + 1.0f : mBounds.L + w * mAttack;
-    float decayX = attackX + w * mDecay;
-    float releaseStartX = std::max(decayX, mBounds.L + w * (1.0f - mRelease));
-    float releaseX = mBounds.L + w;
-
-    if (releaseX > mBounds.R) {
-      releaseX = mBounds.R;
-    }
+    float attackX       = mBounds.L + mAttack              * scale;
+    float decayX        = attackX   + mDecay               * scale;
+    float releaseStartX = decayX    + T_total * 0.25f      * scale;  // always 20% of width
+    float releaseX      = mBounds.R;                                  // always fills right edge
 
     float attackY = mBounds.T;
     float sustainY = mBounds.B - (mSustain * h);
 
     data.attackNode = {attackX, attackY};
     data.decaySustainNode = {decayX, sustainY};
+    data.releaseStartNode = {releaseStartX, sustainY};
     data.releaseNode = {releaseX, mBounds.B};
 
-    data.attackControlPoint = {mBounds.L + (attackX - mBounds.L) * 0.5f,
-                               attackY + (mBounds.B - attackY) * mAtkTension};
+    // Attack: segment from (L, B) to (attackX, T).
+    // Control point at segment midpoint when tension=0 → straight line.
+    // +tension pulls toward bottom-right (exponential rise), -tension toward top-left.
+    float atkMidX = (mBounds.L + attackX) * 0.5f;
+    float atkMidY = (mBounds.B + attackY) * 0.5f;
+    data.attackControlPoint = {
+        atkMidX + mAtkTension * (attackX - atkMidX),
+        atkMidY + mAtkTension * (mBounds.B - atkMidY)};
+
+    // Decay: segment from (attackX, T) to (decayX, sustainY).
+    // Control point at midpoint when tension=0, +tension pulls toward top-right (convex arc).
     data.decayControlPoint = {attackX + (decayX - attackX) * 0.5f,
                               attackY + (sustainY - attackY) *
                                             (0.5f + mDecTension * 0.5f)};
+
+    // Release: segment from (releaseStartX, sustainY) to (releaseX, B).
+    // Control point at midpoint when tension=0, +tension pulls toward bottom-left (lingers).
+    float relMidX = (releaseStartX + releaseX) * 0.5f;
+    float relMidY = (sustainY + mBounds.B) * 0.5f;
     data.releaseControlPoint = {
-        releaseStartX + (releaseX - releaseStartX) * 0.5f,
-        sustainY + (mBounds.B - sustainY) * (0.5f + mRelTension * 0.5f)};
+        relMidX + mRelTension * (releaseStartX - relMidX),
+        relMidY + mRelTension * (mBounds.B - relMidY)};
 
     return data;
   }
@@ -115,13 +128,13 @@ public:
       l -= 0.25f;
       break;
     case Theme::Faint:
-      a = 0.2f;
+      a = 0.12f;
       break;
     case Theme::Fill:
-      a = 0.15f;
+      a = 0.08f;
       break;
     case Theme::Glow:
-      a = 0.4f;
+      a = 0.18f;
       break;
     }
 
@@ -162,6 +175,11 @@ public:
                   static_cast<int>((g + m) * 255),
                   static_cast<int>((b + m) * 255));
   }
+
+  float GetAttack()  const { return mAttack; }
+  float GetDecay()   const { return mDecay; }
+  float GetSustain() const { return mSustain; }
+  float GetRelease() const { return mRelease; }
 
   float GetPlayheadX(float phase) const {
     float p = std::max(0.0f, std::min(1.0f, phase));
