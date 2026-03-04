@@ -198,3 +198,19 @@ version-set version:
 # Set project version across VERSION + desktop platform metadata (low-level).
 set-version version:
     bash ./scripts/cli.sh run set-version -- ./scripts/tasks/set_version.sh {{version}}
+
+# Docs workflow
+# Validate docs structure (mirrors CI smoke test).
+docs-check:
+    @echo "Checking docs structure..."
+    @test -f docs/index.html && echo "  ok  index.html" || (echo "FAIL: docs/index.html missing" && exit 1)
+    @test -f docs/design-system.css && echo "  ok  design-system.css" || (echo "FAIL: docs/design-system.css missing" && exit 1)
+    @test -f docs/web-demo/index.html && echo "  ok  web-demo/index.html" || (echo "FAIL: docs/web-demo/index.html missing" && exit 1)
+    @grep -q "web-demo/scripts/audioworklet.js" docs/index.html && echo "  ok  audioworklet.js referenced" || (echo "FAIL: audioworklet.js not referenced in index.html" && exit 1)
+    @grep -q "web-demo/scripts/PolySynth-web.js" docs/index.html && echo "  ok  PolySynth-web.js referenced" || (echo "FAIL: PolySynth-web.js not referenced in index.html" && exit 1)
+    @echo "Docs check passed. Run 'just docs-serve' to preview locally."
+
+# Serve docs locally for manual preview (http://localhost:8080).
+docs-serve:
+    @echo "Serving docs at http://localhost:8080 — Ctrl+C to stop"
+    python3 -m http.server 8080 --directory docs/
