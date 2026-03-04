@@ -28,21 +28,10 @@ public:
         SetDirty(false);
     }
 
-    void SetColors(const IColor& base, const IColor& /*fill*/ = IColor()) {
-        // Convert RGB to HSL for the view model
-        float r = base.R / 255.f, g = base.G / 255.f, b = base.B / 255.f;
-        float maxC = std::max({r, g, b}), minC = std::min({r, g, b});
-        float l = (maxC + minC) * 0.5f;
-        float s = 0.f, h = 0.f;
-        if (maxC != minC) {
-            float d = maxC - minC;
-            s = (l > 0.5f) ? d / (2.f - maxC - minC) : d / (maxC + minC);
-            if (maxC == r)      h = (g - b) / d + (g < b ? 6.f : 0.f);
-            else if (maxC == g) h = (b - r) / d + 2.f;
-            else                h = (r - g) / d + 4.f;
-            h *= 60.f;
-        }
-        mViewModel.SetBaseColorHSL(h, s, l);
+    void SetColors(const IColor& /*base*/, const IColor& /*fill*/ = IColor()) {
+        // The ADSRViewModel works in HSL space with hand-tuned design values.
+        // Accept IColor params for API compatibility but use the canonical HSL.
+        mViewModel.SetBaseColorHSL(182.0f, 1.0f, 0.42f);
         SetDirty(false);
     }
 
