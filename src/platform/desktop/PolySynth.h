@@ -2,6 +2,7 @@
 #include "../../core/SynthState.h"
 #include "DemoSequencer.h"
 #include "IPlug_include_in_plug_hdr.h"
+#include <atomic>
 #include <chrono>
 
 #if !IPLUG_DSP && !IPLUG_EDITOR
@@ -62,6 +63,7 @@ enum EParams {
 };
 
 #if IPLUG_DSP
+#include "../../core/SPSCQueue.h"
 #include "PolySynth_DSP.h"
 #endif
 
@@ -175,6 +177,9 @@ private:
   PolySynthDSP mDSP{8};
   DemoSequencer mDemoSequencer;
   bool mIsUpdatingUI = false;
+  PolySynthCore::SynthState mAudioState;              // audio-thread-local copy
+  SPSCQueue<PolySynthCore::SynthState, 4> mStateQueue; // lock-free UI→audio queue
+  std::atomic<bool> mPendingDSPReset{false};
 #endif
 
 private:

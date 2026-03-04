@@ -161,7 +161,7 @@ public:
       sample_t freqMod = (oscB * mPolyModOscBToFreqA) +
                          (filterEnvVal * mPolyModFilterEnvToFreqA);
       modFreqA *= (1.0 + freqMod);
-      modFreqA = std::max(1.0, static_cast<double>(modFreqA));
+      modFreqA = std::max(static_cast<sample_t>(1.0), modFreqA);
     }
 
     mOscA.SetFrequency(modFreqA);
@@ -522,10 +522,10 @@ public:
     for (auto &voice : mVoices) {
       sum += voice.Process();
     }
-    return sum * (1.0 / std::sqrt(static_cast<double>(kNumVoices)));
+    return sum * (1.0 / std::sqrt(static_cast<sample_t>(kNumVoices)));
   }
 
-  inline void ProcessStereo(double &outLeft, double &outRight) {
+  inline void ProcessStereo(sample_t &outLeft, sample_t &outRight) {
     outLeft = 0.0;
     outRight = 0.0;
 
@@ -536,12 +536,12 @@ public:
 
       float pan = std::clamp(voice.GetPanPosition(), -1.0f, 1.0f);
       // Constant-power panning: theta maps [-1,+1] to [0, pi/2]
-      double theta = (static_cast<double>(pan) + 1.0) * (kPi / 4.0);
+      sample_t theta = (static_cast<sample_t>(pan) + 1.0) * (kPi / 4.0);
       outLeft += mono * std::cos(theta);
       outRight += mono * std::sin(theta);
     }
     // Headroom scaling
-    double scale = 1.0 / std::sqrt(static_cast<double>(kNumVoices));
+    sample_t scale = 1.0 / std::sqrt(static_cast<sample_t>(kNumVoices));
     outLeft *= scale;
     outRight *= scale;
   }

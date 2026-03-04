@@ -124,6 +124,7 @@ void PolySynthPlugin::SyncUIState() {
     SendParameterValueFromDelegate(i, GetParam(i)->GetNormalized(), true);
   }
   mIsUpdatingUI = false;
+  mStateQueue.TryPush(mState);
 }
 #endif
 
@@ -251,7 +252,7 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
 #endif
 
 #if IPLUG_DSP
-  mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+  mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate());
   SyncUIState();
 #endif
 }
@@ -784,9 +785,14 @@ void PolySynthPlugin::BuildFooter(IGraphics *g, const IRECT &bounds,
 #if IPLUG_DSP
 void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
                                    int nFrames) {
+  if (mPendingDSPReset.exchange(false, std::memory_order_acquire)) {
+    mDSP.Reset(GetSampleRate(), 0);
+  }
   mDemoSequencer.Process(nFrames, GetSampleRate(), mDSP,
                          [this](const IMidiMsg& msg) { SendMidiMsgFromDelegate(msg); });
-  mDSP.UpdateState(mState);
+  PolySynthCore::SynthState tmp;
+  while (mStateQueue.TryPop(tmp)) mAudioState = tmp;
+  mDSP.UpdateState(mAudioState);
   mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
 }
 void PolySynthPlugin::OnIdle() {
@@ -823,7 +829,11 @@ void PolySynthPlugin::OnIdle() {
 }
 void PolySynthPlugin::OnReset() {
   mDSP.Reset(GetSampleRate(), GetBlockSize());
-  mDSP.UpdateState(mState);
+  mAudioState = mState;
+  // Drain any stale queued states
+  PolySynthCore::SynthState tmp;
+  while (mStateQueue.TryPop(tmp)) {}
+  mDSP.UpdateState(mAudioState);
 }
 void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
   mDSP.ProcessMidiMsg(msg);
@@ -1050,12 +1060,13 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
     if (value > 0.5) { // Only act on press
       if (mDemoSequencer.GetMode() == DemoSequencer::Mode::Mono) {
         // Toggle Off
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate());
+        mPendingDSPReset.store(true, std::memory_order_release);
         GetParam(kParamDemoMono)->Set(0.0);
       } else {
         // Switch to Mono
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate(),
-                               mDSP);
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate());
+        mPendingDSPReset.store(true, std::memory_order_release);
         GetParam(kParamDemoPoly)->Set(0.0);
         GetParam(kParamDemoFX)->Set(0.0);
       }
@@ -1068,12 +1079,13 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
     if (value > 0.5) { // Only act on press
       if (mDemoSequencer.GetMode() == DemoSequencer::Mode::Poly) {
         // Toggle Off
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate());
+        mPendingDSPReset.store(true, std::memory_order_release);
         GetParam(kParamDemoPoly)->Set(0.0);
       } else {
         // Switch to Poly
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Poly, GetSampleRate(),
-                               mDSP);
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Poly, GetSampleRate());
+        mPendingDSPReset.store(true, std::memory_order_release);
         GetParam(kParamDemoMono)->Set(0.0);
         GetParam(kParamDemoFX)->Set(0.0);
       }
@@ -1086,14 +1098,16 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
     if (value > 0.5) { // Only act on press
       if (mDemoSequencer.GetMode() == DemoSequencer::Mode::FX) {
         // Toggle Off
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate(), mDSP);
+        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate());
+        mPendingDSPReset.store(true, std::memory_order_release);
         GetParam(kParamDemoFX)->Set(0.0);
 
         mState.fxChorusMix = 0.0;
         mState.fxDelayMix = 0.0;
       } else {
         // Switch to FX
-        mDemoSequencer.SetMode(DemoSequencer::Mode::FX, GetSampleRate(), mDSP);
+        mDemoSequencer.SetMode(DemoSequencer::Mode::FX, GetSampleRate());
+        mPendingDSPReset.store(true, std::memory_order_release);
         GetParam(kParamDemoMono)->Set(0.0);
         GetParam(kParamDemoPoly)->Set(0.0);
 
@@ -1123,6 +1137,8 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
     }
   }
 #endif
+
+  mStateQueue.TryPush(mState);
 }
 
 bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,

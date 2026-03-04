@@ -17,7 +17,7 @@ static constexpr int kMaxEnvelopeVoices = 16;
 
 class Envelope : public IControl {
 public:
-    Envelope(const IRECT& bounds, const IVStyle& style = DEFAULT_STYLE)
+    Envelope(const IRECT& bounds, const IVStyle& /*style*/ = DEFAULT_STYLE)
         : IControl(bounds)
     {
         mIgnoreMouse = true;
@@ -28,8 +28,21 @@ public:
         SetDirty(false);
     }
 
-    void SetColors(const IColor& stroke, const IColor& fill) {
-        mViewModel.SetBaseColorHSL(182.0f, 1.0f, 0.42f);
+    void SetColors(const IColor& base, const IColor& /*fill*/ = IColor()) {
+        // Convert RGB to HSL for the view model
+        float r = base.R / 255.f, g = base.G / 255.f, b = base.B / 255.f;
+        float maxC = std::max({r, g, b}), minC = std::min({r, g, b});
+        float l = (maxC + minC) * 0.5f;
+        float s = 0.f, h = 0.f;
+        if (maxC != minC) {
+            float d = maxC - minC;
+            s = (l > 0.5f) ? d / (2.f - maxC - minC) : d / (maxC + minC);
+            if (maxC == r)      h = (g - b) / d + (g < b ? 6.f : 0.f);
+            else if (maxC == g) h = (b - r) / d + 2.f;
+            else                h = (r - g) / d + 4.f;
+            h *= 60.f;
+        }
+        mViewModel.SetBaseColorHSL(h, s, l);
         SetDirty(false);
     }
 
