@@ -837,8 +837,11 @@ void PolySynthPlugin::OnReset() {
 }
 void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
   mDSP.ProcessMidiMsg(msg);
+#if IPLUG_EDITOR
   SendMidiMsgFromDelegate(msg); // Forward to UI thread for envelope animation
+#endif
 }
+#endif // IPLUG_DSP
 
 #if IPLUG_EDITOR
 void PolySynthPlugin::OnMidiMsgUI(const IMidiMsg &msg) {
@@ -921,8 +924,9 @@ void PolySynthPlugin::OnMidiMsgUI(const IMidiMsg &msg) {
     pEnv->OnVoiceOff(slot);
   }
 }
-#endif
+#endif // IPLUG_EDITOR
 
+#if IPLUG_DSP
 void PolySynthPlugin::OnParamChange(int paramIdx) {
   if (mIsUpdatingUI)
     return;

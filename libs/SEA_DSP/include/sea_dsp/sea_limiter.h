@@ -45,7 +45,7 @@ public:
     mPeakWindow.push_back({mSampleIndex, peak});
 
     const int64_t minIndex = mSampleIndex - (window - 1);
-    while (!mPeakWindow.empty() && mPeakWindow.front().index < minIndex) {
+    while (!mPeakWindow.empty() && mPeakWindow.front().sampleIdx < minIndex) {
       mPeakWindow.pop_front();
     }
 
@@ -78,7 +78,7 @@ public:
 
 private:
   struct PeakEntry {
-    int64_t index = 0;
+    int64_t sampleIdx = 0;
     T value = T(0);
   };
 
