@@ -1,0 +1,103 @@
+# PolySynth Sprint PR Guidelines
+
+## PR Template
+
+Every sprint PR must follow this template:
+
+```markdown
+## Sprint N: [Sprint Title]
+
+### Summary
+- [1-3 bullet points describing what changed and why]
+
+### Changes
+- [ ] List every file added, modified, or deleted
+- [ ] Categorise: NEW / MODIFIED / DELETED
+
+### Testing Evidence
+- [ ] `just build` — compiles cleanly (paste output or screenshot)
+- [ ] `just test` — all tests pass (paste test count summary)
+- [ ] `just check` — lint + tests pass
+- [ ] `just asan` — no memory errors (paste summary)
+- [ ] `just tsan` — no data races (paste summary)
+- [ ] Golden masters: `python3 scripts/golden_master.py --verify` (paste result)
+
+### Platform Evidence (Sprints 2, 7 only)
+- [ ] `just desktop-build` — iPlug2 desktop build compiles
+- [ ] `just desktop-smoke` — Desktop app launches without crash
+
+### Definition of Done Checklist
+[Copy the sprint-specific DoD checklist and check off each item]
+
+### Reviewer Notes
+- Any decisions made during implementation that deviate from the sprint doc
+- Any follow-up work identified during implementation
+```
+
+---
+
+## Review Checklist (for PR Reviewers)
+
+### Code Quality
+- [ ] No new compiler warnings introduced
+- [ ] No `#include` cycles or unnecessary header dependencies
+- [ ] All new code follows existing naming conventions (camelCase members, PascalCase classes)
+- [ ] Header-only pattern maintained for core/ DSP code (Design Principle #8)
+- [ ] No `virtual` keyword in core/ code (Design Principle #5)
+- [ ] No heap allocations in audio-path code (`new`, `malloc`, `std::vector::push_back`)
+- [ ] No exceptions, locks, or blocking calls in audio-path code
+
+### Testing
+- [ ] Every new function/method has at least one test
+- [ ] Edge cases tested (zero values, max values, NaN guards)
+- [ ] All existing tests still pass (no regressions)
+- [ ] Test names clearly describe what they verify
+
+### Architecture
+- [ ] Core code has zero iPlug2 dependencies (check includes)
+- [ ] No `using namespace` in headers
+- [ ] `static_assert(std::is_aggregate_v<SynthState>)` still compiles
+- [ ] SPSCQueue pattern unchanged (lock-free UI→audio boundary)
+
+### Documentation
+- [ ] New constants have one-line comments explaining their purpose
+- [ ] New test files have a brief header comment explaining what they test
+- [ ] Sprint doc's Definition of Done is fully satisfied
+
+---
+
+## Branch Naming
+
+All sprint branches follow: `sprint-N/short-description`
+
+Examples:
+- `sprint-1/extract-voice-header`
+- `sprint-2/eliminate-polysynth-dsp`
+- `sprint-3/magic-numbers-to-constants`
+
+---
+
+## Merge Policy
+
+1. **Squash merge** each sprint into `main` with a clean commit message
+2. **CI must be green** — all `just check` + `just asan` + `just tsan` pass
+3. **One approval** required from a team member who did not write the code
+4. **Golden master delta** — if golden masters changed, the PR must explain why and include regenerated files
+5. **No partial sprints** — all tasks in the sprint doc must be complete before merge
+
+---
+
+## Sprint Dependency Graph
+
+```
+Sprint 1 ──────┬──→ Sprint 3 ──→ Sprint 5
+               ├──→ Sprint 4
+               └──→ Sprint 6
+Sprint 2 (independent)
+Sprint 7 (independent, do last)
+```
+
+- Sprints 1 and 2 can be developed in parallel (no file overlap)
+- Sprints 3, 4, and 6 all depend on Sprint 1 (Voice.h extraction)
+- Sprint 5 depends on Sprint 3 (uses named constants)
+- Sprint 7 is independent but is the highest risk, so it goes last
