@@ -100,6 +100,7 @@ TEST_CASE("PolyKnob Layout & Bounds", "[UI][Knob]") {
 TEST_CASE("Envelope Bounds & Draw", "[UI][Envelope]") {
   IRECT rect(0, 0, 200, 100);
   Envelope env(rect);
+  env.OnResize(); // Initialise ViewModel bounds from control rect
 
   // Set predictable ADSR: 25% Attack, 25% Decay, 50% Sustain, 25% Release
   env.SetADSR(0.25f, 0.25f, 0.5f, 0.25f);
@@ -111,22 +112,19 @@ TEST_CASE("Envelope Bounds & Draw", "[UI][Envelope]") {
   REQUIRE(g.fillRectCalls.size() == 1);
   REQUIRE(g.drawRectCalls.size() == 1);
 
-  // Path building for fill
-  REQUIRE(g.pathFills.size() == 1);
-  // Path building for stroke
+  // No voices active → only faint outline stroke, no reveal fill
+  REQUIRE(g.pathFills.size() == 0);
   REQUIRE(g.pathStrokes.size() == 1);
 
-  // Paths are cleared and rebuilt twice
-  REQUIRE(g.currentPath.size() == 5); // 1 MoveTo + 4 LineTo's for stroke
-
   const auto &stroke = g.pathStrokes[0];
-  // Verify coordinates of the stroke path vertices
-  // Padded bounds: 10px all sides -> w = 180, h = 80, left = 10, top = 10
-  // Attack (0.25) -> ax = 180 * (0.25 * 0.25) = 11.25
-  // Left + ax = 21.25. Y = top = 10.
+  // Verify coordinates of the faint outline path vertices.
+  // Padded bounds: 10px all sides -> w=180, h=80, left=10, top=10, bottom=90
+  // Proportional formula: A=0.25, D=0.25, R=0.25
+  //   T_total=0.75, T_display=0.9375, scale=192.0
+  //   attackX = 10 + 0.25*192 = 58
   REQUIRE(stroke.size() == 5);
-  REQUIRE(stroke[1].first == Approx(21.25f).margin(0.1f));
-  REQUIRE(stroke[1].second == Approx(10.0f).margin(0.1f));
+  REQUIRE(stroke[1].first == Approx(58.0f).margin(0.1f));  // attackNode.x
+  REQUIRE(stroke[1].second == Approx(10.0f).margin(0.1f)); // attackNode.y = top
 }
 
 // ─── PolyToggleButton ────────────────────────────────────────────────────────

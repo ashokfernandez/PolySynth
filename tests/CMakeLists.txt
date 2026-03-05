@@ -77,6 +77,8 @@ set(UNIT_TEST_SOURCES
     unit/Test_StereoPanning.cpp
     unit/Test_VoiceManager_Features.cpp
     unit/Test_ADSRViewModel.cpp
+    unit/Test_SPSCQueue_Concurrent.cpp
+    unit/Test_Engine_UpdateState.cpp
     ../src/core/PresetManager.cpp
 )
 

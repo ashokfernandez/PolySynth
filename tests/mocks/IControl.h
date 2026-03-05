@@ -64,10 +64,14 @@ public:
   void PathMoveTo(float x, float y) { currentPath.push_back({x, y}); }
   void PathLineTo(float x, float y) { currentPath.push_back({x, y}); }
   void PathFill(const IColor &color) { pathFills.push_back(currentPath); }
+  void PathFill(const IPattern &pattern) { pathFills.push_back(currentPath); }
   void PathStroke(const IColor &color, float thick,
                   const void *blend = nullptr) {
     pathStrokes.push_back(currentPath);
   }
+  void PathClipRegion(const IRECT &region = IRECT()) { mClipRegion = region; }
+
+  IRECT mClipRegion;
 
   // Layer caching stubs for PolySection
   int startLayerCalls = 0;
@@ -105,6 +109,7 @@ public:
   virtual ~IControl() {}
   virtual void Draw(IGraphics &g) = 0;
   virtual void OnResize() {}
+  virtual bool IsDirty() { return false; }
   virtual void SetDirty(bool pushParamToPlug = true) {}
   virtual void OnMouseDown(float x, float y, const IMouseMod &mod) {}
   virtual void OnMouseUp(float x, float y, const IMouseMod &mod) {}

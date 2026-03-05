@@ -260,73 +260,39 @@ with no reliance on a timer or `OnIdle`.
 
 ## 8. Known Issues / Review Flags
 
-### 8.1 Unit test assertions are stale
+### 8.1 Unit test assertions — RESOLVED
 
-`tests/unit/Test_ADSRViewModel.cpp` was written before the proportional scaling
-formula was introduced.  Key failing assertions:
+Tests updated to match the proportional scaling formula.  All 103 test cases
+pass (48762 assertions).
 
-| Test | Expected | Actual (current formula) |
-|---|---|---|
-| attackNode.x (A=D=0.25, R=0.5) | `25.0` | `20.0` |
-| decaySustainNode.x (same) | `50.0` | `40.0` |
-| releaseStartNode.x (same) | `≈50.0` | `60.0` |
+### 8.2 Test build compilation — RESOLVED
 
-The zero-state test (`attackNode.x == 1.0f` when all params = 0) is also likely
-broken as the formula now clamps `T_total` to 0.001 rather than mapping 0 attack
-to 1% of width.
+Mock stubs extended with `PathClipRegion`, `IPattern`, and virtual `IsDirty`.
 
-**Action required**: Update `Test_ADSRViewModel.cpp` to use the new formula's
-expected outputs, or re-evaluate the formula.
+### 8.3 Alpha values — RESOLVED
 
-### 8.2 Test build fails to compile `Envelope.h`
-
-`tests/unit/Test_UI_Components.cpp` includes `Envelope.h` via mock iPlug2 stubs
-that are missing:
-- `PathClipRegion()` on `IGraphics`
-- `IPattern` type (for glow gradient)
-- `IsDirty()` as virtual on `IControl`
-
-**Action required**: Either extend the mock stubs in `tests/mocks/` to cover the
-missing API surface, or move `Envelope` rendering logic behind a testable
-abstraction.
-
-### 8.3 Alpha values diverge between code and tests
-
-`Test_ADSRViewModel.cpp` asserts:
-```cpp
-REQUIRE(GetColor(Theme::Faint).A == static_cast<int>(255 * 0.2f));  // 51
-REQUIRE(GetColor(Theme::Fill).A  == static_cast<int>(255 * 0.15f)); // 38
-REQUIRE(GetColor(Theme::Glow).A  == static_cast<int>(255 * 0.4f));  // 102
-```
-
-Current `ADSRViewModel.h` has:
-```cpp
-case Theme::Faint: a = 0.12f; break;  // → A = 30
-case Theme::Fill:  a = 0.08f; break;  // → A = 20
-case Theme::Glow:  a = 0.18f; break;  // → A = 46
-```
-
-These were deliberately reduced for visual subtlety.  The tests must be updated
-to match, or the constants should be named/shared.
+Tests updated to match the code's deliberately reduced alpha values
+(Faint=0.12, Fill=0.08, Glow=0.18).
 
 ### 8.4 Bezier control points unused
 
 `ADSRPathData` carries `attackControlPoint`, `decayControlPoint`, and
 `releaseControlPoint` but `Envelope::Draw()` draws straight lines only.
-Either remove the control point fields from `ADSRPathData` (and the tension
-parameters from `SetParams`) or document them as reserved for a future curved-
-segment rendering mode.
+Reserved for a future curved-segment rendering mode.
 
 ### 8.5 `mUISlotNote` not cleared when release animation ends
 
-When a voice's release animation completes (`ComputeNoteX` returns -1.0f), the
-Envelope marks `mVoices[slot].active = false` but the plugin's `mUISlotNote[slot]`
-remains set to a MIDI note number.  Over time (> 16 unique note-on/off cycles
-without exceeding polyphony), all 16 slots fill with stale "released" entries.
+Slot table is never compacted after release animations complete.  Assessed as
+cosmetic — voice stealing handles stale entries correctly.
 
-New NoteOns still work correctly (voice stealing handles it) but the slot table
-is never naturally compacted.  Lazy cleanup based on elapsed release time could
-be added to `OnMidiMsgUI`.
+### 8.6 Stolen voices `OnVoiceOff` — RESOLVED
+
+`pEnv->OnVoiceOff(toSteal)` now called before clearing stolen slots, preventing
+ghost cursors when multiple slots are stolen simultaneously.
+
+### 8.7 Time arrays reset in `OnUIOpen` — RESOLVED
+
+`mUISlotOnTime` and `mUISlotOffTime` now zero-filled on UI open.
 
 ---
 

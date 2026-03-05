@@ -1,7 +1,6 @@
 #pragma once
 #include "sea_tpt_integrator.h"
 #include <algorithm>
-#include <vector>
 
 namespace sea {
 

@@ -94,13 +94,14 @@ check-sanitizers:
     just asan
     just tsan
 
-# Approximate PR gate: lint + ASan + TSan + unit tests + desktop startup smoke.
+# Approximate PR gate: lint + ASan + TSan + unit tests + desktop startup smoke + VRT.
 ci-pr:
     just lint
     just asan
     just tsan
     just test
     just desktop-smoke
+    just vrt-run
 
 # Desktop app workflow
 # Build the standalone desktop app (default config: Debug).

@@ -9,8 +9,8 @@ using namespace igraphics;
 
 struct ADSRPathData {
   struct Point {
-    float x;
-    float y;
+    float x = 0.f;
+    float y = 0.f;
   };
   Point attackNode;
   Point attackControlPoint;

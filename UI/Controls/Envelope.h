@@ -17,7 +17,7 @@ static constexpr int kMaxEnvelopeVoices = 16;
 
 class Envelope : public IControl {
 public:
-    Envelope(const IRECT& bounds, const IVStyle& style = DEFAULT_STYLE)
+    explicit Envelope(const IRECT& bounds, const IVStyle& /*style*/ = DEFAULT_STYLE)
         : IControl(bounds)
     {
         mIgnoreMouse = true;
@@ -28,7 +28,9 @@ public:
         SetDirty(false);
     }
 
-    void SetColors(const IColor& stroke, const IColor& fill) {
+    void SetColors(const IColor& /*base*/, const IColor& /*fill*/ = IColor()) {
+        // The ADSRViewModel works in HSL space with hand-tuned design values.
+        // Accept IColor params for API compatibility but use the canonical HSL.
         mViewModel.SetBaseColorHSL(182.0f, 1.0f, 0.42f);
         SetDirty(false);
     }

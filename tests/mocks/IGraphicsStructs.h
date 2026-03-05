@@ -1,4 +1,5 @@
 #pragma once
+#include <initializer_list>
 #include <string>
 
 struct IColor {
@@ -37,6 +38,18 @@ static const IColor COLOR_BLUE{255, 0, 0, 255};
 
 struct IVStyle {};
 static const IVStyle DEFAULT_STYLE;
+
+// Gradient pattern stub for Envelope glow
+struct IPattern {
+  struct Stop {
+    IColor color;
+    float offset;
+  };
+  static IPattern CreateLinearGradient(float x0, float y0, float x1, float y1,
+                                       std::initializer_list<Stop> stops) {
+    return IPattern();
+  }
+};
 
 enum EAlign { Near, Center, Far };
 

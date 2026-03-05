@@ -161,7 +161,7 @@ public:
       sample_t freqMod = (oscB * mPolyModOscBToFreqA) +
                          (filterEnvVal * mPolyModFilterEnvToFreqA);
       modFreqA *= (1.0 + freqMod);
-      modFreqA = std::max(1.0, static_cast<double>(modFreqA));
+      modFreqA = std::max(static_cast<sample_t>(1.0), modFreqA);
     }
 
     mOscA.SetFrequency(modFreqA);
@@ -170,7 +170,7 @@ public:
       sample_t pwmMod =
           (oscB * mPolyModOscBToPWM) + (filterEnvVal * mPolyModFilterEnvToPWM);
       sample_t pwmA = mBasePulseWidthA + (pwmMod * 0.5);
-      mOscA.SetPulseWidth(std::clamp(pwmA, 0.01, 0.99));
+      mOscA.SetPulseWidth(std::clamp(pwmA, sample_t(0.01), sample_t(0.99)));
     } else {
       mOscA.SetPulseWidth(mBasePulseWidthA);
     }
@@ -186,7 +186,7 @@ public:
       cutoff += oscB * mPolyModOscBToFilter * mBaseCutoff;
     }
     cutoff *= (1.0 + lfoVal * mLfoFilterDepth);
-    cutoff = std::clamp(cutoff, 20.0, 20000.0);
+    cutoff = std::clamp(cutoff, sample_t(20.0), sample_t(20000.0));
 
     sample_t flt = 0.0;
     switch (mFilterModel) {
@@ -219,7 +219,7 @@ public:
     sample_t ampMod = 1.0;
     if (mLfoAmpDepth > 0.0) {
       ampMod = 1.0 + lfoVal * mLfoAmpDepth;
-      ampMod = std::clamp(ampMod, 0.0, 2.0);
+      ampMod = std::clamp(ampMod, sample_t(0.0), sample_t(2.0));
     }
 
     // Cache the LFO value for pan modulation access later
@@ -258,8 +258,8 @@ public:
   void StartSteal() {
     mStolenFadeGain = 1.0f;
     // Increase fade to 20ms to prevent clicks/crunch when reducing polyphony
-    const sample_t fadeSamples = std::max(1.0, 0.020 * mSampleRate);
-    mStolenFadeDelta = 1.0 / fadeSamples;
+    const sample_t fadeSamples = std::max(sample_t(1.0), sample_t(0.020) * mSampleRate);
+    mStolenFadeDelta = sample_t(1.0) / fadeSamples;
     mVoiceState = VoiceState::Stolen;
   }
 
@@ -289,7 +289,7 @@ public:
     return rs;
   }
 
-  void SetGlideTime(sample_t seconds) { mGlideTime = std::max(0.0, seconds); }
+  void SetGlideTime(sample_t seconds) { mGlideTime = std::max(sample_t(0.0), seconds); }
 
   void SetADSR(sample_t a, sample_t d, sample_t s, sample_t r) {
     mAmpEnv.SetParams(a, d, s, r);
@@ -302,7 +302,7 @@ public:
   void SetFilter(sample_t cutoff, sample_t res, sample_t envAmount) {
     mBaseCutoff = cutoff;
     // Map 0-1 resonance to 0.5-20.5 Q for the biquad filter
-    mBaseRes = 0.5 + (res * res * 20.0);
+    mBaseRes = sample_t(0.5) + (res * res * sample_t(20.0));
     mFilterEnvAmount = envAmount;
   }
 
@@ -318,17 +318,17 @@ public:
 
   void SetPulseWidth(sample_t pw) { SetPulseWidthA(pw); }
   void SetPulseWidthA(sample_t pw) {
-    mBasePulseWidthA = std::clamp(pw, 0.01, 0.99);
+    mBasePulseWidthA = std::clamp(pw, sample_t(0.01), sample_t(0.99));
     mOscA.SetPulseWidth(mBasePulseWidthA);
   }
   void SetPulseWidthB(sample_t pw) {
-    mBasePulseWidthB = std::clamp(pw, 0.01, 0.99);
+    mBasePulseWidthB = std::clamp(pw, sample_t(0.01), sample_t(0.99));
     mOscB.SetPulseWidth(mBasePulseWidthB);
   }
 
   void SetMixer(sample_t mixA, sample_t mixB, sample_t detuneB) {
-    mMixA = std::clamp(mixA, 0.0, 1.0);
-    mMixB = std::clamp(mixB, 0.0, 1.0);
+    mMixA = std::clamp(mixA, sample_t(0.0), sample_t(1.0));
+    mMixB = std::clamp(mixB, sample_t(0.0), sample_t(1.0));
     mDetuneB = detuneB;
   }
 
@@ -522,10 +522,10 @@ public:
     for (auto &voice : mVoices) {
       sum += voice.Process();
     }
-    return sum * (1.0 / std::sqrt(static_cast<double>(kNumVoices)));
+    return sum * (1.0 / std::sqrt(static_cast<sample_t>(kNumVoices)));
   }
 
-  inline void ProcessStereo(double &outLeft, double &outRight) {
+  inline void ProcessStereo(sample_t &outLeft, sample_t &outRight) {
     outLeft = 0.0;
     outRight = 0.0;
 
@@ -536,12 +536,12 @@ public:
 
       float pan = std::clamp(voice.GetPanPosition(), -1.0f, 1.0f);
       // Constant-power panning: theta maps [-1,+1] to [0, pi/2]
-      double theta = (static_cast<double>(pan) + 1.0) * (kPi / 4.0);
+      sample_t theta = (static_cast<sample_t>(pan) + 1.0) * (kPi / 4.0);
       outLeft += mono * std::cos(theta);
       outRight += mono * std::sin(theta);
     }
     // Headroom scaling
-    double scale = 1.0 / std::sqrt(static_cast<double>(kNumVoices));
+    sample_t scale = 1.0 / std::sqrt(static_cast<sample_t>(kNumVoices));
     outLeft *= scale;
     outRight *= scale;
   }

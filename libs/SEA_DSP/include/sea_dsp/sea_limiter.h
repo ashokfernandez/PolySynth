@@ -1,10 +1,9 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
-#include <deque>
-#include <vector>
 
 namespace sea {
 
@@ -17,8 +16,8 @@ public:
   }
 
   void Reset() {
-    std::fill(mBufferL.begin(), mBufferL.end(), T(0.0));
-    std::fill(mBufferR.begin(), mBufferR.end(), T(0.0));
+    std::fill(mBufferL.begin(), mBufferL.begin() + mBufferSize, T(0.0));
+    std::fill(mBufferR.begin(), mBufferR.begin() + mBufferSize, T(0.0));
     mWriteIndex = 0;
     mSampleIndex = 0;
     mPeakWindow.clear();
@@ -37,12 +36,8 @@ public:
   }
 
   void Process(T &left, T &right) {
-    if (mBufferL.empty() || mBufferR.empty()) {
-      return;
-    }
-
     const T peak = std::max(std::abs(left), std::abs(right));
-    const int window = static_cast<int>(mBufferL.size());
+    const int window = mBufferSize;
 
     while (!mPeakWindow.empty() && mPeakWindow.back().value <= peak) {
       mPeakWindow.pop_back();
@@ -50,7 +45,7 @@ public:
     mPeakWindow.push_back({mSampleIndex, peak});
 
     const int64_t minIndex = mSampleIndex - (window - 1);
-    while (!mPeakWindow.empty() && mPeakWindow.front().index < minIndex) {
+    while (!mPeakWindow.empty() && mPeakWindow.front().sampleIdx < minIndex) {
       mPeakWindow.pop_front();
     }
 
@@ -65,7 +60,7 @@ public:
       mGain = mGain + (targetGain - mGain) * releaseCoeff;
     }
 
-    const int size = static_cast<int>(mBufferL.size());
+    const int size = mBufferSize;
     const int readIndex = (mWriteIndex + 1) % size;
 
     T outL = static_cast<T>(mBufferL[readIndex] * mGain);
@@ -83,15 +78,47 @@ public:
 
 private:
   struct PeakEntry {
-    int64_t index;
-    T value;
+    int64_t sampleIdx = 0;
+    T value = T(0);
+  };
+
+  static constexpr int kMaxBufferSize = 16384;
+
+  struct PeakRingBuffer {
+    PeakEntry data[kMaxBufferSize];
+    int head = 0;
+    int tail = 0;
+    int count = 0;
+
+    bool empty() const { return count == 0; }
+    PeakEntry &front() { return data[head]; }
+    const PeakEntry &front() const { return data[head]; }
+    PeakEntry &back() {
+      return data[(tail - 1 + kMaxBufferSize) % kMaxBufferSize];
+    }
+    const PeakEntry &back() const {
+      return data[(tail - 1 + kMaxBufferSize) % kMaxBufferSize];
+    }
+
+    void push_back(const PeakEntry &e) {
+      data[tail] = e;
+      tail = (tail + 1) % kMaxBufferSize;
+      ++count;
+    }
+    void pop_back() {
+      tail = (tail - 1 + kMaxBufferSize) % kMaxBufferSize;
+      --count;
+    }
+    void pop_front() {
+      head = (head + 1) % kMaxBufferSize;
+      --count;
+    }
+    void clear() { head = tail = count = 0; }
   };
 
   void UpdateLookaheadBuffer() {
-    const int samples =
+    mBufferSize =
         std::max(1, static_cast<int>(mLookaheadMs * T(0.001) * mSampleRate));
-    mBufferL.assign(samples, T(0.0));
-    mBufferR.assign(samples, T(0.0));
   }
 
   T mSampleRate = T(44100.0);
@@ -101,9 +128,10 @@ private:
   int mWriteIndex = 0;
   int64_t mSampleIndex = 0;
   T mGain = T(1.0);
-  std::deque<PeakEntry> mPeakWindow;
-  std::vector<T> mBufferL;
-  std::vector<T> mBufferR;
+  int mBufferSize = 1;
+  PeakRingBuffer mPeakWindow;
+  std::array<T, kMaxBufferSize> mBufferL = {};
+  std::array<T, kMaxBufferSize> mBufferR = {};
 };
 
 } // namespace sea

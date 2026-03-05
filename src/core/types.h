@@ -6,8 +6,9 @@
 
 namespace PolySynthCore {
 
-// Fixed precision mode can be defined here if needed
-#ifdef POLYSYNTH_USE_FLOAT
+// Fixed precision mode: enabled by POLYSYNTH_USE_FLOAT or iPlug2's
+// SAMPLE_TYPE_FLOAT (set automatically for WAM/WASM builds).
+#if defined(POLYSYNTH_USE_FLOAT) || defined(SAMPLE_TYPE_FLOAT)
 using sample_t = float;
 #else
 using sample_t = double;

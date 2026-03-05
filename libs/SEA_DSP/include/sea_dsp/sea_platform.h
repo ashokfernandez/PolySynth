@@ -3,7 +3,7 @@
 
 namespace sea {
 
-#ifdef SEA_PLATFORM_EMBEDDED
+#if defined(SEA_PLATFORM_EMBEDDED) || defined(SAMPLE_TYPE_FLOAT)
 using Real = float;
 static constexpr Real kPi = 3.14159265358979323846f;
 static constexpr Real kTwoPi = kPi * 2.0f;
