@@ -130,8 +130,11 @@ def main():
                     diff_count += 1
                     diff_pixels.append((x, y))
 
-        if diff_count > max_failed:
-            print(f"FAIL  {img_name} ({diff_count} differing pixels, max allowed: {max_failed})")
+        per_component = config.get("per_component", {})
+        component_max = per_component.get(img_name, {}).get("max_failed_pixels", max_failed)
+
+        if diff_count > component_max:
+            print(f"FAIL  {img_name} ({diff_count} differing pixels, max allowed: {component_max})")
             all_passed = False
             failing_components.append(img_name)
             

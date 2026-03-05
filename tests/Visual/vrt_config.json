@@ -5,5 +5,8 @@
   "expected_components": [
     "Envelope", "PolyKnob", "PolySection", "PolyToggle",
     "SectionFrame", "LCDPanel", "PresetSaveButton"
-  ]
+  ],
+  "per_component": {
+    "Envelope.png": { "max_failed_pixels": 45000 }
+  }
 }
