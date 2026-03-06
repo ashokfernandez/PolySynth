@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DspConstants.h"
 #include "SynthState.h"
 #include "VoiceManager.h"
 #include "types.h"
@@ -23,7 +24,7 @@ public:
     mSampleRate = sampleRate;
     mVoiceManager.Init(sampleRate);
     mChorus.Init(sampleRate);
-    mDelay.Init(sampleRate, 2000.0);
+    mDelay.Init(sampleRate, kMaxDelayMs);
     mLimiter.Init(sampleRate);
     Reset();
   }
@@ -64,7 +65,7 @@ public:
     mVoiceManager.SetPulseWidthA(state.oscAPulseWidth);
     mVoiceManager.SetPulseWidthB(state.oscBPulseWidth);
     mVoiceManager.SetMixer(state.mixOscA, state.mixOscB,
-                           state.oscBFineTune * 100.0);
+                           state.oscBFineTune * kFineTuneToCents);
 
     mVoiceManager.SetLFO(state.lfoShape, state.lfoRate, state.lfoDepth);
 
@@ -85,7 +86,7 @@ public:
 
     SetChorus(state.fxChorusRate, state.fxChorusDepth, state.fxChorusMix);
     SetDelay(state.fxDelayTime, state.fxDelayFeedback, state.fxDelayMix);
-    SetLimiter(state.fxLimiterThreshold, 5.0, 50.0);
+    SetLimiter(state.fxLimiterThreshold, kLimiterLookaheadMs, kLimiterReleaseMs);
   }
 
   // --- High Level Setters ---
@@ -157,18 +158,18 @@ public:
   // --- FX Setters ---
   void SetChorus(sample_t rateHz, sample_t depth, sample_t mix) {
     mChorus.SetRate(rateHz);
-    mChorus.SetDepth(depth * 5.0); // Map 0-1 to 0-5ms
+    mChorus.SetDepth(depth * kChorusDepthMs);
     mChorus.SetMix(mix);
   }
   void SetDelay(sample_t timeSec, sample_t feedback, sample_t mix) {
-    mDelay.SetTime(timeSec * 1000.0);
-    mDelay.SetFeedback(feedback * 100.0);
-    mDelay.SetMix(mix * 100.0);
+    mDelay.SetTime(timeSec * kDelayTimeToMs);
+    mDelay.SetFeedback(feedback * kDelayFeedbackScale);
+    mDelay.SetMix(mix * kDelayMixScale);
   }
   void SetDelayTempo(sample_t bpm, sample_t division) {
     // Basic fallback for now
     sample_t beatSec = 60.0 / bpm;
-    SetDelay(beatSec * division, 35.0, 0.0);
+    SetDelay(beatSec * division, kTempoDelayFeedbackPct, 0.0);
   }
   void SetLimiter(sample_t threshold, sample_t lookaheadMs, sample_t releaseMs) {
     // Threshold should be mapped inverted if coming from UI,
