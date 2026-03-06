@@ -59,6 +59,12 @@ CATCH_TEST_CASE("All SynthState fields at maximum value", "[Engine][Boundaries]"
     SynthState state;
     state.masterGain = 1.0;
     state.polyphony = 16;
+    state.unisonCount = 8;
+    state.unisonSpread = 1.0;
+    state.stereoSpread = 1.0;
+    state.oscAPulseWidth = 1.0;
+    state.oscBFineTune = 12.0;
+    state.oscBPulseWidth = 1.0;
     state.ampAttack = 10.0;
     state.ampDecay = 10.0;
     state.ampSustain = 1.0;
@@ -74,6 +80,7 @@ CATCH_TEST_CASE("All SynthState fields at maximum value", "[Engine][Boundaries]"
     state.lfoDepth = 1.0;
     state.mixOscA = 1.0;
     state.mixOscB = 1.0;
+    state.mixNoise = 1.0;
     state.polyModOscBToFreqA = 1.0;
     state.polyModOscBToPWM = 1.0;
     state.polyModOscBToFilter = 1.0;
