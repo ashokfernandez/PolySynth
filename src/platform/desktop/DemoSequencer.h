@@ -1,6 +1,5 @@
 #pragma once
 #include "IPlug_include_in_plug_hdr.h"
-#include "PolySynth_DSP.h"
 #include <vector>
 
 namespace iplug {
@@ -12,21 +11,23 @@ public:
   void SetMode(Mode mode, double sampleRate);
 
   // No-callback overload (defined in .cpp)
-  void Process(int nFrames, double sampleRate, PolySynthDSP &dsp);
+  void Process(int nFrames, double sampleRate,
+               std::function<void(const IMidiMsg&)> midiCallback);
 
-  // Templated overload with callback (must be in header)
-  template <typename Callback>
-  void Process(int nFrames, double sampleRate, PolySynthDSP &dsp,
-               Callback&& uiCallback) {
-    ProcessImpl(nFrames, sampleRate, dsp, static_cast<Callback&&>(uiCallback));
+  // Templated overload with separate MIDI and UI callbacks
+  template <typename MidiCb, typename UICb>
+  void Process(int nFrames, double sampleRate, MidiCb&& midiCallback,
+               UICb&& uiCallback) {
+    ProcessImpl(nFrames, sampleRate, static_cast<MidiCb&&>(midiCallback),
+                static_cast<UICb&&>(uiCallback));
   }
 
   Mode GetMode() const { return mMode; }
 
 private:
-  template <typename Callback>
-  void ProcessImpl(int nFrames, double sampleRate, PolySynthDSP &dsp,
-                   Callback&& uiCallback);
+  template <typename MidiCb, typename UICb>
+  void ProcessImpl(int nFrames, double sampleRate, MidiCb&& midiCallback,
+                   UICb&& uiCallback);
 
   Mode mMode = Mode::Off;
   long long mSampleCounter = 0;
@@ -34,9 +35,9 @@ private:
 };
 
 // Template implementation must be in header
-template <typename Callback>
+template <typename MidiCb, typename UICb>
 void DemoSequencer::ProcessImpl(int nFrames, double sampleRate,
-                                PolySynthDSP &dsp, Callback&& uiCallback) {
+                                MidiCb&& midiCallback, UICb&& uiCallback) {
   if (mMode == Mode::Off || sampleRate <= 0.0)
     return;
 
@@ -57,11 +58,11 @@ void DemoSequencer::ProcessImpl(int nFrames, double sampleRate,
 
       if (mNoteIndex > 0) {
         msg.MakeNoteOffMsg(prevNote, 0);
-        dsp.ProcessMidiMsg(msg);
+        midiCallback(msg);
         uiCallback(msg);
       }
       msg.MakeNoteOnMsg(currNote, 100, 0);
-      dsp.ProcessMidiMsg(msg);
+      midiCallback(msg);
       uiCallback(msg);
     } else if (mMode == Mode::Poly || mMode == Mode::FX) {
       const int chords[4][3] = {
@@ -77,13 +78,13 @@ void DemoSequencer::ProcessImpl(int nFrames, double sampleRate,
       if (mNoteIndex > 0) {
         for (int i = 0; i < 3; i++) {
           msg.MakeNoteOffMsg(chords[prevIdx][i], 0);
-          dsp.ProcessMidiMsg(msg);
+          midiCallback(msg);
           uiCallback(msg);
         }
       }
       for (int i = 0; i < 3; i++) {
         msg.MakeNoteOnMsg(chords[currIdx][i], 90, 0);
-        dsp.ProcessMidiMsg(msg);
+        midiCallback(msg);
         uiCallback(msg);
       }
     }

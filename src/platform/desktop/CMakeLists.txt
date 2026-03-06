@@ -102,7 +102,6 @@ iplug_add_plugin(${PROJECT_NAME}
     PolySynth.cpp
     DemoSequencer.cpp
     PolySynth.h
-    PolySynth_DSP.h
     resources/resource.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../../core/PresetManager.cpp
   RESOURCES

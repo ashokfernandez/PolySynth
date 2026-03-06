@@ -63,8 +63,8 @@ enum EParams {
 };
 
 #if IPLUG_DSP
+#include "../../core/Engine.h"
 #include "../../core/SPSCQueue.h"
-#include "PolySynth_DSP.h"
 #endif
 
 enum EControlTags {
@@ -174,8 +174,8 @@ public:
   void SyncUIState();
 
 private:
-  PolySynthDSP mDSP{8};
-  DemoSequencer mDemoSequencer;
+  PolySynthCore::Engine mEngine;
+  iplug::DemoSequencer mDemoSequencer;
   bool mIsUpdatingUI = false;
   PolySynthCore::SynthState mAudioState;              // audio-thread-local copy
   SPSCQueue<PolySynthCore::SynthState, 4> mStateQueue; // lock-free UI→audio queue

@@ -1,5 +1,4 @@
 #include "DemoSequencer.h"
-#include "PolySynth_DSP.h"
 
 namespace iplug {
 
@@ -13,8 +12,9 @@ void DemoSequencer::SetMode(Mode mode, double sampleRate) {
   mNoteIndex = -1;
 }
 
-void DemoSequencer::Process(int nFrames, double sampleRate, PolySynthDSP &dsp) {
-  ProcessImpl(nFrames, sampleRate, dsp, [](const IMidiMsg&) {});
+void DemoSequencer::Process(int nFrames, double sampleRate,
+                            std::function<void(const IMidiMsg&)> midiCallback) {
+  ProcessImpl(nFrames, sampleRate, midiCallback, [](const IMidiMsg&) {});
 }
 
 } // namespace iplug
