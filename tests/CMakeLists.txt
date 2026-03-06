@@ -79,6 +79,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_ADSRViewModel.cpp
     unit/Test_SPSCQueue_Concurrent.cpp
     unit/Test_Engine_UpdateState.cpp
+    unit/Test_Voice.cpp
     ../src/core/PresetManager.cpp
 )
 
