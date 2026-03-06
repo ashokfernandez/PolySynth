@@ -1,5 +1,7 @@
+#include "../../src/core/Engine.h"
 #include "../../src/core/VoiceManager.h"
 #include "catch.hpp"
+#include <cmath>
 
 TEST_CASE("Polyphony limit of 4 respected", "[VoiceAllocation]") {
   PolySynthCore::VoiceManager vm;
@@ -106,4 +108,108 @@ TEST_CASE("Sustain pedal holds and releases through VoiceManager",
     }
   }
   REQUIRE(foundRelease);
+}
+
+// --- Stress Tests (Sprint 4) ---
+
+TEST_CASE("32 rapid NoteOn into 8-voice polyphony", "[VoiceAllocation][Stress]") {
+  PolySynthCore::Engine engine;
+  engine.Init(48000.0);
+  PolySynthCore::SynthState state;
+  state.polyphony = 8;
+  engine.UpdateState(state);
+
+  for (int note = 40; note < 72; ++note) {
+    engine.OnNoteOn(note, 100);
+  }
+  REQUIRE(engine.GetActiveVoiceCount() <= 8);
+
+  // Process and verify no crash
+  for (int i = 0; i < 1024; ++i) {
+    PolySynthCore::sample_t left = 0.0, right = 0.0;
+    engine.Process(left, right);
+    REQUIRE(std::isfinite(left));
+    REQUIRE(std::isfinite(right));
+  }
+}
+
+TEST_CASE("Unison overflow: 3 notes x 4 unison into 8 voices", "[VoiceAllocation][Stress]") {
+  PolySynthCore::Engine engine;
+  engine.Init(48000.0);
+  PolySynthCore::SynthState state;
+  state.polyphony = 8;
+  state.unisonCount = 4;
+  engine.UpdateState(state);
+
+  engine.OnNoteOn(60, 100);
+  engine.OnNoteOn(64, 100);
+  engine.OnNoteOn(67, 100);
+
+  for (int i = 0; i < 1024; ++i) {
+    PolySynthCore::sample_t left = 0.0, right = 0.0;
+    engine.Process(left, right);
+    REQUIRE(std::isfinite(left));
+    REQUIRE(std::isfinite(right));
+  }
+}
+
+TEST_CASE("Sustain pedal + rapid notes + release stress", "[VoiceAllocation][Stress]") {
+  PolySynthCore::Engine engine;
+  engine.Init(48000.0);
+  PolySynthCore::SynthState state;
+  state.polyphony = 8;
+  engine.UpdateState(state);
+
+  engine.OnSustainPedal(true);
+  for (int note = 60; note < 68; ++note) {
+    engine.OnNoteOn(note, 100);
+  }
+  for (int note = 60; note < 68; ++note) {
+    engine.OnNoteOff(note);
+  }
+  // 4 more notes while sustained
+  for (int note = 70; note < 74; ++note) {
+    engine.OnNoteOn(note, 100);
+  }
+  engine.OnSustainPedal(false);
+
+  // Process enough for all voices to release
+  for (int i = 0; i < 48000; ++i) {
+    PolySynthCore::sample_t left = 0.0, right = 0.0;
+    engine.Process(left, right);
+    REQUIRE(std::isfinite(left));
+    REQUIRE(std::isfinite(right));
+  }
+  REQUIRE(engine.GetActiveVoiceCount() == 0);
+}
+
+TEST_CASE("NoteOn/NoteOff same note in quick succession", "[VoiceAllocation][Stress]") {
+  PolySynthCore::Engine engine;
+  engine.Init(48000.0);
+  PolySynthCore::SynthState state;
+  state.ampAttack = 0.01;
+  state.ampDecay = 0.1;
+  state.ampSustain = 1.0;
+  state.ampRelease = 1.0;
+  state.filterAttack = 0.01;
+  state.filterDecay = 0.1;
+  state.filterSustain = 1.0;
+  state.filterRelease = 1.0;
+  engine.UpdateState(state);
+
+  engine.OnNoteOn(60, 100);
+  for (int i = 0; i < 10; ++i) {
+    PolySynthCore::sample_t left = 0.0, right = 0.0;
+    engine.Process(left, right);
+  }
+  engine.OnNoteOff(60);
+  engine.OnNoteOn(60, 100);
+
+  // Verify no crash from rapid retrigger
+  for (int i = 0; i < 2048; ++i) {
+    PolySynthCore::sample_t left = 0.0, right = 0.0;
+    engine.Process(left, right);
+    REQUIRE(std::isfinite(left));
+    REQUIRE(std::isfinite(right));
+  }
 }

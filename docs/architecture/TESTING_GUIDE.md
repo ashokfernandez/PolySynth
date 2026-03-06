@@ -13,7 +13,7 @@
                   │ Golden Master │  19 WAV files, RMS comparison
                   │ Audio Tests   │  (catches signal path regressions)
                  ┌┴──────────────┴┐
-                 │   Unit Tests    │  22+ Catch2 test cases
+                 │   Unit Tests    │  55+ Catch2 test cases
                  │ (src/core only) │  (catches logic errors)
                  └────────────────┘
 ```
@@ -76,7 +76,7 @@ cmake --build build/sea_dsp_tests
 
 ### File Naming
 
-- Test files: `Test_ClassName.cpp` (e.g., `Test_SynthState.cpp`, `Test_Engine_Audio.cpp`)
+- Test files: `Test_ClassName.cpp` (e.g., `Test_SynthState.cpp`, `Test_Engine_Audio.cpp`, `Test_FilterModels.cpp`, `Test_ParameterBoundaries.cpp`, `Test_UnusedFields.cpp`)
 - Demo programs: `demo_feature_name.cpp` (e.g., `demo_filter_sweep.cpp`)
 - One test file per class or concern
 
@@ -159,6 +159,47 @@ You must update both test cases with the new field. See [ADDING_A_PARAMETER.md](
 1. Write a test that **fails before the fix** and **passes after**
 2. If the bug is in the signal path, verify golden masters still pass (or regenerate if the fix intentionally changes audio)
 
+### When Testing Filter Models
+
+Test each `Voice::FilterModel` variant in isolation. See `Test_FilterModels.cpp` for the canonical examples:
+
+- **Distinct output**: Render the same input through each model and verify RMS values differ by >1%
+- **Mid-note switching**: Change the filter model during a note and verify no crash/NaN
+- **Max resonance stability**: All models must remain finite at resonance=1.0 with rich (Saw) input
+- **Cutoff response**: Low cutoff should attenuate, high cutoff should pass signal through
+
+```cpp
+Voice v;
+v.Init(kSampleRate);
+v.SetFilterModel(Voice::FilterModel::Ladder);
+v.SetFilter(2000.0, 0.5, 0.0);
+v.SetADSR(0.001, 0.1, 1.0, 0.2);
+v.SetWaveformA(sea::Oscillator::WaveformType::Saw);
+v.NoteOn(60, 127);
+double rms = processRMS(v, kRenderSamples);
+```
+
+### When Testing Parameter Boundaries
+
+Test extreme values (min, max, zero, rapid changes) to ensure no NaN/Inf. See `Test_ParameterBoundaries.cpp`:
+
+- Set every numeric field to its minimum or maximum reasonable value
+- Alternate parameters every sample to stress smoothing/interpolation
+- Test zero-duration envelopes (attack=decay=sustain=release=0)
+- Test MIDI boundary notes (0 and 127)
+
+Use the local helper pattern for Engine-level boundary tests:
+```cpp
+bool engineProcessAllFinite(Engine& engine, int n) {
+    for (int i = 0; i < n; ++i) {
+        sample_t left = 0.0, right = 0.0;
+        engine.Process(left, right);
+        if (!std::isfinite(left) || !std::isfinite(right)) return false;
+    }
+    return true;
+}
+```
+
 ---
 
 ## Test Patterns
@@ -219,28 +260,36 @@ CATCH_CHECK(rms > 0.01);   // Should be audibly different
 
 ### The "No-Effect" Test Pattern
 
-For verifying that unimplemented SynthState fields have no audio effect:
+For verifying that unimplemented SynthState fields have no audio effect. See `Test_UnusedFields.cpp` for the canonical examples (9 tests covering all unused fields).
+
+Use two separate Engine instances to guarantee identical initial state, and compare output sample-by-sample with exact `==` (not `Approx`) since both engines process identical state:
 
 ```cpp
-CATCH_TEST_CASE("Unimplemented field has no audio effect", "[SynthState]") {
-    PolySynthCore::Engine engine;
-    engine.Init(48000.0);
+void verifyIdenticalOutput(const SynthState& stateA, const SynthState& stateB) {
+    Engine engineA;
+    engineA.Init(kSampleRate);
+    engineA.UpdateState(stateA);
+    engineA.OnNoteOn(60, 100);
 
-    PolySynthCore::SynthState stateA;
-    PolySynthCore::SynthState stateB;
-    stateB.unimplementedField = 999.0;  // Extreme value
+    Engine engineB;
+    engineB.Init(kSampleRate);
+    engineB.UpdateState(stateB);
+    engineB.OnNoteOn(60, 100);
 
-    engine.UpdateState(stateA);
-    engine.OnNoteOn(60, 100);
-    // ... render samples into bufferA ...
+    for (int i = 0; i < kRenderSamples; ++i) {
+        sample_t lA = 0.0, rA = 0.0, lB = 0.0, rB = 0.0;
+        engineA.Process(lA, rA);
+        engineB.Process(lB, rB);
+        CATCH_CHECK(lA == lB);
+        CATCH_CHECK(rA == rB);
+    }
+}
 
-    engine.Reset();
-    engine.UpdateState(stateB);
-    engine.OnNoteOn(60, 100);
-    // ... render samples into bufferB ...
-
-    // Buffers should be identical — field has no DSP effect
-    CATCH_CHECK(memcmp(bufferA, bufferB, sizeof(bufferA)) == 0);
+CATCH_TEST_CASE("Unused field 'mixNoise' has no audio effect", "[UnusedFields]") {
+    SynthState stateA;
+    SynthState stateB;
+    stateB.mixNoise = 1.0;
+    verifyIdenticalOutput(stateA, stateB);
 }
 ```
 
