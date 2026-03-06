@@ -786,21 +786,22 @@ void PolySynthPlugin::BuildFooter(IGraphics *g, const IRECT &bounds,
 void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
                                    int nFrames) {
   if (mPendingDSPReset.exchange(false, std::memory_order_acquire)) {
-    mDSP.Reset(GetSampleRate(), 0);
+    mEngine.Init(GetSampleRate());
   }
-  mDemoSequencer.Process(nFrames, GetSampleRate(), mDSP,
+  mDemoSequencer.Process(nFrames, GetSampleRate(),
+                         [this](const IMidiMsg& msg) { DispatchMidiToEngine(msg); },
                          [this](const IMidiMsg& msg) { SendMidiMsgFromDelegate(msg); });
   PolySynthCore::SynthState tmp;
   while (mStateQueue.TryPop(tmp)) mAudioState = tmp;
-  mDSP.UpdateState(mAudioState);
-  mDSP.ProcessBlock(inputs, outputs, 2, nFrames);
+  mEngine.UpdateState(mAudioState);
+  mEngine.Process(inputs, outputs, nFrames, 2);
 }
 void PolySynthPlugin::OnIdle() {
 #if IPLUG_EDITOR
   // Update active voice count display
   if (GetUI()) {
     if (auto *pControl = GetUI()->GetControlWithTag(kCtrlTagActiveVoices)) {
-      int active = mDSP.GetActiveVoiceCount();
+      int active = mEngine.GetActiveVoiceCount();
       int limit = mState.polyphony;
       char buf[16];
       snprintf(buf, sizeof(buf), "%d/%d", active, limit);
@@ -811,7 +812,7 @@ void PolySynthPlugin::OnIdle() {
     // Update chord name display
     if (auto *pControl = GetUI()->GetControlWithTag(kCtrlTagChordName)) {
       std::array<int, PolySynthCore::kMaxVoices> notes{};
-      int noteCount = mDSP.GetHeldNotes(notes);
+      int noteCount = mEngine.GetHeldNotes(notes);
 
       char chordBuf[32] = "";
       if (noteCount >= 3) {
@@ -828,15 +829,27 @@ void PolySynthPlugin::OnIdle() {
 #endif
 }
 void PolySynthPlugin::OnReset() {
-  mDSP.Reset(GetSampleRate(), GetBlockSize());
+  mEngine.Init(GetSampleRate());
   mAudioState = mState;
   // Drain any stale queued states
   PolySynthCore::SynthState tmp;
   while (mStateQueue.TryPop(tmp)) {}
-  mDSP.UpdateState(mAudioState);
+  mEngine.UpdateState(mAudioState);
+}
+void PolySynthPlugin::DispatchMidiToEngine(const IMidiMsg &msg) {
+  int status = msg.StatusMsg();
+  if (status == IMidiMsg::kNoteOn) {
+    mEngine.OnNoteOn(msg.NoteNumber(), msg.Velocity());
+  } else if (status == IMidiMsg::kNoteOff) {
+    mEngine.OnNoteOff(msg.NoteNumber());
+  } else if (status == IMidiMsg::kControlChange) {
+    if (msg.mData1 == 64) {
+      mEngine.OnSustainPedal(msg.mData2 >= 64);
+    }
+  }
 }
 void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
-  mDSP.ProcessMidiMsg(msg);
+  DispatchMidiToEngine(msg);
 #if IPLUG_EDITOR
   SendMidiMsgFromDelegate(msg); // Forward to UI thread for envelope animation
 #endif
@@ -1190,7 +1203,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
   else if (msgTag == kMsgTagNoteOn) {
     IMidiMsg msg;
     msg.MakeNoteOnMsg(ctrlTag, 100, 0);
-    mDSP.ProcessMidiMsg(msg);
+    DispatchMidiToEngine(msg);
 #if IPLUG_EDITOR
     OnMidiMsgUI(msg); // routes through plugin voice tracking → OnVoiceOn(slot)
 #endif
@@ -1198,7 +1211,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
   } else if (msgTag == kMsgTagNoteOff) {
     IMidiMsg msg;
     msg.MakeNoteOffMsg(ctrlTag, 0);
-    mDSP.ProcessMidiMsg(msg);
+    DispatchMidiToEngine(msg);
 #if IPLUG_EDITOR
     OnMidiMsgUI(msg); // routes through plugin voice tracking → OnVoiceOff(slot)
 #endif

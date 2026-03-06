@@ -376,7 +376,6 @@
     <ClInclude Include="..\..\..\..\external\iPlug2\IPlug\ISender.h">
       <Filter>IPlug</Filter>
     </ClInclude>
-    <ClInclude Include="..\PolySynth_DSP.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="resources">
