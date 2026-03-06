@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DspConstants.h"
 #include "types.h"
 #include <algorithm>
 #include <cmath>
@@ -129,11 +130,11 @@ public:
     sample_t filterEnvVal = mFilterEnv.Process();
 
     // Portamento: glide toward target frequency
-    if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > 0.01) {
-      sample_t alpha = 1.0 - std::exp(-3.0 / (mGlideTime * mSampleRate));
+    if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > kGlideSnapThresholdHz) {
+      sample_t alpha = 1.0 - std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate));
       mFreq += (mTargetFreq - mFreq) * alpha;
       // Snap to target when close enough
-      if (std::abs(mFreq - mTargetFreq) < 0.01) {
+      if (std::abs(mFreq - mTargetFreq) < kGlideSnapThresholdHz) {
         mFreq = mTargetFreq;
       }
       mCurrentPitch = static_cast<float>(mFreq);
@@ -147,7 +148,7 @@ public:
     sample_t modFreqB = mFreq * std::pow(2.0, mDetuneB / 1200.0);
 
     if (mLfoPitchDepth > 0.0) {
-      sample_t modMult = (1.0 + lfoVal * mLfoPitchDepth * 0.05);
+      sample_t modMult = (1.0 + lfoVal * mLfoPitchDepth * kLfoPitchScale);
       modFreqA *= modMult;
       modFreqB *= modMult;
     }
@@ -167,7 +168,7 @@ public:
     if (mPolyModOscBToPWM != 0.0 || mPolyModFilterEnvToPWM != 0.0) {
       sample_t pwmMod =
           (oscB * mPolyModOscBToPWM) + (filterEnvVal * mPolyModFilterEnvToPWM);
-      sample_t pwmA = mBasePulseWidthA + (pwmMod * 0.5);
+      sample_t pwmA = mBasePulseWidthA + (pwmMod * kPwmModScale);
       mOscA.SetPulseWidth(std::clamp(pwmA, sample_t(0.01), sample_t(0.99)));
     } else {
       mOscA.SetPulseWidth(mBasePulseWidthA);
@@ -179,7 +180,7 @@ public:
     // Filter Modulation: Base + Keyboard + Env + LFO
     sample_t cutoff = mBaseCutoff;
     cutoff +=
-        filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) * 10000.0;
+        filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) * kFilterEnvMaxHz;
     if (mPolyModOscBToFilter != 0.0) {
       cutoff += oscB * mPolyModOscBToFilter * mBaseCutoff;
     }
@@ -256,7 +257,7 @@ public:
   void StartSteal() {
     mStolenFadeGain = 1.0f;
     // Increase fade to 20ms to prevent clicks/crunch when reducing polyphony
-    const sample_t fadeSamples = std::max(sample_t(1.0), sample_t(0.020) * mSampleRate);
+    const sample_t fadeSamples = std::max(sample_t(1.0), kStolenFadeTimeSec * mSampleRate);
     mStolenFadeDelta = sample_t(1.0) / fadeSamples;
     mVoiceState = VoiceState::Stolen;
   }
@@ -300,7 +301,7 @@ public:
   void SetFilter(sample_t cutoff, sample_t res, sample_t envAmount) {
     mBaseCutoff = cutoff;
     // Map 0-1 resonance to 0.5-20.5 Q for the biquad filter
-    mBaseRes = sample_t(0.5) + (res * res * sample_t(20.0));
+    mBaseRes = kResonanceBaseQ + (res * res * kResonanceScale);
     mFilterEnvAmount = envAmount;
   }
 
