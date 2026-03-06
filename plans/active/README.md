@@ -19,3 +19,8 @@ These are the current, non-archived planning documents.
   - [`plans/active/dsp_refactor.md`](dsp_refactor.md)
   - [`plans/active/dsp-refactor-claude.md`](dsp-refactor-claude.md)
   - [`plans/active/dsp-refactor-claude-v2.md`](dsp-refactor-claude-v2.md)
+
+## Sprint Tracks
+
+- **Architecture Review & Refactoring** (7 sprints): [`architecture-review/00_overview.md`](architecture-review/00_overview.md)
+  - Voice extraction, PolySynth_DSP removal, magic numbers, test pyramid, performance caching, LFO tests, table-driven params
