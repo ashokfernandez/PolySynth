@@ -18,7 +18,7 @@ LFO routing is one of the most complex modulation features with zero dedicated t
 
 ## Background Reading
 
-- `src/core/Voice.h` — SetLFORouting (line 341-347), LFO modulation in Process (lines 130, 147-155, 188, 218-223, 226, 272)
+- `src/core/Voice.h` — SetLFORouting, LFO modulation in Process
 - `docs/architecture/OVERVIEW.md` — Layer diagram and file map
 - `docs/architecture/ARCHITECTURE_REVIEW_PROMPT.md` — Original issues list
 - `docs/architecture/TESTING_GUIDE.md` — Test conventions
@@ -35,10 +35,12 @@ LFO routing is one of the most complex modulation features with zero dedicated t
 // See TESTING_GUIDE.md for test patterns and conventions.
 #define CATCH_CONFIG_PREFIX_ALL
 #include "Voice.h"
+#include "TestHelpers.h"
 #include "catch.hpp"
 #include <cmath>
 
 using namespace PolySynthCore;
+using namespace TestHelpers;
 
 namespace {
 constexpr double kSampleRate = 48000.0;
@@ -59,7 +61,7 @@ constexpr int kRenderSamples = 4096; // ~85ms, enough for LFO to modulate
 - Set LFO routing: pitch=0.0, filter=1.0, amp=0.0, pan=0.0
 - NoteOn(60, 127)
 - Compare: RMS of first quarter of render vs third quarter
-- Assert: RMS values differ (filter cutoff is sweeping)
+- Assert: RMS values differ by >1% relative difference (filter cutoff is sweeping)
 - Tag: `[Voice][LFO]`
 
 **Test Case 3: LFO amp modulation varies amplitude (tremolo)**
@@ -67,7 +69,7 @@ constexpr int kRenderSamples = 4096; // ~85ms, enough for LFO to modulate
 - Set LFO routing: pitch=0.0, filter=0.0, amp=1.0, pan=0.0
 - NoteOn(60, 127)
 - Compute max amplitude of consecutive 512-sample blocks
-- Assert: Max amplitude varies across blocks (tremolo effect)
+- Assert: Max amplitude varies across blocks (use >5% relative difference between min and max block amplitude)
 - Tag: `[Voice][LFO]`
 
 **Test Case 4: LFO pan modulation varies pan position**
@@ -82,9 +84,9 @@ constexpr int kRenderSamples = 4096; // ~85ms, enough for LFO to modulate
   float pan2 = v.GetPanPosition();
   for (int i = 0; i < 2400; ++i) v.Process();
   float pan3 = v.GetPanPosition();
-  CATCH_CHECK(pan1 != pan2); // Pan should vary over time
+  CATCH_CHECK(std::abs(pan1 - pan2) > 0.01); // Pan should vary measurably
   ```
-- Assert: At least two of the sampled pan positions differ
+- Assert: At least two of the sampled pan positions differ by >0.01
 - Tag: `[Voice][LFO]`
 
 **Test Case 5: LFO depth=0 produces no modulation**
@@ -234,7 +236,9 @@ LFO modulation is time-varying, so tests must process enough samples for the LFO
 - **Pitch modulation**: count zero-crossings in different time windows
 - **Amplitude modulation**: compare max amplitude across time blocks
 - **Filter modulation**: compare RMS across time blocks (spectral energy changes)
-- **Pan modulation**: sample GetPanPosition() at multiple points
+- **Pan modulation**: sample GetPanPosition() at multiple points (must call Process() between reads)
+
+Use relative difference thresholds (>1%) rather than bare `!=` for robustness.
 
 Example pattern: see `Test_LFO_Routing.cpp`.
 ```

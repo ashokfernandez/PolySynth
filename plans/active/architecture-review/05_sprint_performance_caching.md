@@ -14,8 +14,8 @@ On desktop, these per-sample `std::pow`/`std::exp`/`std::sqrt` calls are measura
 
 ## Background Reading
 
-- `src/core/Voice.h` — Lines 27, 76, 86, 110, 114, 135, 149 (expensive math calls)
-- `src/core/VoiceManager.h` — Lines 525, 544 (sqrt in ProcessStereo)
+- `src/core/Voice.h` — Expensive math calls in Process(), Init(), NoteOn(), ApplyDetuneCents()
+- `src/core/VoiceManager.h` — sqrt in ProcessStereo
 - `src/core/DspConstants.h` (from Sprint 3) — Named constants referenced
 
 ---
@@ -61,7 +61,7 @@ On desktop, these per-sample `std::pow`/`std::exp`/`std::sqrt` calls are measura
 
 ### Task 5.2: Cache Glide Coefficient in Voice
 
-**Problem:** `std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate))` is computed every sample during portamento (line 135).
+**Problem:** `std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate))` is computed every sample during portamento.
 
 **What to do:**
 
@@ -84,7 +84,7 @@ On desktop, these per-sample `std::pow`/`std::exp`/`std::sqrt` calls are measura
 
 3. Replace the per-sample computation in `Voice::Process()`:
 
-   **Before (line 135):**
+   **Before (search for `std::exp(-kGlideTimeConstant`):**
    ```cpp
    sample_t alpha = 1.0 - std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate));
    mFreq += (mTargetFreq - mFreq) * alpha;
@@ -102,7 +102,7 @@ On desktop, these per-sample `std::pow`/`std::exp`/`std::sqrt` calls are measura
 
 ### Task 5.3: Cache Headroom Scale in VoiceManager
 
-**Problem:** `1.0 / std::sqrt(static_cast<sample_t>(kNumVoices))` is computed every `Process()` and `ProcessStereo()` call (lines 525, 544). `kNumVoices` is a compile-time constant, so this never changes.
+**Problem:** `1.0 / std::sqrt(static_cast<sample_t>(kNumVoices))` is computed every `Process()` and `ProcessStereo()` call. `kNumVoices` is a compile-time constant, so this never changes.
 
 **What to do:**
 
@@ -116,12 +116,12 @@ On desktop, these per-sample `std::pow`/`std::exp`/`std::sqrt` calls are measura
 
    Note: `constexpr` with `std::sqrt` may not work in C++17 depending on the compiler. Use `static inline const` as a portable alternative.
 
-2. Replace in `Process()` (line 525):
+2. Replace in `Process()` (search for `sum * (1.0 / std::sqrt`):
    ```cpp
    return sum * kHeadroomScale;
    ```
 
-3. Replace in `ProcessStereo()` (line 544):
+3. Replace in `ProcessStereo()` (search for `1.0 / std::sqrt`):
    ```cpp
    outLeft *= kHeadroomScale;
    outRight *= kHeadroomScale;
@@ -129,7 +129,7 @@ On desktop, these per-sample `std::pow`/`std::exp`/`std::sqrt` calls are measura
 
 ### Task 5.4: Cache Voice Stealing Fade Delta (Minor)
 
-**Problem:** `Voice::StartSteal()` computes `1.0 / fadeSamples` each time a voice is stolen (line 262). This is only called during voice stealing (not per-sample), so it's not a hot-path issue. However, for consistency with the caching pattern, we can pre-compute it.
+**Problem:** `Voice::StartSteal()` computes `1.0 / fadeSamples` each time a voice is stolen. This is only called during voice stealing (not per-sample), so it's not a hot-path issue. However, for consistency with the caching pattern, we can pre-compute it.
 
 **Decision:** Skip this — it's called infrequently. Document as "not cached because it's not in the per-sample path" to show it was considered.
 

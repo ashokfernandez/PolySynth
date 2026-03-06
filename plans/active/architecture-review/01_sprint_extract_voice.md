@@ -162,6 +162,11 @@ inline double processRMS(PolySynthCore::Voice& voice, int n) {
     return std::sqrt(sumSq / n);
 }
 
+// Check that a value is finite and within a reasonable audio range.
+inline bool isValidAudio(double value, double maxMagnitude = 10.0) {
+    return std::isfinite(value) && std::abs(value) <= maxMagnitude;
+}
+
 } // namespace TestHelpers
 ```
 
@@ -202,7 +207,7 @@ CATCH_TEST_CASE("Voice idle produces silence", "[Voice]") {
     v.Init(kSampleRate);
     // Voice starts inactive — Process() should return 0.0
     for (int i = 0; i < kBlockSize; ++i) {
-        CATCH_REQUIRE(v.Process() == 0.0);
+        CATCH_REQUIRE(v.Process() == Catch::Approx(0.0).margin(1e-15));
     }
 }
 ```
@@ -216,7 +221,8 @@ CATCH_TEST_CASE("Voice NoteOn produces non-zero output", "[Voice]") {
     v.NoteOn(60, 127);
     // After a few samples of attack, output should be non-zero
     double maxVal = processMaxAbs(v, kBlockSize);
-    CATCH_REQUIRE(maxVal > 0.0);
+    CATCH_REQUIRE(std::isfinite(maxVal));
+    CATCH_REQUIRE(maxVal > 1e-6);
 }
 ```
 
@@ -233,15 +239,17 @@ CATCH_TEST_CASE("Voice returns to silence after NoteOff + release", "[Voice]") {
     processNSamples(v, 1000);
     // Voice should now be idle
     CATCH_CHECK(!v.IsActive());
-    CATCH_CHECK(v.Process() == 0.0);
+    CATCH_CHECK(std::abs(v.Process()) < 1e-10);
 }
 ```
 
 **Test Case 4: All four filter models produce distinct output**
+
+> **Robustness note:** We use RMS comparison with a minimum difference threshold instead of bare `!=` to avoid fragile equality checks.
+
 ```cpp
 CATCH_TEST_CASE("Filter models produce distinct output", "[Voice][Filter]") {
-    // Sum of absolute values for each model should differ
-    double sums[4] = {};
+    double rms[4] = {};
     for (int model = 0; model < 4; ++model) {
         Voice v;
         v.Init(kSampleRate);
@@ -250,14 +258,15 @@ CATCH_TEST_CASE("Filter models produce distinct output", "[Voice][Filter]") {
         v.SetADSR(0.001, 0.1, 1.0, 0.2);
         v.SetWaveformA(sea::Oscillator::WaveformType::Saw);
         v.NoteOn(60, 127);
-        for (int i = 0; i < kBlockSize * 4; ++i) {
-            sums[model] += std::abs(v.Process());
+        rms[model] = processRMS(v, kBlockSize * 4);
+    }
+    // Each model should produce measurably different RMS (>1% difference)
+    for (int i = 0; i < 4; ++i) {
+        for (int j = i + 1; j < 4; ++j) {
+            double relDiff = std::abs(rms[i] - rms[j]) / std::max(rms[i], rms[j]);
+            CATCH_CHECK(relDiff > 0.01);
         }
     }
-    // Each model should produce a different sum (different filter characteristics)
-    CATCH_CHECK(sums[0] != sums[1]);
-    CATCH_CHECK(sums[0] != sums[2]);
-    CATCH_CHECK(sums[0] != sums[3]);
 }
 ```
 
@@ -285,10 +294,10 @@ CATCH_TEST_CASE("Zero attack time produces immediate output", "[Voice][Envelope]
     v.SetADSR(0.0, 0.1, 1.0, 0.2); // Zero attack
     v.SetWaveformA(sea::Oscillator::WaveformType::Saw);
     v.NoteOn(60, 127);
-    // First sample after NoteOn should already have signal
-    double first = std::abs(v.Process());
-    // With zero attack + sustain=1.0, first sample should be close to full amplitude
-    CATCH_CHECK(first > 0.0);
+    // First few samples after NoteOn should already have signal
+    double maxFirst8 = processMaxAbs(v, 8);
+    CATCH_CHECK(std::isfinite(maxFirst8));
+    CATCH_CHECK(maxFirst8 > 1e-6);
 }
 ```
 
@@ -296,21 +305,19 @@ CATCH_TEST_CASE("Zero attack time produces immediate output", "[Voice][Envelope]
 ```cpp
 CATCH_TEST_CASE("Velocity scales output amplitude", "[Voice]") {
     // Low velocity should produce quieter output than high velocity
-    double maxLow = 0.0, maxHigh = 0.0;
-
     Voice vLow;
     vLow.Init(kSampleRate);
     vLow.SetADSR(0.001, 0.1, 1.0, 0.2);
     vLow.NoteOn(60, 10); // Low velocity
-    maxLow = processMaxAbs(vLow, kBlockSize);
+    double rmsLow = processRMS(vLow, kBlockSize);
 
     Voice vHigh;
     vHigh.Init(kSampleRate);
     vHigh.SetADSR(0.001, 0.1, 1.0, 0.2);
     vHigh.NoteOn(60, 127); // Max velocity
-    maxHigh = processMaxAbs(vHigh, kBlockSize);
+    double rmsHigh = processRMS(vHigh, kBlockSize);
 
-    CATCH_CHECK(maxHigh > maxLow);
+    CATCH_CHECK(rmsHigh > rmsLow * 1.5); // At least 50% louder
 }
 ```
 
@@ -337,18 +344,18 @@ CATCH_TEST_CASE("StartSteal fades voice to zero within 25ms", "[Voice][Stealing]
 ```
 
 **Test Case 9: Poly-mod OscB→FreqA produces measurable frequency change**
+
+> **Robustness note:** Uses RMS comparison with a minimum ratio threshold instead of `!=`.
+
 ```cpp
 CATCH_TEST_CASE("PolyMod OscB to FreqA modulates output", "[Voice][PolyMod]") {
-    // Compare output with and without FM modulation
-    double sumNoMod = 0.0, sumWithMod = 0.0;
-
     Voice v1;
     v1.Init(kSampleRate);
     v1.SetADSR(0.001, 0.1, 1.0, 0.2);
     v1.SetMixer(1.0, 1.0, 0.0);
     v1.SetPolyModOscBToFreqA(0.0);
     v1.NoteOn(60, 127);
-    for (int i = 0; i < kBlockSize * 2; ++i) sumNoMod += std::abs(v1.Process());
+    double rmsNoMod = processRMS(v1, kBlockSize * 2);
 
     Voice v2;
     v2.Init(kSampleRate);
@@ -356,17 +363,16 @@ CATCH_TEST_CASE("PolyMod OscB to FreqA modulates output", "[Voice][PolyMod]") {
     v2.SetMixer(1.0, 1.0, 0.0);
     v2.SetPolyModOscBToFreqA(0.8); // Strong FM
     v2.NoteOn(60, 127);
-    for (int i = 0; i < kBlockSize * 2; ++i) sumWithMod += std::abs(v2.Process());
+    double rmsWithMod = processRMS(v2, kBlockSize * 2);
 
-    CATCH_CHECK(sumNoMod != sumWithMod);
+    double relDiff = std::abs(rmsNoMod - rmsWithMod) / std::max(rmsNoMod, rmsWithMod);
+    CATCH_CHECK(relDiff > 0.01); // At least 1% RMS difference
 }
 ```
 
 **Test Case 10: Poly-mod OscB→PWM modulates pulse width**
 ```cpp
 CATCH_TEST_CASE("PolyMod OscB to PWM modulates output", "[Voice][PolyMod]") {
-    double sumNoMod = 0.0, sumWithMod = 0.0;
-
     Voice v1;
     v1.Init(kSampleRate);
     v1.SetADSR(0.001, 0.1, 1.0, 0.2);
@@ -374,7 +380,7 @@ CATCH_TEST_CASE("PolyMod OscB to PWM modulates output", "[Voice][PolyMod]") {
     v1.SetMixer(1.0, 1.0, 0.0);
     v1.SetPolyModOscBToPWM(0.0);
     v1.NoteOn(60, 127);
-    for (int i = 0; i < kBlockSize * 2; ++i) sumNoMod += std::abs(v1.Process());
+    double rmsNoMod = processRMS(v1, kBlockSize * 2);
 
     Voice v2;
     v2.Init(kSampleRate);
@@ -383,17 +389,16 @@ CATCH_TEST_CASE("PolyMod OscB to PWM modulates output", "[Voice][PolyMod]") {
     v2.SetMixer(1.0, 1.0, 0.0);
     v2.SetPolyModOscBToPWM(0.8);
     v2.NoteOn(60, 127);
-    for (int i = 0; i < kBlockSize * 2; ++i) sumWithMod += std::abs(v2.Process());
+    double rmsWithMod = processRMS(v2, kBlockSize * 2);
 
-    CATCH_CHECK(sumNoMod != sumWithMod);
+    double relDiff = std::abs(rmsNoMod - rmsWithMod) / std::max(rmsNoMod, rmsWithMod);
+    CATCH_CHECK(relDiff > 0.01);
 }
 ```
 
 **Test Case 11: Poly-mod OscB→Filter modulates filter cutoff**
 ```cpp
 CATCH_TEST_CASE("PolyMod OscB to Filter modulates output", "[Voice][PolyMod]") {
-    double sumNoMod = 0.0, sumWithMod = 0.0;
-
     Voice v1;
     v1.Init(kSampleRate);
     v1.SetADSR(0.001, 0.1, 1.0, 0.2);
@@ -401,7 +406,7 @@ CATCH_TEST_CASE("PolyMod OscB to Filter modulates output", "[Voice][PolyMod]") {
     v1.SetMixer(1.0, 1.0, 0.0);
     v1.SetPolyModOscBToFilter(0.0);
     v1.NoteOn(60, 127);
-    for (int i = 0; i < kBlockSize * 2; ++i) sumNoMod += std::abs(v1.Process());
+    double rmsNoMod = processRMS(v1, kBlockSize * 2);
 
     Voice v2;
     v2.Init(kSampleRate);
@@ -410,24 +415,23 @@ CATCH_TEST_CASE("PolyMod OscB to Filter modulates output", "[Voice][PolyMod]") {
     v2.SetMixer(1.0, 1.0, 0.0);
     v2.SetPolyModOscBToFilter(0.8);
     v2.NoteOn(60, 127);
-    for (int i = 0; i < kBlockSize * 2; ++i) sumWithMod += std::abs(v2.Process());
+    double rmsWithMod = processRMS(v2, kBlockSize * 2);
 
-    CATCH_CHECK(sumNoMod != sumWithMod);
+    double relDiff = std::abs(rmsNoMod - rmsWithMod) / std::max(rmsNoMod, rmsWithMod);
+    CATCH_CHECK(relDiff > 0.01);
 }
 ```
 
 **Test Case 12: Filter envelope modulates cutoff**
 ```cpp
 CATCH_TEST_CASE("Filter envelope modulates filter cutoff", "[Voice][Filter]") {
-    double sumNoEnv = 0.0, sumWithEnv = 0.0;
-
     Voice v1;
     v1.Init(kSampleRate);
     v1.SetADSR(0.001, 0.1, 1.0, 0.2);
     v1.SetFilterEnv(0.01, 0.1, 0.5, 0.2);
     v1.SetFilter(1000.0, 0.3, 0.0); // No env amount
     v1.NoteOn(60, 127);
-    for (int i = 0; i < kBlockSize * 4; ++i) sumNoEnv += std::abs(v1.Process());
+    double rmsNoEnv = processRMS(v1, kBlockSize * 4);
 
     Voice v2;
     v2.Init(kSampleRate);
@@ -435,11 +439,41 @@ CATCH_TEST_CASE("Filter envelope modulates filter cutoff", "[Voice][Filter]") {
     v2.SetFilterEnv(0.01, 0.1, 0.5, 0.2);
     v2.SetFilter(1000.0, 0.3, 0.8); // Strong env amount
     v2.NoteOn(60, 127);
-    for (int i = 0; i < kBlockSize * 4; ++i) sumWithEnv += std::abs(v2.Process());
+    double rmsWithEnv = processRMS(v2, kBlockSize * 4);
 
-    CATCH_CHECK(sumNoEnv != sumWithEnv);
+    double relDiff = std::abs(rmsNoEnv - rmsWithEnv) / std::max(rmsNoEnv, rmsWithEnv);
+    CATCH_CHECK(relDiff > 0.01);
 }
 ```
+
+---
+
+## Test Robustness Guidelines
+
+All tests in this sprint follow these robustness patterns:
+
+1. **Use `Approx` with margins** instead of exact `== 0.0` for silence checks:
+   ```cpp
+   CATCH_CHECK(value == Catch::Approx(0.0).margin(1e-15));
+   ```
+
+2. **Use RMS with relative difference thresholds** instead of `!=` for inequality:
+   ```cpp
+   double relDiff = std::abs(a - b) / std::max(a, b);
+   CATCH_CHECK(relDiff > 0.01); // At least 1% different
+   ```
+
+3. **Check finiteness and bounds** instead of bare `> 0.0`:
+   ```cpp
+   CATCH_CHECK(std::isfinite(value));
+   CATCH_CHECK(value > 1e-6);   // measurable signal
+   CATCH_CHECK(value < 10.0);   // not exploding
+   ```
+
+4. **Use time-based sample counts** with margin instead of exact sample counts:
+   ```cpp
+   int samples25ms = static_cast<int>(0.025 * kSampleRate); // 20ms fade + 5ms margin
+   ```
 
 ---
 
@@ -449,7 +483,7 @@ CATCH_TEST_CASE("Filter envelope modulates filter cutoff", "[Voice][Filter]") {
 |------|--------|-------------|
 | `src/core/Voice.h` | **NEW** | Voice class extracted from VoiceManager.h |
 | `src/core/VoiceManager.h` | **MODIFIED** | Remove Voice class, add `#include "Voice.h"` |
-| `tests/utils/TestHelpers.h` | **NEW** | Shared test helpers (processMaxAbs, processAllFinite, etc.) |
+| `tests/utils/TestHelpers.h` | **NEW** | Shared test helpers (processMaxAbs, processAllFinite, processRMS, etc.) |
 | `tests/unit/Test_Voice.cpp` | **NEW** | 12 isolated Voice test cases |
 | `tests/CMakeLists.txt` | **MODIFIED** | Add Test_Voice.cpp to UNIT_TEST_SOURCES, ensure utils/ is on include path |
 

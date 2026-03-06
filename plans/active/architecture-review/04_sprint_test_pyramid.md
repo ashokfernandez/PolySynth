@@ -18,7 +18,7 @@ Without these tests:
 
 ## Background Reading
 
-- `src/core/Voice.h` — FilterModel enum, SetFilter, Process (filter section lines 181-213)
+- `src/core/Voice.h` — FilterModel enum, SetFilter, Process (filter section)
 - `src/core/SynthState.h` — All fields, especially unused ones: `unison`, `unisonDetune`, `oscASync`, `oscBLoFreq`, `oscBKeyboardPoints`, `mixNoise`, `filterKeyboardTrack`
 - `src/core/VoiceManager.h` — OnNoteOn, voice allocation, polyphony enforcement
 - `docs/architecture/TESTING_GUIDE.md` — Current test patterns and conventions
@@ -54,8 +54,8 @@ constexpr int kRenderSamples = 2048;
 **Test Case 1: Each filter model produces distinct spectral output**
 - Setup: Create 4 Voice objects, each with a different FilterModel
 - All other settings identical: Saw wave, cutoff=2000Hz, resonance=0.5, note=60, velocity=127
-- Process `kRenderSamples` samples for each, sum absolute values
-- Assert: All 4 sums are different from each other
+- Process `kRenderSamples` samples for each, compute RMS
+- Assert: All 6 pairwise RMS comparisons show >1% relative difference
 - Tag: `[Voice][Filter]`
 
 **Test Case 2: Switching filter model mid-note doesn't crash**
@@ -77,13 +77,13 @@ constexpr int kRenderSamples = 2048;
 - For each model:
   - Render 2048 samples with cutoff=20Hz (min), note=60 (261Hz fundamental)
   - Render 2048 samples with cutoff=20000Hz (max)
-  - Assert: RMS of low-cutoff render < RMS of high-cutoff render
+  - Assert: RMS of low-cutoff render < RMS of high-cutoff render (use `CATCH_CHECK(rmsLow < rmsHigh * 0.9)` for robustness)
 - Tag: `[Voice][Filter]`
 
 **Test Case 5: High cutoff passes signal for all models**
 - For each model:
   - Render 2048 samples with cutoff=20000Hz, note=60
-  - Assert: max absolute value > 0.01 (signal passes through)
+  - Assert: RMS > 0.001 (measurable signal passes through) and all samples finite
 - Tag: `[Voice][Filter]`
 
 ### Task 4.2: Create `tests/unit/Test_ParameterBoundaries.cpp`
@@ -205,6 +205,8 @@ CATCH_TEST_CASE("Unused field 'fieldName' has no audio effect", "[UnusedFields]"
 }
 ```
 
+> **Note on exact comparison:** For the UnusedFields tests, exact `==` comparison is correct and preferred. Both engines process identical state (the unused field has no effect), so the output must be bit-for-bit identical. Using `Approx` here would mask a real bug.
+
 Write 9 test cases, one per unused field.
 
 ### Task 4.5: Update `tests/CMakeLists.txt`
@@ -250,7 +252,7 @@ In addition to writing new tests, apply these style cleanups to files you touch:
 |------|--------|-------------|
 | `tests/unit/Test_FilterModels.cpp` | **NEW** | 5 filter model test cases |
 | `tests/unit/Test_ParameterBoundaries.cpp` | **NEW** | 6 boundary safety test cases |
-| `tests/unit/Test_UnusedFields.cpp` | **NEW** | 7 no-effect regression tests |
+| `tests/unit/Test_UnusedFields.cpp` | **NEW** | 9 no-effect regression tests |
 | `tests/unit/Test_VoiceAllocation.cpp` | **MODIFIED** | 4 stress test cases added |
 | `tests/CMakeLists.txt` | **MODIFIED** | 3 new test files registered |
 | `docs/architecture/TESTING_GUIDE.md` | **MODIFIED** | Updated test count, new sections |
@@ -292,7 +294,7 @@ After this sprint: ~35 test files, ~55+ test cases total
 
 ## Common Pitfalls
 
-1. **Comparing floating point with `==`** — For the UnusedFields tests, exact comparison (`==`) is correct because both engines process identical state. For other comparisons, use `Approx` or inequality checks.
+1. **Comparing floating point with `==`** — For the UnusedFields tests, exact comparison (`==`) is correct because both engines process identical state. For other comparisons, use RMS with relative difference thresholds (>1% difference).
 2. **Engine::Init resets voices** — When testing Engine, always call `Init()` before `UpdateState()`. The Init resets all voice states.
 3. **Voice needs Init before NoteOn** — Always call `voice.Init(sampleRate)` before `voice.NoteOn()`. Uninitialized voice has undefined behaviour.
 4. **Catch2 prefix** — Remember to use `CATCH_TEST_CASE`, `CATCH_CHECK`, `CATCH_REQUIRE` (not `TEST_CASE`, `CHECK`, `REQUIRE`). This project uses `CATCH_CONFIG_PREFIX_ALL`.

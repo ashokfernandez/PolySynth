@@ -8,13 +8,13 @@ This folder contains fully groomed sprint documents for the PolySynth architectu
 
 | Sprint | Title | Risk | Effort | Key Deliverable |
 |--------|-------|------|--------|-----------------|
-| **1** | [Extract Voice to Own Header](SPRINT_1_EXTRACT_VOICE.md) | Low | Small | Voice.h + 12 isolated Voice tests |
-| **2** | [Eliminate PolySynth_DSP](SPRINT_2_ELIMINATE_POLYSYNTH_DSP.md) | Low | Small | Delete adapter, plugin owns Engine directly |
-| **3** | [Extract Magic Numbers](SPRINT_3_MAGIC_NUMBERS.md) | Low | Small | DspConstants.h with 13+ named constants |
-| **4** | [Strengthen Test Pyramid](SPRINT_4_TEST_PYRAMID.md) | Low | Medium | 22+ new tests (filters, boundaries, stress, unused fields) |
-| **5** | [Performance Caching](SPRINT_5_PERFORMANCE_CACHING.md) | Medium | Small | Cache pow/exp/sqrt in setters (may regenerate golden masters) |
-| **6** | [LFO Tests & Documentation](SPRINT_6_LFO_TESTS_AND_DOCS.md) | Low | Medium | 7 LFO tests + architecture doc updates |
-| **7** | [Table-Driven OnParamChange](SPRINT_7_TABLE_DRIVEN_PARAMS.md) | High | Large | ParamMeta table replaces 120-line switch |
+| **1** | [Extract Voice to Own Header](01_sprint_extract_voice.md) | Low | Small | Voice.h + 12 isolated Voice tests |
+| **2** | [Eliminate PolySynth_DSP](02_sprint_eliminate_polysynth_dsp.md) | Low | Small | Delete adapter, plugin owns Engine directly |
+| **3** | [Extract Magic Numbers](03_sprint_magic_numbers.md) | Low | Small | DspConstants.h with 13+ named constants |
+| **4** | [Strengthen Test Pyramid](04_sprint_test_pyramid.md) | Low | Medium | 22+ new tests (filters, boundaries, stress, unused fields) |
+| **5** | [Performance Caching](05_sprint_performance_caching.md) | Medium | Small | Cache pow/exp/sqrt in setters (may regenerate golden masters) |
+| **6** | [LFO Tests & Documentation](06_sprint_lfo_tests_and_docs.md) | Low | Medium | 7 LFO tests + architecture doc updates |
+| **7** | [Table-Driven OnParamChange](07_sprint_table_driven_params.md) | High | Large | ParamMeta table replaces 120-line switch |
 
 ## Dependency Graph
 
@@ -84,7 +84,7 @@ Phase 5:             Sprint 7               (standalone, highest risk, do last)
 
 ## PR Guidelines
 
-See [PR_GUIDELINES.md](PR_GUIDELINES.md) for:
+See [pr_guidelines.md](pr_guidelines.md) for:
 - PR template (required for every sprint)
 - Review checklist
 - Branch naming conventions

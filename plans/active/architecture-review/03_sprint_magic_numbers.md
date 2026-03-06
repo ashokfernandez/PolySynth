@@ -20,9 +20,9 @@ Named constants make the code self-documenting, prevent copy-paste errors, and g
 
 ## Background Reading
 
-- `src/core/Voice.h` (after Sprint 1 extraction) — Lines 117-252 (Process method)
-- `src/core/Engine.h` — Lines 86-177 (FX setters with magic numbers)
-- `src/core/VoiceManager.h` — Lines 520-546 (ProcessStereo with sqrt)
+- `src/core/Voice.h` (after Sprint 1 extraction) — Process method with magic numbers
+- `src/core/Engine.h` — FX setters with magic numbers
+- `src/core/VoiceManager.h` — ProcessStereo with sqrt
 
 ---
 
