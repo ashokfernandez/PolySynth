@@ -788,19 +788,8 @@ void PolySynthPlugin::ProcessBlock(sample **inputs, sample **outputs,
   if (mPendingDSPReset.exchange(false, std::memory_order_acquire)) {
     mEngine.Init(GetSampleRate());
   }
-  auto dispatchMidi = [this](const IMidiMsg& msg) {
-    int status = msg.StatusMsg();
-    if (status == IMidiMsg::kNoteOn) {
-      mEngine.OnNoteOn(msg.NoteNumber(), msg.Velocity());
-    } else if (status == IMidiMsg::kNoteOff) {
-      mEngine.OnNoteOff(msg.NoteNumber());
-    } else if (status == IMidiMsg::kControlChange) {
-      if (msg.mData1 == 64) {
-        mEngine.OnSustainPedal(msg.mData2 >= 64);
-      }
-    }
-  };
-  mDemoSequencer.Process(nFrames, GetSampleRate(), dispatchMidi,
+  mDemoSequencer.Process(nFrames, GetSampleRate(),
+                         [this](const IMidiMsg& msg) { DispatchMidiToEngine(msg); },
                          [this](const IMidiMsg& msg) { SendMidiMsgFromDelegate(msg); });
   PolySynthCore::SynthState tmp;
   while (mStateQueue.TryPop(tmp)) mAudioState = tmp;
@@ -847,7 +836,7 @@ void PolySynthPlugin::OnReset() {
   while (mStateQueue.TryPop(tmp)) {}
   mEngine.UpdateState(mAudioState);
 }
-void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
+void PolySynthPlugin::DispatchMidiToEngine(const IMidiMsg &msg) {
   int status = msg.StatusMsg();
   if (status == IMidiMsg::kNoteOn) {
     mEngine.OnNoteOn(msg.NoteNumber(), msg.Velocity());
@@ -858,6 +847,9 @@ void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
       mEngine.OnSustainPedal(msg.mData2 >= 64);
     }
   }
+}
+void PolySynthPlugin::ProcessMidiMsg(const IMidiMsg &msg) {
+  DispatchMidiToEngine(msg);
 #if IPLUG_EDITOR
   SendMidiMsgFromDelegate(msg); // Forward to UI thread for envelope animation
 #endif
@@ -1211,7 +1203,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
   else if (msgTag == kMsgTagNoteOn) {
     IMidiMsg msg;
     msg.MakeNoteOnMsg(ctrlTag, 100, 0);
-    mEngine.OnNoteOn(msg.NoteNumber(), msg.Velocity());
+    DispatchMidiToEngine(msg);
 #if IPLUG_EDITOR
     OnMidiMsgUI(msg); // routes through plugin voice tracking → OnVoiceOn(slot)
 #endif
@@ -1219,7 +1211,7 @@ bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,
   } else if (msgTag == kMsgTagNoteOff) {
     IMidiMsg msg;
     msg.MakeNoteOffMsg(ctrlTag, 0);
-    mEngine.OnNoteOff(msg.NoteNumber());
+    DispatchMidiToEngine(msg);
 #if IPLUG_EDITOR
     OnMidiMsgUI(msg); // routes through plugin voice tracking → OnVoiceOff(slot)
 #endif

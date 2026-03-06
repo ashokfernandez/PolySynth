@@ -498,7 +498,6 @@
     <ClInclude Include="..\..\..\..\external\iPlug2\IPlug\ISender.h" />
     <ClInclude Include="..\config.h" />
     <ClInclude Include="..\PolySynth.h" />
-    <ClInclude Include="..\PolySynth_DSP.h" />
     <ClInclude Include="..\resources\resource.h" />
   </ItemGroup>
   <ItemGroup>

@@ -1,3 +1,4 @@
+// Isolated Voice tests. See TESTING_GUIDE.md for patterns.
 #define CATCH_CONFIG_PREFIX_ALL
 #include "Voice.h"
 #include "TestHelpers.h"
@@ -15,7 +16,7 @@ CATCH_TEST_CASE("Voice idle produces silence", "[Voice]") {
     Voice v;
     v.Init(kSampleRate);
     for (int i = 0; i < kBlockSize; ++i) {
-        CATCH_REQUIRE(std::abs(v.Process()) < 1e-15);
+        CATCH_REQUIRE(v.Process() == Catch::Approx(0.0).margin(1e-15));
     }
 }
 

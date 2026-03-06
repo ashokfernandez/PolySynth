@@ -173,6 +173,8 @@ public:
 
   void SyncUIState();
 
+  void DispatchMidiToEngine(const iplug::IMidiMsg &msg);
+
 private:
   PolySynthCore::Engine mEngine;
   iplug::DemoSequencer mDemoSequencer;

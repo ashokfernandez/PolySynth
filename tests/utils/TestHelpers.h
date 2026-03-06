@@ -1,4 +1,6 @@
 #pragma once
+// Shared test helpers for Voice and Engine unit tests.
+// Used by Test_Voice.cpp, Test_FilterModels.cpp, Test_ParameterBoundaries.cpp, etc.
 
 #include "Voice.h"
 #include <cmath>

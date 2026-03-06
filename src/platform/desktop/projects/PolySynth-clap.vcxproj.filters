@@ -205,7 +205,6 @@
     <ClInclude Include="..\..\..\..\external\iPlug2\IPlug\Extras\Synth\VoiceAllocator.h">
       <Filter>IPlug\Extras\Synth</Filter>
     </ClInclude>
-    <ClInclude Include="..\PolySynth_DSP.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="IPlug">

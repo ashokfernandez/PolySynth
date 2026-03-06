@@ -93,7 +93,6 @@
 /* Begin PBXFileReference section */
 		4F10E7BF20B17EDB00F5B09B /* PolySynth-iOS-MainInterface.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = "PolySynth-iOS-MainInterface.storyboard"; path = "../resources/PolySynth-iOS-MainInterface.storyboard"; sourceTree = "<group>"; };
 		4F10E7C520B189DD00F5B09B /* PolySynth-iOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = "PolySynth-iOS.entitlements"; sourceTree = "<group>"; };
-		4F11D40623201452003E1647 /* PolySynth_DSP.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PolySynth_DSP.h; path = ../PolySynth_DSP.h; sourceTree = "<group>"; };
 		4F2020F620A1B2B500F22200 /* scripts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = scripts; path = ../scripts; sourceTree = "<group>"; };
 		4F2602DB2269F79200C7E97E /* tex */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tex; path = ../resources/tex; sourceTree = "<group>"; };
 		4F3E0F6420A0BC1C00A9C2BE /* PolySynth-iOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PolySynth-iOS-Info.plist"; path = "../resources/PolySynth-iOS-Info.plist"; sourceTree = "<group>"; };
@@ -522,7 +521,6 @@
 				4FFF108420A1036200D3092F /* config.h */,
 				4FFF108820A1036200D3092F /* PolySynth.h */,
 				4FFF108720A1036200D3092F /* PolySynth.cpp */,
-				4F11D40623201452003E1647 /* PolySynth_DSP.h */,
 				4F8D8BD82316701900EFA1FB /* README.md */,
 				4F8BF48D20A12D2E0081DF0A /* Resources */,
 				4F67D51620A121F60061FB8E /* Other Sources */,
