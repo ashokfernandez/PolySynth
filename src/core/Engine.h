@@ -169,7 +169,7 @@ public:
   void SetDelayTempo(sample_t bpm, sample_t division) {
     // Basic fallback for now
     sample_t beatSec = 60.0 / bpm;
-    SetDelay(beatSec * division, 35.0, 0.0);
+    SetDelay(beatSec * division, kTempoDelayFeedbackPct, 0.0);
   }
   void SetLimiter(sample_t threshold, sample_t lookaheadMs, sample_t releaseMs) {
     // Threshold should be mapped inverted if coming from UI,

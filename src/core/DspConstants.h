@@ -77,9 +77,11 @@ constexpr sample_t kMaxDelayMs = 2000.0;
 constexpr sample_t kDelayTimeToMs = 1000.0;
 
 // Conversion factor: UI feedback (0.0-0.95) to internal percentage (0-95).
+// Intentionally independent from kDelayMixScale despite same value.
 constexpr sample_t kDelayFeedbackScale = 100.0;
 
 // Conversion factor: UI mix (0.0-1.0) to internal percentage (0-100).
+// Intentionally independent from kDelayFeedbackScale despite same value.
 constexpr sample_t kDelayMixScale = 100.0;
 
 // ============================================================================
@@ -99,13 +101,21 @@ constexpr sample_t kLimiterReleaseMs = 50.0;
 // Multiplier to convert UI fine tune (semitones, +/-12) to cents for detune.
 constexpr sample_t kFineTuneToCents = 100.0;
 
+// ============================================================================
+// Engine: Tempo-Synced Delay FX
+// ============================================================================
+
+// Default feedback percentage for tempo-synced delay mode.
+constexpr sample_t kTempoDelayFeedbackPct = 35.0;
+
 static_assert(kResonanceBaseQ > 0.0);
 static_assert(kResonanceScale > 0.0);
 static_assert(kLfoPitchScale > 0.0);
 static_assert(kPwmModScale > 0.0);
 static_assert(kFilterEnvMaxHz > 0.0);
 static_assert(kGlideTimeConstant > 0.0);
-static_assert(kGlideSnapThresholdHz > 0.0);
+static_assert(kGlideSnapThresholdHz > 0.0 && kGlideSnapThresholdHz < 1.0,
+              "snap threshold should be sub-Hz");
 static_assert(kStolenFadeTimeSec > 0.0);
 static_assert(kChorusDepthMs > 0.0);
 static_assert(kMaxDelayMs > 0.0);
@@ -115,5 +125,6 @@ static_assert(kDelayMixScale > 0.0);
 static_assert(kLimiterLookaheadMs > 0.0);
 static_assert(kLimiterReleaseMs > 0.0);
 static_assert(kFineTuneToCents > 0.0);
+static_assert(kTempoDelayFeedbackPct > 0.0);
 
 } // namespace PolySynthCore
