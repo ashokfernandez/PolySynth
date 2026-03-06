@@ -101,3 +101,17 @@ Sprint 7 (independent, do last)
 - Sprints 3, 4, and 6 all depend on Sprint 1 (Voice.h extraction)
 - Sprint 5 depends on Sprint 3 (uses named constants)
 - Sprint 7 is independent but is the highest risk, so it goes last
+
+---
+
+## Cross-Sprint Fix Policy
+
+If during Sprint N you discover a bug or needed adjustment in a file modified by an earlier Sprint M:
+
+1. **Small fix (< 10 lines, same area):** Include the fix in Sprint N's PR. Note it in the PR description under a "### Fixes from earlier sprints" heading with a brief explanation.
+
+2. **Larger fix (> 10 lines, different concern):** Create a separate hotfix PR targeting `main` with the branch name `hotfix/sprint-M-description`. This keeps Sprint N's PR focused and reviewable.
+
+3. **Sprint doc correction:** If the sprint doc itself had an error (wrong API, wrong line number), fix the doc in the same PR and note it. Sprint docs are living documents — corrections are expected.
+
+4. **Never silently change behaviour from an earlier sprint** without documenting it in the PR. If a fix changes audio output, regenerate golden masters and explain why.

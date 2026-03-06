@@ -109,24 +109,22 @@ just test    # All existing tests pass
 2. Find the `set(UNIT_TEST_SOURCES ...)` list
 3. Add `unit/Test_Voice.cpp` in alphabetical order
 
-### Task 1.5: Create `tests/unit/Test_Voice.cpp` — Core Tests
+### Task 1.4b: Create `tests/utils/TestHelpers.h` — Shared Test Utilities
 
-**What to do:** Create the test file with the following test cases. Each test case is fully specified below with exact setup and assertions.
+**What to do:** Create a shared header for test helpers that will be reused across multiple test files (Sprints 1, 4, 5, 6).
 
-**File header:**
 ```cpp
-#define CATCH_CONFIG_PREFIX_ALL
+#pragma once
+// Shared test helpers for Voice and Engine unit tests.
+// Used by Test_Voice.cpp, Test_FilterModels.cpp, Test_ParameterBoundaries.cpp, etc.
+
 #include "Voice.h"
-#include "catch.hpp"
+#include <cmath>
 
-using namespace PolySynthCore;
+namespace TestHelpers {
 
-namespace {
-constexpr double kSampleRate = 48000.0;
-constexpr int kBlockSize = 256;
-
-// Helper: process N samples and return the last output
-double processNSamples(Voice& voice, int n) {
+// Process N samples, return the last output value.
+inline double processNSamples(PolySynthCore::Voice& voice, int n) {
     double last = 0.0;
     for (int i = 0; i < n; ++i) {
         last = voice.Process();
@@ -134,8 +132,8 @@ double processNSamples(Voice& voice, int n) {
     return last;
 }
 
-// Helper: process N samples and return max absolute value
-double processMaxAbs(Voice& voice, int n) {
+// Process N samples, return the maximum absolute output value.
+inline double processMaxAbs(PolySynthCore::Voice& voice, int n) {
     double maxAbs = 0.0;
     for (int i = 0; i < n; ++i) {
         double s = voice.Process();
@@ -145,16 +143,57 @@ double processMaxAbs(Voice& voice, int n) {
     return maxAbs;
 }
 
-// Helper: check that all samples are finite (no NaN or Inf)
-bool processAllFinite(Voice& voice, int n) {
+// Process N samples, return true if all output values are finite (no NaN or Inf).
+inline bool processAllFinite(PolySynthCore::Voice& voice, int n) {
     for (int i = 0; i < n; ++i) {
         double s = voice.Process();
         if (!std::isfinite(s)) return false;
     }
     return true;
 }
+
+// Compute RMS of N samples from a Voice.
+inline double processRMS(PolySynthCore::Voice& voice, int n) {
+    double sumSq = 0.0;
+    for (int i = 0; i < n; ++i) {
+        double s = voice.Process();
+        sumSq += s * s;
+    }
+    return std::sqrt(sumSq / n);
+}
+
+} // namespace TestHelpers
+```
+
+**Why a shared header:** These helpers are needed by Test_Voice.cpp (Sprint 1), Test_FilterModels.cpp (Sprint 4), Test_ParameterBoundaries.cpp (Sprint 4), and Test_LFO_Routing.cpp (Sprint 6). Duplicating them would violate DRY and create maintenance burden.
+
+**CMakeLists.txt:** The `tests/utils/` directory is already on the include path (verify in `tests/CMakeLists.txt`). If not, add it:
+```cmake
+target_include_directories(unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/utils)
+```
+
+### Task 1.5: Create `tests/unit/Test_Voice.cpp` — Core Tests
+
+**What to do:** Create the test file with the following test cases. Each test case is fully specified below with exact setup and assertions.
+
+**File header:**
+```cpp
+// Isolated Voice tests. See TESTING_GUIDE.md for patterns.
+#define CATCH_CONFIG_PREFIX_ALL
+#include "Voice.h"
+#include "TestHelpers.h"
+#include "catch.hpp"
+
+using namespace PolySynthCore;
+using namespace TestHelpers;
+
+namespace {
+constexpr double kSampleRate = 48000.0;
+constexpr int kBlockSize = 256;
 } // namespace
 ```
+
+> **Important:** The test helpers (`processNSamples`, `processMaxAbs`, `processAllFinite`) live in `tests/utils/TestHelpers.h` — see Task 1.4b below. Do NOT define them inline in this file.
 
 **Test Case 1: Idle voice produces silence**
 ```cpp
@@ -410,8 +449,9 @@ CATCH_TEST_CASE("Filter envelope modulates filter cutoff", "[Voice][Filter]") {
 |------|--------|-------------|
 | `src/core/Voice.h` | **NEW** | Voice class extracted from VoiceManager.h |
 | `src/core/VoiceManager.h` | **MODIFIED** | Remove Voice class, add `#include "Voice.h"` |
+| `tests/utils/TestHelpers.h` | **NEW** | Shared test helpers (processMaxAbs, processAllFinite, etc.) |
 | `tests/unit/Test_Voice.cpp` | **NEW** | 12 isolated Voice test cases |
-| `tests/CMakeLists.txt` | **MODIFIED** | Add Test_Voice.cpp to UNIT_TEST_SOURCES |
+| `tests/CMakeLists.txt` | **MODIFIED** | Add Test_Voice.cpp to UNIT_TEST_SOURCES, ensure utils/ is on include path |
 
 ---
 

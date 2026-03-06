@@ -140,9 +140,11 @@ constexpr sample_t kFineTuneToCents = 100.0;
 
 ### Task 3.2: Update `src/core/Voice.h` — Replace Magic Numbers
 
-**What to do:** Add `#include "DspConstants.h"` at the top of Voice.h, then make these exact replacements:
+**What to do:** Add `#include "DspConstants.h"` at the top of Voice.h, then make these exact replacements.
 
-**Change 1: Resonance mapping** (Voice::SetFilter, around line 305)
+> **Note on line numbers:** After Sprint 1 extracts Voice to its own file, line numbers will differ from VoiceManager.h. Search for the **Before** string to find each location — every pattern below is unique in the file.
+
+**Change 1: Resonance mapping** (in `Voice::SetFilter` — search for `0.5) + (res * res`)
 
 Before:
 ```cpp
@@ -153,7 +155,7 @@ After:
 mBaseRes = kResonanceBaseQ + (res * res * kResonanceScale);
 ```
 
-**Change 2: LFO pitch modulation** (Voice::Process, around line 152)
+**Change 2: LFO pitch modulation** (in `Voice::Process`, pitch modulation section — search for `mLfoPitchDepth * 0.05`)
 
 Before:
 ```cpp
@@ -164,7 +166,7 @@ After:
 sample_t modMult = (1.0 + lfoVal * mLfoPitchDepth * kLfoPitchScale);
 ```
 
-**Change 3: PWM modulation** (Voice::Process, around line 172)
+**Change 3: PWM modulation** (in `Voice::Process`, PWM section — search for `pwmMod * 0.5`)
 
 Before:
 ```cpp
@@ -175,7 +177,7 @@ After:
 sample_t pwmA = mBasePulseWidthA + (pwmMod * kPwmModScale);
 ```
 
-**Change 4: Filter envelope scaling** (Voice::Process, around line 184)
+**Change 4: Filter envelope scaling** (in `Voice::Process`, filter modulation section — search for `* 10000.0`)
 
 Before:
 ```cpp
@@ -186,7 +188,7 @@ After:
 cutoff += filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) * kFilterEnvMaxHz;
 ```
 
-**Change 5: Glide time constant** (Voice::Process, around line 135)
+**Change 5: Glide time constant** (in `Voice::Process`, portamento section — search for `-3.0 / (mGlideTime`)
 
 Before:
 ```cpp
@@ -197,7 +199,7 @@ After:
 sample_t alpha = 1.0 - std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate));
 ```
 
-**Change 6: Glide snap threshold** (Voice::Process, lines 134 and 138)
+**Change 6: Glide snap threshold** (in `Voice::Process`, portamento section — search for `> 0.01` near `mTargetFreq`. There are TWO occurrences: one `>` and one `<`)
 
 Before:
 ```cpp
@@ -212,7 +214,7 @@ if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > kGlideSnapThresholdHz) {
     if (std::abs(mFreq - mTargetFreq) < kGlideSnapThresholdHz) {
 ```
 
-**Change 7: Voice stealing fade time** (Voice::StartSteal, around line 261)
+**Change 7: Voice stealing fade time** (in `Voice::StartSteal` — search for `0.020`)
 
 Before:
 ```cpp
@@ -227,7 +229,7 @@ const sample_t fadeSamples = std::max(sample_t(1.0), kStolenFadeTimeSec * mSampl
 
 **What to do:** Add `#include "DspConstants.h"` at the top of Engine.h, then make these exact replacements:
 
-**Change 1: Delay init** (Engine::Init, line 26)
+**Change 1: Delay init** (in `Engine::Init` — search for `2000.0` near `mDelay.Init`)
 
 Before:
 ```cpp
@@ -238,7 +240,7 @@ After:
 mDelay.Init(sampleRate, kMaxDelayMs);
 ```
 
-**Change 2: Limiter params** (Engine::UpdateState, line 88)
+**Change 2: Limiter params** (in `Engine::UpdateState` — search for `5.0, 50.0` near `SetLimiter`)
 
 Before:
 ```cpp
@@ -249,7 +251,7 @@ After:
 SetLimiter(state.fxLimiterThreshold, kLimiterLookaheadMs, kLimiterReleaseMs);
 ```
 
-**Change 3: Chorus depth** (Engine::SetChorus, line 160)
+**Change 3: Chorus depth** (in `Engine::SetChorus` — search for `depth * 5.0`)
 
 Before:
 ```cpp
@@ -260,7 +262,7 @@ After:
 mChorus.SetDepth(depth * kChorusDepthMs);
 ```
 
-**Change 4: Delay time/feedback/mix scaling** (Engine::SetDelay, lines 164-166)
+**Change 4: Delay time/feedback/mix scaling** (in `Engine::SetDelay` — search for `timeSec * 1000.0`)
 
 Before:
 ```cpp
@@ -275,7 +277,7 @@ mDelay.SetFeedback(feedback * kDelayFeedbackScale);
 mDelay.SetMix(mix * kDelayMixScale);
 ```
 
-**Change 5: Fine tune scaling** (Engine::UpdateState, line 67)
+**Change 5: Fine tune scaling** (in `Engine::UpdateState` — search for `oscBFineTune * 100.0`)
 
 Before:
 ```cpp

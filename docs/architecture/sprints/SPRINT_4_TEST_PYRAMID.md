@@ -33,18 +33,23 @@ Without these tests:
 
 **File header:**
 ```cpp
+// Tests for filter model behaviour. See TESTING_GUIDE.md for patterns.
 #define CATCH_CONFIG_PREFIX_ALL
 #include "Voice.h"
+#include "TestHelpers.h"
 #include "catch.hpp"
 #include <cmath>
 
 using namespace PolySynthCore;
+using namespace TestHelpers;
 
 namespace {
 constexpr double kSampleRate = 48000.0;
 constexpr int kRenderSamples = 2048;
 } // namespace
 ```
+
+> **Note:** `TestHelpers.h` is created in Sprint 1 (Task 1.4b) and provides `processMaxAbs`, `processAllFinite`, `processRMS`, etc. All Sprint 4 tests should use these shared helpers.
 
 **Test Case 1: Each filter model produces distinct spectral output**
 - Setup: Create 4 Voice objects, each with a different FilterModel
@@ -169,6 +174,10 @@ constexpr int kRenderSamples = 2048;
 5. `oscBKeyboardPoints` (bool) — Key tracking for OscB not implemented
 6. `mixNoise` (double) — Noise oscillator not implemented
 7. `filterKeyboardTrack` (bool) — Filter key tracking not implemented
+8. `oscAFreq` (double) — Set in SynthState but oscillator frequency comes from MIDI NoteOn, not from this field
+9. `oscBFreq` (double) — Same: oscillator frequency comes from MIDI NoteOn + detune, not this field
+
+> **Why oscAFreq/oscBFreq are unused:** Engine::UpdateState never reads `state.oscAFreq` or `state.oscBFreq`. The oscillator frequencies are set exclusively by `Voice::NoteOn(note, velocity)` which converts the MIDI note number to Hz. These fields exist in SynthState for potential future "fixed frequency" modes but are currently dead.
 
 **Pattern for each test:**
 ```cpp
@@ -196,7 +205,7 @@ CATCH_TEST_CASE("Unused field 'fieldName' has no audio effect", "[UnusedFields]"
 }
 ```
 
-Write 7 test cases, one per unused field.
+Write 9 test cases, one per unused field.
 
 ### Task 4.5: Update `tests/CMakeLists.txt`
 
@@ -222,7 +231,7 @@ Add all new test files to `UNIT_TEST_SOURCES`:
 
 In addition to writing new tests, apply these style cleanups to files you touch:
 
-1. **Consistent test helper location** — If you create test helpers (like `processMaxAbs`, `processAllFinite`), put them in a shared namespace or a `tests/utils/TestHelpers.h` header if they're reused across multiple test files. If Sprint 1 already created these helpers in Test_Voice.cpp, extract them to a shared header.
+1. **Use shared test helpers** — Import `TestHelpers.h` (created in Sprint 1, Task 1.4b) for `processMaxAbs`, `processAllFinite`, `processRMS`. Do NOT duplicate these helpers in new test files.
 
 2. **Consistent tag naming** — Use these standard tags across all test files:
    - `[Voice]`, `[Engine]`, `[Filter]`, `[Envelope]`, `[VoiceAllocation]`
@@ -268,7 +277,7 @@ After this sprint: ~35 test files, ~55+ test cases total
 
 - [ ] ≥5 test cases for filter model behaviour in `Test_FilterModels.cpp`
 - [ ] ≥6 test cases for parameter boundary safety in `Test_ParameterBoundaries.cpp`
-- [ ] ≥7 no-effect tests for unused SynthState fields in `Test_UnusedFields.cpp`
+- [ ] ≥9 no-effect tests for unused SynthState fields (including oscAFreq, oscBFreq) in `Test_UnusedFields.cpp`
 - [ ] ≥4 stress test cases added to `Test_VoiceAllocation.cpp`
 - [ ] All new test files registered in `tests/CMakeLists.txt`
 - [ ] `docs/architecture/TESTING_GUIDE.md` updated with new patterns and test count

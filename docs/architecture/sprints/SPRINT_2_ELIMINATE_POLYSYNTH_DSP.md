@@ -104,10 +104,9 @@ mDSP.ProcessBlock(inputs, outputs, nOutputs, nFrames, GetTransportState().mTempo
 Replace with:
 ```cpp
 mEngine.Process(inputs, outputs, nFrames, nOutputs);
-mEngine.UpdateVisualization();
 ```
 
-Note: The transport state parameters (tempo, running) were passed to `ProcessBlock` but never used. `UpdateVisualization()` was called inside `Engine::Process(inputs, outputs, nFrames, nChans)` at line 261 of Engine.h, so it's already handled. Check whether the multi-frame `Process` already calls `UpdateVisualization()` — if yes, the explicit call is redundant and can be omitted.
+Note: The transport state parameters (tempo, running) were passed to `ProcessBlock` but never used. **Do NOT add an explicit `UpdateVisualization()` call** — the block-processing overload `Engine::Process(inputs, outputs, nFrames, nChans)` already calls `UpdateVisualization()` internally at the end (Engine.h line 261). Adding a second call would double-update the atomic visualization state, which is harmless but wasteful.
 
 **Change 3: `ProcessMidiMsg()` method**
 

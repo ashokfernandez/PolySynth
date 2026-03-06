@@ -79,6 +79,12 @@ struct ParamMeta {
     // nullptr = linear, "exp" = ShapeExp, "pow3" = ShapePowCurve(3)
     const char* shape;
 };
+
+// IMPORTANT: The table only supports `double` and `int` SynthState fields.
+// `bool` fields (oscASync, oscBLoFreq, filterKeyboardTrack, etc.) use
+// InitBool/InitEnum and MUST be handled as special cases — never add a
+// bool field to kParamTable. The ApplyParamToState/StateToUIValue helpers
+// do not handle bool types.
 ```
 
 ### Task 7.2: Build the Parameter Table
@@ -158,10 +164,12 @@ static const ParamMeta kParamTable[] = {
     // NOTE: OscWave, OscBWave, FilterModel use InitEnum — special cases.
 
     {kParamOscMix, "Osc Bal", nullptr, "%",
-     0., 100., 1., 0.,
+     0., 100., 1., 0.,  // default=0% means fully OscA (mixOscB=0.0, mixOscA=1.0)
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(mixOscB), nullptr},
-    // NOTE: OscMix also sets mixOscA = 1.0 - value. This is a special case.
+    // SPECIAL CASE: OscMix writes to mixOscB via the table, but also requires
+    // setting mixOscA = 1.0 - mixOscB. This is handled explicitly in OnParamChange
+    // after the table write. See Task 7.6.
 
     {kParamOscPulseWidthA, "PWA", nullptr, "%",
      0., 100., 1., 50.,

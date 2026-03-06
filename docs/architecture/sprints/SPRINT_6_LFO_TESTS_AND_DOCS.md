@@ -74,8 +74,17 @@ constexpr int kRenderSamples = 4096; // ~85ms, enough for LFO to modulate
 - Setup: Voice with LFO rate=5Hz, depth=1.0, shape=0
 - Set LFO routing: pitch=0.0, filter=0.0, amp=0.0, pan=1.0
 - NoteOn(60, 127)
-- Sample `GetPanPosition()` at multiple points during render
-- Assert: Pan position changes over time (not constant)
+- **Critical implementation detail:** `GetPanPosition()` uses `mLastLfoVal` which is only updated inside `Process()`. You MUST call `voice.Process()` between `GetPanPosition()` reads, otherwise the LFO value never advances and the pan position stays constant.
+- Sample pattern:
+  ```cpp
+  float pan1 = v.GetPanPosition();
+  for (int i = 0; i < 2400; ++i) v.Process(); // Advance LFO by ~half cycle at 5Hz
+  float pan2 = v.GetPanPosition();
+  for (int i = 0; i < 2400; ++i) v.Process();
+  float pan3 = v.GetPanPosition();
+  CATCH_CHECK(pan1 != pan2); // Pan should vary over time
+  ```
+- Assert: At least two of the sampled pan positions differ
 - Tag: `[Voice][LFO]`
 
 **Test Case 5: LFO depth=0 produces no modulation**

@@ -24,7 +24,7 @@ On desktop, these per-sample `std::pow`/`std::exp`/`std::sqrt` calls are measura
 
 ### Task 5.1: Cache OscB Detune Factor in Voice
 
-**Problem:** `std::pow(2.0, mDetuneB / 1200.0)` is computed every sample on line 149 of `Voice::Process()`, and also during `NoteOn()` (line 27, 86) and `ApplyDetuneCents()` (line 114).
+**Problem:** `std::pow(2.0, mDetuneB / 1200.0)` is computed every sample in `Voice::Process()` (search for `mFreq * std::pow(2.0, mDetuneB`), and also during `Init()` and `NoteOn()`. Note: `ApplyDetuneCents()` has a DIFFERENT pow that uses a local `cents` parameter — see warning below.
 
 **What to do:**
 
@@ -48,11 +48,16 @@ On desktop, these per-sample `std::pow`/`std::exp`/`std::sqrt` calls are measura
    mDetuneFactor = std::pow(2.0, mDetuneB / 1200.0);
    ```
 
-4. Replace all `std::pow(2.0, mDetuneB / 1200.0)` in Process, NoteOn, ApplyDetuneCents with `mDetuneFactor`:
-   - Line 27 (Init): `mOscB.SetFrequency(440.0 * mDetuneFactor);`
-   - Line 86 (NoteOn): `mOscB.SetFrequency(mFreq * mDetuneFactor);`
-   - Line 114 (ApplyDetuneCents): `mOscB.SetFrequency(mFreq * mDetuneFactor);`
-   - Line 149 (Process): `sample_t modFreqB = mFreq * mDetuneFactor;`
+4. Replace `std::pow(2.0, mDetuneB / 1200.0)` with `mDetuneFactor` in these locations:
+   - `Init()` (search for `440.0 * std::pow(2.0, mDetuneB`): → `mOscB.SetFrequency(440.0 * mDetuneFactor);`
+   - `NoteOn()` (search for `mFreq * std::pow(2.0, mDetuneB`): → `mOscB.SetFrequency(mFreq * mDetuneFactor);`
+   - `Process()` (search for `mFreq * std::pow(2.0, mDetuneB`): → `sample_t modFreqB = mFreq * mDetuneFactor;`
+
+   > **WARNING — Do NOT touch `ApplyDetuneCents()`'s first pow!**
+   > `ApplyDetuneCents(sample_t cents)` uses a **local** `cents` parameter (unison detune from the voice allocator), NOT `mDetuneB`. The `std::pow(2.0, cents / 1200.0)` on the `factor` line converts a different value each call and **cannot** be cached. Leave it unchanged. HOWEVER, the second pow in `ApplyDetuneCents` (for OscB frequency: `mFreq * std::pow(2.0, mDetuneB / 1200.0)`) CAN and SHOULD be replaced with `mDetuneFactor`.
+
+   > **Also leave `NoteOn()` MIDI→Hz pow unchanged:**
+   > `440.0 * std::pow(2.0, (note - 69.0) / 12.0)` converts the MIDI note number to Hz. This is called once per NoteOn with a different `note` each time — it cannot be cached.
 
 ### Task 5.2: Cache Glide Coefficient in Voice
 
