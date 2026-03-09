@@ -8,7 +8,7 @@ You MUST use `just` as the default interface for local development and verificat
 
 **Agent Navigation Paths:**
 * **Design principles (10 non-negotiable rules):** `docs/architecture/DESIGN_PRINCIPLES.md`
-* **PR review checklist:** `plans/active/architecture-review/pr_guidelines.md`
+* **PR review checklist:** `docs/guides/PR_REVIEW_GUIDELINES.md`
 * **Sprint retrospectives:** `plans/SPRINT_RETROSPECTIVE_NOTES.md`
 * Agent handbook: `docs/agents/README.md`
 * Full docs hub: `docs/README.md`
@@ -149,7 +149,7 @@ When asked to "review PR N", follow this exact process:
 Read every changed file in full (not just the diff hunks). You need surrounding context to catch issues the diff alone won't reveal.
 
 ### Step 3: Check against the review checklist
-Apply every item from `plans/active/architecture-review/pr_guidelines.md` § Review Checklist:
+Apply every item from `docs/guides/PR_REVIEW_GUIDELINES.md` § Review Checklist:
 
 **Code Quality:**
 - No new compiler warnings
