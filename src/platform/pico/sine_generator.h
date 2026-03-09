@@ -7,10 +7,13 @@
 
 namespace pico_audio {
 
+static constexpr float kPi = 3.14159265f;
+static constexpr float kTwoPi = 2.0f * kPi;
+
 // Compute the phase increment for a given frequency and sample rate.
 inline constexpr float PhaseIncrement(float freq, float sample_rate)
 {
-    return 2.0f * 3.14159265f * freq / sample_rate;
+    return kTwoPi * freq / sample_rate;
 }
 
 // Pack an int16 sample into a left-justified 32-bit I2S word.
@@ -32,7 +35,6 @@ inline void GenerateSine(float& phase,
                          uint32_t* buffer,
                          uint32_t num_frames)
 {
-    constexpr float kTwoPi = 2.0f * 3.14159265f;
     for (uint32_t i = 0; i < num_frames; i++) {
         float sample = sinf(phase) * amplitude;
         auto sample_i16 = static_cast<int16_t>(sample * 32767.0f);

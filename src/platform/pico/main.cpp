@@ -10,11 +10,12 @@
 
 #include "audio_i2s_driver.h"
 
-// DSP smoke test: pull in the full Engine header chain.
+// DSP link smoke test: verify the full Engine object graph links for ARM.
+// Removed before Sprint Pico-4 when real engine integration happens.
+#ifdef PICO_LINK_SMOKE_TEST
 #include "Engine.h"
-
-// Static Engine instance — proves the entire DSP object graph links for ARM.
 static PolySynthCore::Engine g_engine;
+#endif
 
 #include "sine_generator.h"
 

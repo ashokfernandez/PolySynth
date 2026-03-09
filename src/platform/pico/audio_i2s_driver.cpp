@@ -13,7 +13,6 @@ namespace pico_audio {
 
 // ── State ────────────────────────────────────────────────────────────────
 static uint32_t s_buffer[kNumBuffers][kBufferWords];  // ~4 KB total
-static volatile uint32_t s_active_buffer = 0;          // Which buffer DMA is sending
 static AudioCallback s_callback = nullptr;
 static volatile uint32_t s_underrun_count = 0;
 static volatile uint32_t s_last_fill_time_us = 0;
@@ -51,6 +50,13 @@ static void dma_irq_handler()
         dma_channel_set_trans_count(s_dma_channel_b, kBufferWords, false);
     } else {
         return;  // Spurious interrupt
+    }
+
+    // Underrun detection: if the other channel is already done (not busy),
+    // the fill callback took too long and DMA had nothing to send.
+    int other_channel = (fill_idx == 0) ? s_dma_channel_b : s_dma_channel_a;
+    if (!dma_channel_is_busy(other_channel)) {
+        s_underrun_count++;
     }
 
     // Fill the buffer that just finished sending (it's now free)

@@ -66,7 +66,6 @@ TEST_CASE("Sine generator produces correct 440 Hz tone", "[pico][audio]")
 
 TEST_CASE("Sine generator phase wraps without drift", "[pico][audio]")
 {
-    constexpr float kTwoPi = 2.0f * 3.14159265f;
     const float phase_inc = pico_audio::PhaseIncrement(440.0f, 48000.0f);
 
     float phase = 0.0f;
@@ -79,7 +78,7 @@ TEST_CASE("Sine generator phase wraps without drift", "[pico][audio]")
 
     // Phase should stay in [0, 2π)
     REQUIRE(phase >= 0.0f);
-    REQUIRE(phase < kTwoPi);
+    REQUIRE(phase < pico_audio::kTwoPi);
 }
 
 // ─── Test 1b: PackI2S encoding ──────────────────────────────────────────

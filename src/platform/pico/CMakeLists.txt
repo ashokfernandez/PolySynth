@@ -51,6 +51,7 @@ target_compile_definitions(polysynth_pico PRIVATE
     POLYSYNTH_MAX_VOICES=4
     PICO_AUDIO_SAMPLE_RATE=48000
     PICO_AUDIO_BUFFER_FRAMES=256
+    PICO_LINK_SMOKE_TEST  # Proves Engine object graph links for ARM; remove in Sprint Pico-4
 )
 
 # Catch float-to-double promotions in hot paths (these cost ~10x on Cortex-M33)

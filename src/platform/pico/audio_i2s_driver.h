@@ -16,9 +16,6 @@ static constexpr uint32_t kBufferFrames   = 256;    // Stereo frames per DMA buf
 static constexpr uint32_t kBufferWords    = kBufferFrames * 2;  // Total 32-bit words per buffer (L+R per frame)
 static constexpr uint32_t kNumBuffers     = 2;      // Double-buffering (ping-pong)
 
-// Kept for test backward-compat (kBufferSamples == kBufferWords for 32-bit layout)
-static constexpr uint32_t kBufferSamples  = kBufferWords;
-
 // Buffer latency: 256 frames / 48000 Hz = 5.33 ms per buffer
 // Total latency: 2 × 5.33 ms = 10.67 ms (double-buffered)
 
