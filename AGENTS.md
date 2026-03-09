@@ -10,6 +10,7 @@ You MUST use `just` as the default interface for local development and verificat
 * **Design principles (10 non-negotiable rules):** `docs/architecture/DESIGN_PRINCIPLES.md`
 * **PR review checklist:** `docs/guides/PR_REVIEW_GUIDELINES.md`
 * **Sprint retrospectives:** `plans/SPRINT_RETROSPECTIVE_NOTES.md`
+* **Build system sync (CMake/Xcode/MSBuild):** `docs/guides/BUILD_SYSTEM_SYNC.md`
 * Agent handbook: `docs/agents/README.md`
 * Full docs hub: `docs/README.md`
 * Planning hub: `plans/README.md`
@@ -85,7 +86,7 @@ Key topic files:
 * **FIX, DO NOT SUPPRESS:** You MUST NOT use static analysis (e.g., `cppcheck`) suppressions to hide warnings on newly written code. You must fix the underlying issue.
 * **DO NOT DEVIATE FROM SPEC:** The sprint plan and pseudocode are your absolute sources of truth. If a behavior is strictly specified (like immediate retriggering on steal or specific sample-rate reset values), you MUST implement it exactly as written and MUST NOT flag it as a bug.
 * **DO NOT HARDCODE PLUGIN IDENTITY:** You MUST NOT hardcode plugin name, company name, version, or bundle identifier strings anywhere outside `src/platform/desktop/config.h`. The Info.plist files are generated from `.in` templates by cmake at configure time — edit only `config.h` and re-run cmake. Hardcoding these values elsewhere (e.g. directly in a `.plist`) causes `[NSBundle bundleWithIdentifier:]` to return nil at runtime, silently breaking font loading and crashing DAWs.
-* **DO NOT CALL `BundleResourcePath` OUTSIDE `#ifndef WEB_API`:** On Emscripten, `PluginIDType = void*` so passing a `const char*` is a compile error. Any call to `BundleResourcePath` or `PluginPath` with a string argument must be wrapped in `#ifndef WEB_API`. The lint job enforces this via `scripts/check_platform_guards.py`.
+* **PLATFORM-GUARD ALL `BundleResourcePath` CALLS:** `PluginIDType` differs per platform: `const char*` (macOS), `HMODULE` (Windows), `void*` (Emscripten). You MUST use `#if defined(OS_MAC)` / `#elif defined(OS_WIN)` / `#endif` guards — NOT `#ifndef WEB_API` alone, which misses the macOS/Windows difference. On macOS pass a bundle ID string; on Windows pass `gHINSTANCE`. The lint job enforces web guards via `scripts/check_platform_guards.py`.
 * **NO MAGIC NUMBERS:** All numeric constants must be named or have an inline derivation comment. DSP tuning parameters go in `DspConstants.h`. Loop bounds over enum/variant sets must use a named constant (e.g., `kNumLFOWaveforms`), not a bare literal.
 * **NO BARE `==` ON FLOATS IN TESTS:** Use `Approx(x).margin(eps)` (Catch2) for computed values. Exact `==` is only acceptable when the value is structurally identical (same variable, or multiplied by literal `0.0`), with a comment explaining why.
 * **NO REDIRECT STUBS:** When moving or renaming files, just move them. Do not leave behind redirect stubs, re-export wrappers, or "this file moved to…" comments. Git history is the redirect.
