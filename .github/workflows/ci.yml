@@ -459,6 +459,41 @@ jobs:
             release-assets/windows/PolySynth-windows-vst3.zip
 
   # ---------------------------------------------------------------------------
+  # Job: Pico RP2350 Compile Check
+  # Ensures Pico firmware compiles after every change — no hardware needed.
+  # Runs independently of the desktop pipeline.
+  # ---------------------------------------------------------------------------
+  pico-compile-check:
+    name: Pico / Compile Check (RP2350)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Download Pico SDK
+        run: |
+          chmod +x scripts/download_pico_sdk.sh
+          ./scripts/download_pico_sdk.sh
+
+      - name: Build Pico firmware
+        run: |
+          cmake -S src/platform/pico -B build/pico \
+            -DPICO_SDK_PATH=${{ github.workspace }}/external/pico-sdk \
+            -G Ninja
+          cmake --build build/pico
+
+      - name: Verify .uf2 output
+        run: |
+          test -f build/pico/polysynth_pico.uf2
+          echo "polysynth_pico.uf2 generated successfully"
+          ls -lh build/pico/polysynth_pico.uf2
+
+  # ---------------------------------------------------------------------------
   # Job 8: Build PolySynth WAM Demo (unchanged – now depends on safety gate)
   # ---------------------------------------------------------------------------
   build-wam-demo:
