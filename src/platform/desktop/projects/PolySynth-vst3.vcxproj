@@ -395,6 +395,8 @@
     <ClCompile Include="..\..\..\..\external\iPlug2\IPlug\VST3\IPlugVST3.cpp" />
     <ClCompile Include="..\..\..\..\external\iPlug2\IPlug\VST3\IPlugVST3_ProcessorBase.cpp" />
     <ClCompile Include="..\PolySynth.cpp" />
+    <ClCompile Include="..\DemoSequencer.cpp" />
+    <ClCompile Include="..\..\..\..\src\core\PresetManager.cpp" />
     <ClCompile Include="..\..\..\..\external\iPlug2\WDL\win32_utf8.c" />
   </ItemGroup>
   <ItemGroup>
