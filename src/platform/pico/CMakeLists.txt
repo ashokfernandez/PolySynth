@@ -43,6 +43,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/SEA_Util"
 # ── Firmware executable ──────────────────────────────────────────────────
 add_executable(polysynth_pico
     main.cpp
+    audio_i2s_driver.cpp
 )
 
 target_compile_definitions(polysynth_pico PRIVATE
@@ -67,9 +68,15 @@ target_include_directories(polysynth_pico PRIVATE
 target_link_libraries(polysynth_pico PRIVATE
     pico_stdlib
     pico_cyw43_arch_none    # CYW43 for onboard LED (no WiFi stack)
+    hardware_pio
+    hardware_dma
+    hardware_clocks
     SEA_DSP
     SEA_Util
 )
+
+# Generate PIO header from .pio assembly
+pico_generate_pio_header(polysynth_pico ${CMAKE_CURRENT_LIST_DIR}/i2s.pio)
 
 # USB serial output (not UART) — Pico 2 W connects via USB
 pico_enable_stdio_usb(polysynth_pico 1)
