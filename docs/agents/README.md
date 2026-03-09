@@ -26,6 +26,9 @@ When instructions overlap, use this order:
 - **Testing expectations**:
   - [`.agent/rules/testing.md`](../../.agent/rules/testing.md)
   - [`docs/architecture/TESTING_GUIDE.md`](../architecture/TESTING_GUIDE.md)
+- **Embedded/Pico development**:
+  - [`plans/active/pico-port/`](../../plans/active/pico-port/)
+  - [`.agent/rules/platform_integration.md`](../../.agent/rules/platform_integration.md)
 
 ## Execution Convention
 

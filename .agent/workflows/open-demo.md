@@ -19,8 +19,3 @@ just desktop-run
 ```bash
 ./build_desktop/out/Debug/PolySynth.app/Contents/MacOS/PolySynth
 ```
-
-4. To view the underlying Web UI in a browser (for design/debugging):
-```bash
-open src/platform/desktop/resources/web/index.html
-```

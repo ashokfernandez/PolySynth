@@ -53,6 +53,7 @@ a new file if you are covering a genuinely distinct topic area.
 |---|---|
 | [`html_to_cpp_ui.md`](html_to_cpp_ui.md) | Converting HTML Canvas / CSS prototypes to iPlug2/Skia rendering |
 | [`iplug2_threading.md`](iplug2_threading.md) | Audio↔UI thread boundary patterns in iPlug2 |
+| [`embedded_pico.md`](embedded_pico.md) | RP2350 Pico embedded patterns, memory constraints, Pico SDK |
 
 ---
 

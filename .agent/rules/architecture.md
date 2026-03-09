@@ -4,7 +4,7 @@ Follow these strict architectural rules to ensure the codebase remains maintaina
 
 ## 1. Core Principles
 - **Agnotic Core ("The Hub")**: All DSP and business logic MUST reside in `src/core`.
-- **Platform Adapters ("The Spokes")**: Platform-specific code (iPlug2, Daisy, etc.) MUST reside in `src/platform`.
+- **Platform Adapters ("The Spokes")**: Platform-specific code (iPlug2, Pico, etc.) MUST reside in `src/platform`.
 - **Minimal Dependencies**: `src/core` should only depend on the C++17 Standard Library (strictly limited). No platform headers (Windows.h, Cocoa.h) allowed here.
 
 ## 2. Directory Structure
@@ -14,7 +14,7 @@ Follow these strict architectural rules to ensure the codebase remains maintaina
     - `oscillator/`, `filter/`, `modulation/`: Modular DSP components.
 - `src/platform/`:
     - `desktop/`: iPlug2 implementation for AU/VST3/Standalone.
-    - `daisy/`: (Future) Hardware implementation.
+    - `pico/`: RP2350 embedded hardware port (in progress).
 
 ## 3. Communication Rules
 - **UI -> Audio Thread**: Use `std::atomic` for simple parameters. Use lock-free FIFOs for complex events (e.g., loading a sample).

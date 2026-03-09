@@ -100,7 +100,7 @@ See [ADDING_A_PARAMETER.md](ADDING_A_PARAMETER.md) for the complete checklist.
 | **Unit test** (Catch2) | Logic errors in a single class | New DSP feature, new parameter, bug fix |
 | **Golden master** (WAV comparison) | Unintended audio regressions | Every merge |
 | **Demo program** (WAV generator) | New audio features need audible verification | New synthesis feature |
-| **Visual regression** (Playwright) | UI rendering changes | New or modified controls |
+| **Visual regression** (native VRT sandbox) | UI rendering changes | New or modified controls |
 
 **The minimum for adding a SynthState field:**
 1. Round-trip serialization test (already enforced by existing test)

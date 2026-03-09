@@ -5,7 +5,7 @@
 Every sprint PR must follow this template:
 
 ```markdown
-## Sprint N: [Sprint Title]
+## <Initiative>-N: [Sprint Title]
 
 ### Summary
 - [1-3 bullet points describing what changed and why]
@@ -28,6 +28,7 @@ Every sprint PR must follow this template:
 
 ### Definition of Done Checklist
 [Copy the sprint-specific DoD checklist and check off each item]
+- [ ] Retro section added to `plans/SPRINT_RETROSPECTIVE_NOTES.md`
 
 ### Reviewer Notes
 - Any decisions made during implementation that deviate from the sprint doc
@@ -70,12 +71,14 @@ Every sprint PR must follow this template:
 
 ## Branch Naming
 
-All sprint branches follow: `sprint-N/short-description`
+All sprint branches follow: `sprint/<prefix>-N-short-description`
+
+The prefix identifies the initiative (e.g., `AR` for Architecture Review, `pico` for Pico Port).
 
 Examples:
-- `sprint-1/extract-voice-header`
-- `sprint-2/eliminate-polysynth-dsp`
-- `sprint-3/magic-numbers-to-constants`
+- `sprint/AR-1-extract-voice-header`
+- `sprint/AR-3-magic-numbers-to-constants`
+- `sprint/pico-1-cmake-skeleton`
 
 ---
 
@@ -91,18 +94,7 @@ Examples:
 
 ## Sprint Dependency Graph
 
-```
-Sprint 1 ──────┬──→ Sprint 3 ──→ Sprint 5
-               ├──→ Sprint 4
-               └──→ Sprint 6
-Sprint 2 (independent)
-Sprint 7 (independent, do last)
-```
-
-- Sprints 1 and 2 can be developed in parallel (no file overlap)
-- Sprints 3, 4, and 6 all depend on Sprint 1 (Voice.h extraction)
-- Sprint 5 depends on Sprint 3 (uses named constants)
-- Sprint 7 is independent but is the highest risk, so it goes last
+Each initiative defines its own dependency graph in its `00_overview.md` file under `plans/active/<initiative>/`. Consult that file before starting work on any sprint to understand ordering constraints.
 
 ---
 

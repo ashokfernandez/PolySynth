@@ -33,7 +33,7 @@ src/core/
 src/platform/desktop/
 
 # UI changes
-src/platform/desktop/resources/web/src/
+UI/Controls/
 ```
 
 ### Build Commands
@@ -41,10 +41,6 @@ src/platform/desktop/resources/web/src/
 ```bash
 # Build desktop app
 just desktop-build
-
-# Build React UI
-cd src/platform/desktop/resources/web
-npm run build
 ```
 
 ---
@@ -60,13 +56,6 @@ Write and run tests to verify correctness:
 # Build and run
 just build
 just test
-```
-
-### JavaScript Tests
-
-```bash
-cd src/platform/desktop/resources/web
-npm test
 ```
 
 ### What to Test
@@ -170,7 +159,7 @@ git commit -m "Add demo for <feature>"
 git push origin main
 ```
 
-The demo page will update at: https://ashokfernandez.github.io/PolySynth/
+After pushing, run `just vrt-baseline` to update visual regression baselines if UI changed.
 
 ---
 
@@ -180,7 +169,7 @@ The demo page will update at: https://ashokfernandez.github.io/PolySynth/
 1. BUILD
    - Add filter to src/core/dsp/va/NewFilter.h
    - Add parameter to SynthState.h
-   - Wire up UI control in App.jsx
+   - Wire up UI control in PolySynth.cpp (OnLayout)
 
 2. TEST
    - Add Test_NewFilter.cpp

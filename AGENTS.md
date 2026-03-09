@@ -69,6 +69,7 @@ this codebase.  It is written by agents, for agents.
 Key topic files:
 * `learnings/html_to_cpp_ui.md` — HTML Canvas → iPlug2/Skia translation
 * `learnings/iplug2_threading.md` — Audio↔UI thread boundary patterns
+* `learnings/embedded_pico.md` — RP2350 Pico embedded patterns & constraints
 
 ---
 
@@ -82,22 +83,24 @@ Key topic files:
 * **DO NOT CALL `BundleResourcePath` OUTSIDE `#ifndef WEB_API`:** On Emscripten, `PluginIDType = void*` so passing a `const char*` is a compile error. Any call to `BundleResourcePath` or `PluginPath` with a string argument must be wrapped in `#ifndef WEB_API`. The lint job enforces this via `scripts/check_platform_guards.py`.
 * **NO MAGIC NUMBERS:** All numeric constants must be named or have an inline derivation comment. DSP tuning parameters go in `DspConstants.h`. Loop bounds over enum/variant sets must use a named constant (e.g., `kNumLFOWaveforms`), not a bare literal.
 * **NO BARE `==` ON FLOATS IN TESTS:** Use `Approx(x).margin(eps)` (Catch2) for computed values. Exact `==` is only acceptable when the value is structurally identical (same variable, or multiplied by literal `0.0`), with a comment explaining why.
+* **NO REDIRECT STUBS:** When moving or renaming files, just move them. Do not leave behind redirect stubs, re-export wrappers, or "this file moved to…" comments. Git history is the redirect.
+* **VALIDATE SPRINT PLANS:** Before treating a sprint plan as authoritative, verify that referenced builds compile, APIs exist, and test data is correct. Plans are written ahead of implementation and may contain stale assumptions.
 
-## 🏗️ 3. ARCHITECTURE & DSP RULES (When/Then Triggers)
+## 🏗️ 5. ARCHITECTURE & DSP RULES (When/Then Triggers)
 
 * **WHEN adding new building blocks:** You MUST enforce the split principle. If a class has a `Process(sample)` method, it belongs in `SEA_DSP`. If it supports audio applications but does not process audio samples (e.g., allocators, thread-safe queues, music theory), it belongs in `SEA_Util`.
 * **WHEN defining numeric types:** You MUST enforce strict type discipline for embedded portability. Use the `sample_t` alias for signals instead of hardcoded `double`. Use `float` for control parameters (e.g., spread, detune). Use `uint32_t` for timestamps to avoid expensive 64-bit atomic operations on ARM platforms.
 * **WHEN writing math for music theory:** You MUST normalize modulo arithmetic for negative inputs (e.g., `if (val < 0) val += 12;`) because standard C++ `%` is a remainder operator and will cause out-of-bounds bit shifts for negative numbers.
 * **WHEN adding header includes:** You MUST include exactly what you use and never rely on transitive includes, as WAM web builds compile in different orders. Do not add speculative includes.
 
-## 🖥️ 4. IPLUG2 & UI THREAD HYGIENE (When/Then Triggers)
+## 🖥️ 6. IPLUG2 & UI THREAD HYGIENE (When/Then Triggers)
 
 * **WHEN writing WAM/Processor code (HEADLESS BUILD PROTECTION):** You MUST wrap any code touching the UI (e.g., calls to `GetUI()`) within `#if IPLUG_EDITOR` / `#endif` blocks. Headless builds define `IPLUG_DSP=1` and `NO_IGRAPHICS`, meaning `GetUI()` does not exist and will fail compilation if unguarded.
 * **WHEN displaying DSP states (UI/AUDIO THREAD ISOLATION):** You MUST NOT iterate non-atomic DSP structures (like `VoiceManager::mVoices`) directly from the UI thread, such as within `OnIdle()`. You must use atomic mirrors or lock-free SPSC ring buffers for visual data.
 * **WHEN building UI components:** You MUST NOT perform direct drawing calls (e.g., `g->FillRect`) within `OnLayout()`. Custom graphics must be encapsulated exclusively within `IControl::Draw()` methods.
 * **WHEN styling typography:** You MUST explicitly set fonts and colors using a centralized theme/style object (e.g., `PolyTheme`). Hardcoding strings for fonts causes immediate launch crashes.
 
-## 📜 5. SCRIPT ORGANIZATION & LOGGING
+## 📜 7. SCRIPT ORGANIZATION & LOGGING
 
 * Root-level helper scripts have been retired. Non-trivial script implementations now live in `scripts/tasks/`.
 * Shared command logging helpers live in `scripts/lib/cli.sh`, and the command execution wrapper lives in `scripts/cli.sh`.
@@ -106,7 +109,7 @@ Key topic files:
 * **When reporting failures in conversation, you MUST include the log path from `.artifacts/logs/...`.**
 * To view logs, use: `just logs-latest` or `POLYSYNTH_VERBOSE=1 just <task>`.
 
-## 🎨 6. UI ITERATION & HUMAN FEEDBACK PROTOCOL
+## 🎨 8. UI ITERATION & HUMAN FEEDBACK PROTOCOL
 
 As an AI, you cannot visually inspect the rendered iPlug2 GUI. When a human provides UI feedback, you MUST follow this defensive protocol:
 
@@ -114,7 +117,7 @@ As an AI, you cannot visually inspect the rendered iPlug2 GUI. When a human prov
 * **WHEN a human reports a crash immediately on UI launch:** You MUST immediately verify that the code uses explicit font styles from the centralized `PolyTheme` object.
 * **WHEN a human reports a Web/WAM build failure after UI changes:** You MUST audit the preprocessor stack for unguarded `GetUI()` calls and wrap them in `#if IPLUG_EDITOR` / `#endif`.
 
-## 🧪 7. BUG FIXING & REGRESSION PROTOCOL (Test-Driven Resolution)
+## 🧪 9. BUG FIXING & REGRESSION PROTOCOL (Test-Driven Resolution)
 
 Your goal is to permanently immunize the repository against recurring failures. You MUST follow a strict Test-Driven Development (TDD) loop for all bug reports.
 
@@ -124,18 +127,20 @@ Your goal is to permanently immunize the repository against recurring failures. 
 * **Step 4 (Document the Gap):** You MUST document the testing gap in `plans/SPRINT_RETROSPECTIVE_NOTES.md` using the Problem/Action/Lesson format.
 * **For UI/Build specific regressions:** If Catch2 tests do not apply, you MUST update or write an automated script (like `scripts/check_ui_safety.py`) to catch the structural rule violation before compilation.
 
-## 📝 8. CONTINUOUS LEARNING & KNOWLEDGE CAPTURE
+## 📝 10. CONTINUOUS LEARNING & KNOWLEDGE CAPTURE
 
-You MUST act as a steward of the project's institutional memory. 
+You MUST act as a steward of the project's institutional memory.
 
-* **WHEN to document:** You MUST capture a learning whenever you resolve a build/UI failure, debug a complex DSP issue, receive an architectural correction, or apply the Bug Fixing Protocol (Section 7).
-* **WHERE to document:** You MUST append your learnings to `plans/SPRINT_RETROSPECTIVE_NOTES.md` under the current sprint's "Retro" or "Issues & Resolutions" section. 
+* **WHEN to document:** You MUST capture a learning whenever you resolve a build/UI failure, debug a complex DSP issue, receive an architectural correction, or apply the Bug Fixing Protocol (Section 9).
+* **WHERE to document:** You MUST append your learnings to `plans/SPRINT_RETROSPECTIVE_NOTES.md` under the current sprint's "Retro" or "Issues & Resolutions" section.
+* **Sprint DoD includes retro:** Every sprint's Definition of Done includes adding a retro entry in `plans/SPRINT_RETROSPECTIVE_NOTES.md`. No sprint is complete without it.
+* **Archive completed initiatives:** When the final sprint of an initiative merges, immediately move its folder from `plans/active/` to `plans/archive/`.
 * **HOW to document:** You MUST use the exact three-part format:
   * **Problem:** A concise explanation of what failed or was ambiguous.
   * **Action:** What you changed, where, and why to fix it.
   * **Lesson:** A generalized, prompt-friendly rule designed to prevent the mistake in the future.
 
-## 🔍 9. PR REVIEW PROCESS
+## 🔍 11. PR REVIEW PROCESS
 
 When asked to "review PR N", follow this exact process:
 
@@ -191,7 +196,7 @@ If the user asks you to fix the issues you found:
 3. Run `just build && just test` to verify
 4. Commit with message prefix `fix(review):` and push
 
-## 📋 10. AGENT PRE-FLIGHT CHECKLIST
+## 📋 12. AGENT PRE-FLIGHT CHECKLIST
 
 Before concluding your task, running `just ci-pr`, or submitting a PR, you MUST output a checklist verifying the following:
 
@@ -201,3 +206,4 @@ Before concluding your task, running `just ci-pr`, or submitting a PR, you MUST 
 4.  [ ] **Compile-Time Checks:** If the spec mentions trait requirements checked at compile time, have you actually implemented the `static_assert` calls?
 5.  [ ] **Golden Master Policy:** If your fix changes runtime behavior, have you checked the decision tree for Golden Masters?
 6.  [ ] **Desktop Startup Smoke:** Have you run `just desktop-smoke` (or CI equivalent) to verify the desktop app reaches UI-loaded state without crashing?
+7.  [ ] **Multi-Build-System Sync:** Have you updated CMake, Xcode, and any platform-specific configs (e.g., Pico CMakeLists) that are affected by your changes?
