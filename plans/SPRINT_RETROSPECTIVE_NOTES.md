@@ -400,6 +400,38 @@ The following should be added to the "Cross-Sprint Guardrails" section of `00_ov
 
 ---
 
+## Sprint 6 (LFO Tests, Docs & VRT Skia Fix) — Retro
+
+### Issues & Resolutions
+
+1. **Exact floating-point equality in depth=0 LFO test**
+   - **Problem:** `CATCH_CHECK(s1 == s2)` used exact float equality to assert that two voices with LFO depth=0 produce identical output. This works because depth=0 means the LFO contribution is literally multiplied by zero, but it's fragile — any future change to the LFO path (e.g., a tiny epsilon depth) would break the test with no clear diagnostic.
+   - **Action:** Replaced with `CATCH_CHECK(s1 == Approx(s2).margin(1e-15))`.
+   - **Lesson:** Exact float `==` in tests is a code smell. Even when structurally correct, it signals "I haven't thought about what happens when this assumption breaks." Use `Approx` with an explicit margin and document why the margin is valid. Added as Design Principle #10.
+
+2. **Magic waveform count in LFO waveform loop**
+   - **Problem:** `for (int waveform = 0; waveform < 4; ...)` hardcoded the number of LFO waveforms. If a 5th waveform were added to `sea_lfo.h`, this test would silently skip it.
+   - **Action:** Replaced with `constexpr int kNumLFOWaveforms = 4;` and added a comment mapping values to waveform names (`0=Sine, 1=Triangle, 2=Square, 3=Ramp`).
+   - **Lesson:** Numeric loop bounds over enum/variant sets are magic numbers. Name the constant and document what it maps to. Added as Design Principle #9.
+
+3. **VRTCaptureHelper runtime fallback for missing Skia was dead code**
+   - **Problem:** After switching the ComponentGallery to the Skia backend, the `#ifdef IGRAPHICS_SKIA` / `#else` fallback path in `VRTCaptureHelper.h` became unreachable dead code. If someone accidentally built without Skia, they'd get a silent runtime failure (return false + stderr warning) rather than a clear build error.
+   - **Action:** Replaced `#ifdef IGRAPHICS_SKIA` with `#ifndef IGRAPHICS_SKIA #error` at the top of the file. Removed the runtime fallback branch and the `#ifdef` guards around the capture code, since Skia is now a hard requirement.
+   - **Lesson:** When a dependency becomes mandatory (not optional), convert runtime fallbacks to compile-time errors immediately. Dead fallback code is worse than no fallback — it suggests the code handles a case it actually can't.
+
+### What worked well
+
+- **VRT Skia migration was well-motivated.** The PR description clearly explained why a "tests and docs only" sprint included a backend change. The tolerance tightening (20K/3% → 100/1%) is directly justified by the deterministic readback.
+- **LFO test design is behavioral, not structural.** Tests assert observable effects (zero-crossing counts, RMS differences, pan position changes) rather than internal LFO state, making them resilient to implementation changes.
+- **Signal flow comments in Voice::Process().** The 10-step overview turns a 200-line DSP function into something navigable without reading every line.
+
+### Process observations
+
+- **Review feedback patterns are becoming systematic.** The three issues found in this sprint (magic numbers, float equality, dead fallback code) are instances of broader anti-patterns. They've been codified as Design Principles #9 and #10 to prevent recurrence.
+- **`ci-pr` gate caught the VRT flakiness.** Without `just ci-pr` as a mandatory pre-merge step, the NanoVG VRT issue could have persisted indefinitely. The gate works.
+
+---
+
 ## Resolved notes
 
 - **Sprint 1 scaffolding** — all issues resolved and merged in PR #36 (squash commit to main).
