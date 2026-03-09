@@ -498,6 +498,12 @@ jobs:
           chmod +x scripts/download_dependencies.sh
           ./scripts/download_dependencies.sh
 
+      - name: Download iPlug2 prebuilt Skia libs
+        run: |
+          cd external/iPlug2/Dependencies
+          chmod +x download-prebuilt-libs.sh
+          ./download-prebuilt-libs.sh mac
+
       - name: Install Python VRT dependencies
         run: |
           python3 -m venv .venv
