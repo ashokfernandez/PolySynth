@@ -341,6 +341,12 @@ jobs:
       - name: Download project external dependencies
         run: just deps
 
+      - name: Download iPlug2 prebuilt Skia libs
+        run: |
+          cd external/iPlug2/Dependencies
+          chmod +x download-prebuilt-libs.sh
+          ./download-prebuilt-libs.sh mac
+
       - name: Build unsigned macOS release bundles
         run: just plugin-release-mac
 
@@ -371,16 +377,22 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install just
-        uses: taiki-e/install-action@just
-
       - name: Download project external dependencies
         shell: bash
-        run: just deps
+        run: |
+          chmod +x scripts/download_dependencies.sh
+          ./scripts/download_dependencies.sh
+
+      - name: Download iPlug2 prebuilt Skia libs
+        shell: bash
+        run: |
+          cd external/iPlug2/Dependencies
+          chmod +x download-prebuilt-libs.sh
+          ./download-prebuilt-libs.sh win
 
       - name: Build Windows release VST3 zip
         shell: bash
-        run: just plugin-release-win
+        run: bash scripts/tasks/plugin_release_windows.sh
 
       - name: Upload Windows release artifact
         uses: actions/upload-artifact@v4
