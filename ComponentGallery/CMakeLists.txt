@@ -8,7 +8,7 @@ if(NOT DEFINED IPLUG2_DIR)
   set(IPLUG2_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../external/iPlug2" CACHE PATH "iPlug2 root directory")
 endif()
 
-set(IGRAPHICS_BACKEND "NANOVG" CACHE STRING "IGraphics drawing backend" FORCE)
+set(IGRAPHICS_BACKEND "SKIA" CACHE STRING "IGraphics drawing backend" FORCE)
 
 include(${IPLUG2_DIR}/iPlug2.cmake)
 find_package(iPlug2 REQUIRED)
@@ -18,6 +18,11 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../UI/Controls
     ${IPLUG2_DIR}/Dependencies/Extras/nlohmann
 )
+
+# Workaround: iPlug2's IGraphicsSkia.cpp uses std::once_flag without including
+# <mutex>. When compiled as ObjC++ via IGraphicsMac.mm the precompiled header
+# doesn't transitively pull it in. Force-include it for all TUs.
+add_compile_options(-include mutex)
 
 iplug_add_plugin(${PROJECT_NAME}
   SOURCES

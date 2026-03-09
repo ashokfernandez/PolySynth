@@ -27,7 +27,7 @@
 ## Dependency Rules
 
 1. **Core never imports platform.** Files in `src/core/` must not include anything from `src/platform/` or iPlug2 headers.
-2. **Platform imports core.** `PolySynth.h` includes `SynthState.h` and (in DSP builds) `Engine.h` or `PolySynth_DSP.h`.
+2. **Platform imports core.** `PolySynth.h` includes `SynthState.h` and (in DSP builds) `Engine.h`.
 3. **Core imports SEA_DSP.** `VoiceManager.h` and `Engine.h` use SEA_DSP oscillators, filters, envelopes, and effects.
 4. **SEA_DSP is fully independent.** No reverse dependencies on core or platform.
 5. **UI headers are guarded.** `#if IPLUG_EDITOR` protects all IGraphics includes. DSP code paths must never touch UI headers.
@@ -51,8 +51,10 @@ The `#error` guard in `PolySynth.h` enforces that at least one of `IPLUG_DSP` or
 |---|---|
 | `types.h` | Type aliases (`sample_t`), constants (`kPi`, `kMaxBlockSize`), platform assertions |
 | `SynthState.h` | Aggregate struct with all synth parameters and inline defaults. Single source of truth. |
-| `VoiceManager.h` | `Voice` class (per-voice DSP chain) and `VoiceManager` (allocation, stealing, mixing) |
+| `Voice.h` | Per-voice DSP chain: oscillators, filter, envelopes, LFO, modulation |
+| `VoiceManager.h` | Voice allocation, polyphony management, stereo mixing |
 | `Engine.h` | Top-level DSP coordinator: VoiceManager + Chorus + Delay + Limiter |
+| `DspConstants.h` | Named constants for all DSP tuning parameters |
 | `PresetManager.h/cpp` | JSON serialize/deserialize of SynthState. File I/O helpers. |
 
 ### Platform (`src/platform/desktop/`)
@@ -60,8 +62,7 @@ The `#error` guard in `PolySynth.h` enforces that at least one of `IPLUG_DSP` or
 | File | Responsibility |
 |---|---|
 | `PolySynth.h` | Plugin class declaration, parameter enum (`EParams`), control tags |
-| `PolySynth.cpp` | Constructor (param init), `OnParamChange`, `SyncUIState`, UI layout, preset dispatch |
-| `PolySynth_DSP.h` | DSP wrapper (VoiceManager + FX). Slated for removal — see proposal. |
+| `PolySynth.cpp` | Constructor (param init), `OnParamChange`, `SyncUIState`, UI layout, preset dispatch. Owns `Engine` directly. |
 | `DemoSequencer.h/cpp` | Auto-play demo modes (Mono, Poly, FX) via synthesized MIDI |
 | `config.h` | iPlug2 build metadata (plugin name, dimensions, channel config) |
 

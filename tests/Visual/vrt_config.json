@@ -1,12 +1,10 @@
 {
-  "tolerance": 3.0,
-  "max_failed_pixels": 20000,
-  "crop_top_px": 28,
+  "tolerance": 1.0,
+  "max_failed_pixels": 100,
+  "crop_top_px": 0,
   "expected_components": [
     "Envelope", "PolyKnob", "PolySection", "PolyToggle",
     "SectionFrame", "LCDPanel", "PresetSaveButton"
   ],
-  "per_component": {
-    "Envelope.png": { "max_failed_pixels": 45000 }
-  }
+  "per_component": {}
 }

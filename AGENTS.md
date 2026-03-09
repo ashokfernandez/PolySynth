@@ -7,6 +7,9 @@ This file defines the strict command workflow, architectural constraints, and op
 You MUST use `just` as the default interface for local development and verification. Prefer `just` recipes over ad-hoc command chains. 
 
 **Agent Navigation Paths:**
+* **Design principles (10 non-negotiable rules):** `docs/architecture/DESIGN_PRINCIPLES.md`
+* **PR review checklist:** `docs/guides/PR_REVIEW_GUIDELINES.md`
+* **Sprint retrospectives:** `plans/SPRINT_RETROSPECTIVE_NOTES.md`
 * Agent handbook: `docs/agents/README.md`
 * Full docs hub: `docs/README.md`
 * Planning hub: `plans/README.md`
@@ -77,6 +80,8 @@ Key topic files:
 * **DO NOT DEVIATE FROM SPEC:** The sprint plan and pseudocode are your absolute sources of truth. If a behavior is strictly specified (like immediate retriggering on steal or specific sample-rate reset values), you MUST implement it exactly as written and MUST NOT flag it as a bug.
 * **DO NOT HARDCODE PLUGIN IDENTITY:** You MUST NOT hardcode plugin name, company name, version, or bundle identifier strings anywhere outside `src/platform/desktop/config.h`. The Info.plist files are generated from `.in` templates by cmake at configure time — edit only `config.h` and re-run cmake. Hardcoding these values elsewhere (e.g. directly in a `.plist`) causes `[NSBundle bundleWithIdentifier:]` to return nil at runtime, silently breaking font loading and crashing DAWs.
 * **DO NOT CALL `BundleResourcePath` OUTSIDE `#ifndef WEB_API`:** On Emscripten, `PluginIDType = void*` so passing a `const char*` is a compile error. Any call to `BundleResourcePath` or `PluginPath` with a string argument must be wrapped in `#ifndef WEB_API`. The lint job enforces this via `scripts/check_platform_guards.py`.
+* **NO MAGIC NUMBERS:** All numeric constants must be named or have an inline derivation comment. DSP tuning parameters go in `DspConstants.h`. Loop bounds over enum/variant sets must use a named constant (e.g., `kNumLFOWaveforms`), not a bare literal.
+* **NO BARE `==` ON FLOATS IN TESTS:** Use `Approx(x).margin(eps)` (Catch2) for computed values. Exact `==` is only acceptable when the value is structurally identical (same variable, or multiplied by literal `0.0`), with a comment explaining why.
 
 ## 🏗️ 3. ARCHITECTURE & DSP RULES (When/Then Triggers)
 
@@ -130,7 +135,63 @@ You MUST act as a steward of the project's institutional memory.
   * **Action:** What you changed, where, and why to fix it.
   * **Lesson:** A generalized, prompt-friendly rule designed to prevent the mistake in the future.
 
-## 📋 9. AGENT PRE-FLIGHT CHECKLIST
+## 🔍 9. PR REVIEW PROCESS
+
+When asked to "review PR N", follow this exact process:
+
+### Step 1: Gather context
+1. Fetch PR metadata: `gh pr view N --json title,body,headRefName,baseRefName`
+2. Get the full diff: `gh pr diff N`
+3. List changed files: `gh api repos/OWNER/REPO/pulls/N/files --jq '.[].filename'`
+4. Check CI status: `gh pr checks N`
+
+### Step 2: Read the changed files
+Read every changed file in full (not just the diff hunks). You need surrounding context to catch issues the diff alone won't reveal.
+
+### Step 3: Check against the review checklist
+Apply every item from `docs/guides/PR_REVIEW_GUIDELINES.md` § Review Checklist:
+
+**Code Quality:**
+- No new compiler warnings
+- No `#include` cycles or unnecessary headers
+- Naming conventions (camelCase members, PascalCase classes)
+- Header-only for hot path DSP (Principle #8)
+- No heap allocations/exceptions/locks in audio path (Principle #1)
+- No magic numbers — constants named or derivation commented (Principle #9)
+- No bare `==` on floats in tests — use `Approx` (Principle #10)
+- No LLM reasoning traces in production comments
+
+**Testing:**
+- Every new function has at least one test
+- Edge cases tested (zero, max, NaN)
+- All existing tests still pass
+- Test names describe what they verify
+
+**Architecture:**
+- Core code has zero iPlug2 dependencies
+- No `using namespace` in headers
+- `static_assert(is_aggregate_v<SynthState>)` preserved
+- `#if IPLUG_EDITOR` guards on all `GetUI()` calls
+
+**Documentation:**
+- New constants have purpose comments
+- New test files have header comments
+- Sprint DoD fully satisfied (if applicable)
+
+### Step 4: Leave the review
+Post a single `gh pr review N --comment --body "..."` with:
+1. A per-section summary of findings (what's good, what needs fixing)
+2. Specific file:line references for any issues
+3. An overall assessment: approve / request changes / comment only
+
+### Step 5: Fix if asked
+If the user asks you to fix the issues you found:
+1. Check out the PR branch
+2. Make the fixes
+3. Run `just build && just test` to verify
+4. Commit with message prefix `fix(review):` and push
+
+## 📋 10. AGENT PRE-FLIGHT CHECKLIST
 
 Before concluding your task, running `just ci-pr`, or submitting a PR, you MUST output a checklist verifying the following:
 

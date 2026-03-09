@@ -101,6 +101,7 @@ ci-pr:
     just tsan
     just test
     just desktop-smoke
+    just sandbox-build
     just vrt-run
 
 # Desktop app workflow

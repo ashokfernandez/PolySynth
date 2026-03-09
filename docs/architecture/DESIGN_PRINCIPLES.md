@@ -151,6 +151,36 @@ See [ADDING_A_PARAMETER.md](ADDING_A_PARAMETER.md) for the complete checklist.
 
 ---
 
+## 9. No Magic Numbers in Production Code
+
+**Rule:** Every numeric literal in DSP, UI, or test code must either be self-explanatory in context (e.g., `0`, `1`, `2.0 * pi`) or be replaced by a named constant.
+
+**Why:** Magic numbers obscure intent and silently break when the underlying domain changes. Sprint 3 extracted all DSP magic numbers into `DspConstants.h`. Sprint 6 review caught a magic `4` in a test loop that silently assumed the LFO waveform count — if a 5th waveform were added, the test wouldn't cover it.
+
+**What this means in practice:**
+
+- DSP tuning parameters go in `DspConstants.h` with a descriptive name.
+- Enum counts or variant counts should use a named constant (e.g., `kNumLFOWaveforms`) near the loop or assertion that depends on them.
+- Array sizes, sample counts, and thresholds in tests should have a `constexpr` name or an inline comment explaining the derivation (e.g., `4096 // ~85ms at 48kHz, enough for one LFO cycle at 5Hz`).
+- Bare `0` and `1` for boolean-like or identity values are fine. Bare `12` for semitones-per-octave is fine in music theory code.
+
+---
+
+## 10. Floating-Point Comparisons Must Be Explicit
+
+**Rule:** Never use `==` to compare floating-point values in tests unless the equality is structurally guaranteed (e.g., comparing against a literal `0.0` that was assigned, not computed).
+
+**Why:** Floating-point arithmetic is not associative. Two computations that should produce the same result often differ by ULP-scale rounding. An exact `==` check passes today and fails tomorrow when the compiler changes optimization levels or the code is refactored.
+
+**What this means in practice:**
+
+- Use `Approx(expected).margin(epsilon)` (Catch2) for computed values.
+- Use `Approx(expected).epsilon(relTol)` for relative comparisons.
+- Exact `==` is acceptable only when the value is structurally identical (same variable, or multiplied by literal `0.0`), and even then, add a comment explaining why exact equality holds.
+- For DSP tests, prefer behavioral assertions (RMS difference, zero-crossing count, relative amplitude) over exact sample-level equality.
+
+---
+
 ## Summary
 
 | Principle | Enforced by |
@@ -163,3 +193,5 @@ See [ADDING_A_PARAMETER.md](ADDING_A_PARAMETER.md) for the complete checklist.
 | Layer boundaries | CMake test build (no iPlug2 headers available) |
 | Minimal conditional compilation | `#error` guard, code review |
 | Hot path stays inline | Code review |
+| No magic numbers | Code review, `DspConstants.h` convention |
+| Explicit float comparisons | Code review, test review |

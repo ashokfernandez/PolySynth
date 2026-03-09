@@ -279,15 +279,16 @@ For quick orientation when starting a review:
 src/core/
   types.h              - sample_t, kMaxVoices, VoiceState, VoiceRenderState, VoiceEvent
   SynthState.h         - Parameter aggregate struct (single source of truth)
-  VoiceManager.h       - Voice (per-voice signal chain) + VoiceManager (polyphony)
+  Voice.h              - Per-voice DSP chain: oscillators, filter, envelopes, LFO, modulation
+  VoiceManager.h       - Voice allocation, polyphony management, stereo mixing
   Engine.h             - Top-level DSP engine (VoiceManager + FX chain)
+  DspConstants.h       - Named constants for all DSP tuning parameters
   PresetManager.h/.cpp - JSON serialization of SynthState
 
 src/platform/desktop/
   config.h             - Plugin identity, dimensions, font paths
   PolySynth.h          - Plugin class (EParams, EControlTags, PolySynthPlugin)
-  PolySynth.cpp         - Plugin implementation (OnParamChange, ProcessBlock, OnLayout, UI builders)
-  PolySynth_DSP.h      - DSP adapter (NEEDS REFACTOR — see Issue #2)
+  PolySynth.cpp         - Plugin implementation (OnParamChange, ProcessBlock, OnLayout, UI builders). Owns Engine directly.
   DemoSequencer.h      - Programmatic MIDI playback for demos
 
 UI/Controls/
@@ -307,7 +308,21 @@ tests/demos/           - Standalone audio rendering programs for audible verific
 
 ---
 
-## 10. IMMEDIATE PRIORITIES FOR REVIEW
+## 10. ISSUE RESOLUTION STATUS
+
+| Issue | Original Description | Status | Resolution |
+|-------|---------------------|--------|------------|
+| #1 | SynthState data race between UI/audio threads | RESOLVED | SPSCQueue<SynthState, 4> in PolySynth.h |
+| #2 | PolySynth_DSP unnecessary indirection | RESOLVED (Sprint 2) | Deleted; plugin owns Engine directly |
+| #3 | Engine::UpdateState missing | RESOLVED | Engine::UpdateState centralises parameter fan-out |
+| #4 | Voice monolith in VoiceManager.h | RESOLVED (Sprint 1) | Voice extracted to Voice.h |
+| #5 | Magic numbers in hot path | RESOLVED (Sprint 3) | All constants in DspConstants.h |
+| #6 | Missing test coverage | RESOLVED (Sprints 1, 4, 6) | 55+ test cases covering Voice, filters, boundaries, LFO |
+| #7 | Performance: per-sample pow/exp/sqrt | RESOLVED (Sprint 5) | Cached in setter methods |
+
+---
+
+## 11. IMMEDIATE PRIORITIES FOR REVIEW
 
 If tasked with a full codebase review, address these in order:
 

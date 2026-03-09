@@ -46,6 +46,8 @@ Every sprint PR must follow this template:
 - [ ] No `virtual` keyword in core/ code (Design Principle #5)
 - [ ] No heap allocations in audio-path code (`new`, `malloc`, `std::vector::push_back`)
 - [ ] No exceptions, locks, or blocking calls in audio-path code
+- [ ] No magic numbers — numeric constants are named or commented (Design Principle #9)
+- [ ] No bare `==` on floats in tests — use `Approx` with explicit margin (Design Principle #10)
 
 ### Testing
 - [ ] Every new function/method has at least one test

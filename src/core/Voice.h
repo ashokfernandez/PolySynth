@@ -116,6 +116,20 @@ public:
   }
 
   inline sample_t Process() {
+    // ─── Voice Signal Flow ────────────────────────────────────────────
+    // 1. Early exit if voice is idle or stolen-and-faded
+    // 2. LFO + Filter Envelope generation
+    // 3. Portamento: exponential glide toward target frequency
+    // 4. Pitch modulation: base freq ← LFO vibrato + poly-mod (OscB→FreqA, FilterEnv→FreqA)
+    // 5. OscB synthesis → used as poly-mod source
+    // 6. OscA synthesis → modulated frequency, pulse width from poly-mod
+    // 7. Mixer: OscA × mixA + OscB × mixB
+    // 8. Filter: base cutoff + filter env + poly-mod + LFO modulation
+    // 9. Amp envelope × velocity × tremolo (LFO amp mod)
+    // 10. Voice stealing fade (if state == Stolen)
+    // ──────────────────────────────────────────────────────────────────
+
+    // ── Step 1: Early exit ──
     if (!mActive)
       return 0.0;
 
@@ -128,10 +142,11 @@ public:
       return 0.0;
     }
 
+    // ── Step 2: LFO & Filter Envelope ──
     sample_t lfoVal = mLfo.Process();
     sample_t filterEnvVal = mFilterEnv.Process();
 
-    // Portamento: glide toward target frequency
+    // ── Step 3: Portamento ──
     if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > kGlideSnapThresholdHz) {
       mFreq += (mTargetFreq - mFreq) * mGlideAlpha;
       // Snap to target when close enough
@@ -144,7 +159,7 @@ public:
       // with modulation
     }
 
-    // Pitch Modulation (Vibrato)
+    // ── Step 4-6: Oscillator Synthesis & Modulation ──
     sample_t modFreqA = mFreq;
     sample_t modFreqB = mFreq * mDetuneFactor;
 
@@ -176,9 +191,10 @@ public:
     }
 
     sample_t oscA = mOscA.Process();
+    // ── Step 7: Mixer ──
     sample_t mixed = (oscA * mMixA) + (oscB * mMixB);
 
-    // Filter Modulation: Base + Keyboard + Env + LFO
+    // ── Step 8: Filter (model dispatch) ──
     sample_t cutoff = mBaseCutoff;
     cutoff +=
         filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) * kFilterEnvMaxHz;
@@ -189,6 +205,11 @@ public:
     cutoff = std::clamp(cutoff, sample_t(20.0), sample_t(20000.0));
 
     sample_t flt = 0.0;
+    // Filter model dispatch: each model uses a different topology.
+    // Classic (Biquad): 2nd-order IIR, RBJ coefficients, gentle resonance
+    // Ladder: 4-pole transistor ladder, TPT integrators, self-oscillates at high resonance
+    // Cascade12: 2-pole cascaded biquad, 12dB/octave slope
+    // Cascade24: 4-pole cascaded biquad, 24dB/octave slope (steepest rolloff)
     switch (mFilterModel) {
     case FilterModel::Ladder:
       mLadderFilter.SetParams(sea::LadderFilter<sample_t>::Model::Transistor,
@@ -212,10 +233,9 @@ public:
       break;
     }
 
+    // ── Step 9: Amplitude Envelope & Tremolo ──
     sample_t ampEnvVal = mAmpEnv.Process();
     mLastAmpEnvVal = static_cast<float>(ampEnvVal);
-
-    // Amp Modulation (Tremolo)
     sample_t ampMod = 1.0;
     if (mLfoAmpDepth > 0.0) {
       ampMod = 1.0 + lfoVal * mLfoAmpDepth;
@@ -235,6 +255,7 @@ public:
     }
 
     sample_t out = flt * ampEnvVal * mVelocity * ampMod;
+    // ── Step 10: Voice Stealing Fade ──
     if (mVoiceState == VoiceState::Stolen) {
       const float gain = std::max(0.0f, mStolenFadeGain);
       out *= gain;

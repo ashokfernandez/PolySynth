@@ -84,7 +84,7 @@ Phase 5:             Sprint 7               (standalone, highest risk, do last)
 
 ## PR Guidelines
 
-See [pr_guidelines.md](pr_guidelines.md) for:
+See [PR_REVIEW_GUIDELINES.md](../../../docs/guides/PR_REVIEW_GUIDELINES.md) for:
 - PR template (required for every sprint)
 - Review checklist
 - Branch naming conventions
