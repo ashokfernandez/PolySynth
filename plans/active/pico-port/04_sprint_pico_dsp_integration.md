@@ -1,9 +1,16 @@
-# Sprint Pico-3: Core DSP Integration
+# Sprint Pico-4: Core DSP Integration
 
-**Depends on:** Sprint Pico-2
-**Blocks:** Sprint Pico-4, Sprint Pico-5
+**Depends on:** Sprint Pico-3 (I2S audio working)
+**Blocks:** Sprint Pico-5 (Effects Architecture), Sprint Pico-6 (Serial Control)
 **Approach:** TDD where possible — compile tests first, then auditory verification
 **Estimated effort:** 2–3 days
+
+> **CI Mandate (from Sprint Pico-2):** This sprint's Definition of Done requires:
+> 1. `just test` — Desktop tests pass (no regressions from `#ifndef SEA_PLATFORM_EMBEDDED` guards)
+> 2. `just test-embedded` — Layer 1 tests pass (Engine produces audio with `sample_t=float`, 4 voices)
+> 3. `just pico-build` — RP2350 ARM cross-compile succeeds (zero `-Wdouble-promotion` warnings)
+> 4. Firmware self-test: `[TEST:PASS] engine_produces_audio` verified via Wokwi emulation
+> 5. New Catch2 tests in `Test_EmbeddedConfig.cpp` for float-precision DSP correctness
 
 ---
 

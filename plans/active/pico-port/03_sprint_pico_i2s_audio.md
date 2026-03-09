@@ -1,9 +1,16 @@
-# Sprint Pico-2: I2S Audio Hello World
+# Sprint Pico-3: I2S Audio Hello World
 
-**Depends on:** Sprint Pico-1
-**Blocks:** Sprint Pico-3
+**Depends on:** Sprint Pico-1 (toolchain), Sprint Pico-2 (CI/CD pipeline established)
+**Blocks:** Sprint Pico-4 (DSP Integration)
 **Approach:** Incremental — PIO I2S driver first, then sine wave test, then DMA tuning
 **Estimated effort:** 2–3 days
+
+> **CI Mandate (from Sprint Pico-2):** This sprint's Definition of Done requires:
+> 1. `just test` — Desktop tests pass
+> 2. `just test-embedded` — Layer 1 embedded-config tests pass
+> 3. `just pico-build` — RP2350 ARM cross-compile succeeds
+> 4. Firmware self-test prints `[TEST:PASS] audio_i2s_init` and `[TEST:PASS] sine_wave_output`
+> 5. Wokwi emulation detects `[TEST:ALL_PASSED]` (when token configured)
 
 ---
 

@@ -1,9 +1,17 @@
-# Sprint Pico-5: Serial Control Interface
+# Sprint Pico-6: Serial Control Interface
 
-**Depends on:** Sprint Pico-3 (core DSP), Sprint Pico-4 (effects architecture)
+**Depends on:** Sprint Pico-4 (Core DSP), Sprint Pico-5 (Effects Architecture)
 **Blocks:** Future sprints (dual-core, physical controls, presets)
 **Approach:** TDD — protocol parser tests first, then integration
 **Estimated effort:** 2–3 days
+
+> **CI Mandate (from Sprint Pico-2):** This sprint's Definition of Done requires:
+> 1. `just test` — Desktop tests pass (command parser tests included)
+> 2. `just test-embedded` — Layer 1 tests pass (parser works with `sample_t=float`)
+> 3. `just pico-build` — RP2350 ARM cross-compile succeeds with parser sources
+> 4. Wokwi automation scenario (`test_boot.yaml`) verifies serial protocol:
+>    `NOTE_ON 60 100` → `OK:`, `STATUS` → `STATUS:`, `INVALID` → `ERR:`
+> 5. 15 command parser Catch2 tests pass in both desktop and embedded configurations
 
 ---
 

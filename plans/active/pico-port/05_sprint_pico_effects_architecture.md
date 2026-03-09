@@ -1,9 +1,16 @@
-# Sprint Pico-4: Effects Architecture & Deploy Flags
+# Sprint Pico-5: Effects Architecture & Deploy Flags
 
-**Depends on:** Sprint Pico-3
-**Blocks:** Sprint Pico-5 (serial control), future effects enablement sprints
+**Depends on:** Sprint Pico-4 (Core DSP Integration)
+**Blocks:** Sprint Pico-6 (Serial Control), future effects enablement sprints
 **Approach:** Analysis-first, then TDD for deploy guards and soft clipper
 **Estimated effort:** 2–3 days
+
+> **CI Mandate (from Sprint Pico-2):** This sprint's Definition of Done requires:
+> 1. `just test` — Desktop tests pass (deploy flags transparent when all ON)
+> 2. `just test-embedded` — Layer 1 tests pass (deploy flags OFF path exercised)
+> 3. `just pico-build` — RP2350 builds with default flags OFF and with all flags ON
+> 4. PicoSoftClipper unit tests pass in both desktop and embedded configurations
+> 5. CI verifies both flag-OFF and flag-ON Pico compile configurations
 
 ---
 

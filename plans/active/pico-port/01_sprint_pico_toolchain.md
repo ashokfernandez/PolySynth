@@ -1,7 +1,7 @@
 # Sprint Pico-1: RP2350 Toolchain & Basic Hello World
 
 **Depends on:** Nothing (greenfield Pico platform)
-**Blocks:** Sprints Pico-2, Pico-3, Pico-4
+**Blocks:** Sprint Pico-2 (CI/CD & Emulation), and transitively all subsequent sprints
 **Approach:** Incremental build-up — each task adds one working layer, verified before moving on
 **Estimated effort:** 1–2 days
 
