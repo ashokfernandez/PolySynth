@@ -295,6 +295,19 @@ CATCH_TEST_CASE("Unused field 'mixNoise' has no audio effect", "[UnusedFields]")
 
 When someone wires up the feature, this test fails — reminding them to add proper tests for the new behaviour.
 
+### When Testing LFO Routing
+
+LFO modulation is time-varying, so tests must process enough samples for the LFO to complete at least one cycle. At rate=5Hz, one cycle = 200ms = 9600 samples at 48kHz. Common assertions:
+
+- **Pitch modulation**: count zero-crossings in different time windows
+- **Amplitude modulation**: compare max amplitude across time blocks
+- **Filter modulation**: compare RMS across time blocks (spectral energy changes)
+- **Pan modulation**: sample GetPanPosition() at multiple points (must call Process() between reads)
+
+Use relative difference thresholds (>1%) rather than bare `!=` for robustness.
+
+Example pattern: see `Test_LFO_Routing.cpp`.
+
 ---
 
 ## Golden Master Reference

@@ -6,12 +6,8 @@
 // codebase calls only the functions in the VRTCapture namespace; no Skia
 // surface internals leak elsewhere.
 //
-// Preferred path  : IGraphicsSkia surface → SkPngEncoder (requires IGRAPHICS_SKIA)
-// Active path     : SaveWindowScreenshot fallback (APP_API, CoreGraphics on Mac)
-//
-// The Skia path calls pSkia->GetSurface() — method name unverified against
-// IGraphicsSkia.h as Skia deps were unavailable during Sprint 2. Validated
-// when IGRAPHICS_SKIA is enabled; the fallback path is the current live path.
+// Skia path: reads pixels from the SkCanvas via GetDrawContext(), crops to
+// component bounds, encodes to PNG via SkPngEncoder. Deterministic.
 
 #include "IGraphics.h"
 
@@ -20,16 +16,12 @@
 #include <sys/stat.h>
 
 #ifdef IGRAPHICS_SKIA
-// IGraphicsSkia.h is in the iPlug2 IGraphics directory; the iPlug2 CMake
-// config adds that directory to the include path automatically.
 #include "IGraphicsSkia.h"
-// Skia encode/core headers are transitively available after IGraphicsSkia.h.
-// Explicit includes listed for clarity; adjust paths if Skia layout differs.
-#include "SkBitmap.h"
-#include "SkCanvas.h"
-#include "SkPixmap.h"
-#include "SkPngEncoder.h"
-#include "SkStream.h"
+#include "include/core/SkBitmap.h"
+#include "include/core/SkCanvas.h"
+#include "include/core/SkPixmap.h"
+#include "include/encode/SkPngEncoder.h"
+#include "include/core/SkStream.h"
 #endif // IGRAPHICS_SKIA
 
 namespace VRTCapture {
@@ -78,88 +70,59 @@ inline void RenderWarmupFrames(iplug::igraphics::IGraphics *pGraphics,
 
 /// Save a rectangular region of the current IGraphics backing surface as PNG.
 ///
-/// Preferred path  : Skia SkSurface readback via IGraphicsSkia (compile-
-///                   time guarded by IGRAPHICS_SKIA).
-/// Fallback path   : prints a diagnostic and returns false so callers know
-///                   the capture was not completed.
+/// Reads pixels from the Skia canvas (obtained via GetDrawContext()), crops
+/// to the specified component bounds, and encodes directly to PNG. This
+/// produces deterministic output independent of window position or OS chrome.
 ///
 /// @param pGraphics  Active IGraphics instance (must not be null).
 /// @param bounds     Region to capture in plugin coordinates at 1× scale.
 /// @param filePath   Absolute or repo-relative path for the output .png.
 /// @return true on success.
-#if defined(APP_API)
-// Fallback: Use SaveWindowScreenshot if Skia is unavailable
-extern "C" bool SaveWindowScreenshot(void *hwnd, const char *path);
-#endif
-
 inline bool SaveRegionAsPNG(iplug::igraphics::IGraphics *pGraphics,
                             const iplug::igraphics::IRECT &bounds,
                             const std::string &filePath) {
   if (!pGraphics)
     return false;
 
-  const int x = static_cast<int>(bounds.L);
-  const int y = static_cast<int>(bounds.T);
-  const int w = static_cast<int>(bounds.W());
-  const int h = static_cast<int>(bounds.H());
+  const float scale = pGraphics->GetDrawScale() * pGraphics->GetScreenScale();
+  const int x = static_cast<int>(bounds.L * scale);
+  const int y = static_cast<int>(bounds.T * scale);
+  const int w = static_cast<int>(bounds.W() * scale);
+  const int h = static_cast<int>(bounds.H() * scale);
 
   if (w <= 0 || h <= 0)
     return false;
 
 #ifdef IGRAPHICS_SKIA
   {
-    using namespace iplug::igraphics;
-    auto *pSkia = dynamic_cast<IGraphicsSkia *>(pGraphics);
-    if (pSkia) {
-      // GetSurface() is unverified against IGraphicsSkia.h (Skia unavailable
-      // during Sprint 2). If this path is enabled, confirm the method name
-      // against external/iPlug2/IGraphics/IGraphicsSkia.h first.
-      // Alternative names seen in iPlug2 forks: GetBackingSurface(), mSurface.
-      sk_sp<SkSurface> surface = pSkia->GetSurface();
-      if (surface) {
-        // Software rasterizer: force CPU backend when possible so pixels are
-        // deterministic across runs.  IGraphicsSkia may expose a method such
-        // as SetForceCPURaster(true); call it here if available.
-
-        // Allocate a destination bitmap for the cropped region.
-        SkBitmap dstBitmap;
-        if (!dstBitmap.tryAllocPixels(SkImageInfo::MakeN32Premul(w, h))) {
-          return false;
-        }
-
-        // Read pixels from the surface at offset (x, y) into dstBitmap.
-        if (!surface->getCanvas()->readPixels(dstBitmap, x, y)) {
-          return false;
-        }
-
-        // Encode to PNG via SkPngEncoder.
-        SkFILEWStream stream(filePath.c_str());
-        SkPixmap pixmap;
-        if (!dstBitmap.peekPixels(&pixmap))
-          return false;
-        SkPngEncoder::Options opts;
-        return SkPngEncoder::Encode(&stream, pixmap, opts);
+    auto *canvas = static_cast<SkCanvas *>(pGraphics->GetDrawContext());
+    if (canvas) {
+      SkBitmap dstBitmap;
+      if (!dstBitmap.tryAllocPixels(SkImageInfo::MakeN32Premul(w, h))) {
+        return false;
       }
+
+      if (!canvas->readPixels(dstBitmap, x, y)) {
+        fprintf(stderr,
+                "[VRTCapture] readPixels failed for '%s' "
+                "(region %d,%d %dx%d).\n",
+                filePath.c_str(), x, y, w, h);
+        return false;
+      }
+
+      SkFILEWStream stream(filePath.c_str());
+      SkPixmap pixmap;
+      if (!dstBitmap.peekPixels(&pixmap))
+        return false;
+      SkPngEncoder::Options opts;
+      return SkPngEncoder::Encode(&stream, pixmap, opts);
     }
   }
-#else
-    // Fallback: Skia surface readback not available.
-    // Use SaveWindowScreenshot to capture the entire window.
-    // Since this captures the whole window rather than the specific bounds,
-    // the resulting image must be cropped externally (e.g. by the VRT python
-    // script).
-#if defined(APP_API)
-  void *hwnd = pGraphics->GetWindow();
-  if (hwnd) {
-    return SaveWindowScreenshot(hwnd, filePath.c_str());
-  }
-#endif
 #endif // IGRAPHICS_SKIA
 
   fprintf(stderr,
-          "[VRTCapture] WARNING: Skia surface readback unavailable for '%s'.\n"
-          "  Ensure IGRAPHICS_SKIA is defined and verify "
-          "IGraphicsSkia::GetSurface().\n",
+          "[VRTCapture] WARNING: Skia readback unavailable for '%s'.\n"
+          "  Ensure IGRAPHICS_SKIA is defined.\n",
           filePath.c_str());
   return false;
 }

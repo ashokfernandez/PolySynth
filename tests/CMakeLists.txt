@@ -83,6 +83,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_ParameterBoundaries.cpp
     unit/Test_UnusedFields.cpp
     unit/Test_Voice.cpp
+    unit/Test_LFO_Routing.cpp
     ../src/core/PresetManager.cpp
 )
 
