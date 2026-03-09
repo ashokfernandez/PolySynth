@@ -15,14 +15,16 @@
 #include <string>
 #include <sys/stat.h>
 
-#ifdef IGRAPHICS_SKIA
+#ifndef IGRAPHICS_SKIA
+#error "VRTCaptureHelper requires IGRAPHICS_SKIA — set the backend to SKIA in CMakeLists.txt"
+#endif
+
 #include "IGraphicsSkia.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkPixmap.h"
 #include "include/encode/SkPngEncoder.h"
 #include "include/core/SkStream.h"
-#endif // IGRAPHICS_SKIA
 
 namespace VRTCapture {
 
@@ -93,38 +95,32 @@ inline bool SaveRegionAsPNG(iplug::igraphics::IGraphics *pGraphics,
   if (w <= 0 || h <= 0)
     return false;
 
-#ifdef IGRAPHICS_SKIA
-  {
-    auto *canvas = static_cast<SkCanvas *>(pGraphics->GetDrawContext());
-    if (canvas) {
-      SkBitmap dstBitmap;
-      if (!dstBitmap.tryAllocPixels(SkImageInfo::MakeN32Premul(w, h))) {
-        return false;
-      }
-
-      if (!canvas->readPixels(dstBitmap, x, y)) {
-        fprintf(stderr,
-                "[VRTCapture] readPixels failed for '%s' "
-                "(region %d,%d %dx%d).\n",
-                filePath.c_str(), x, y, w, h);
-        return false;
-      }
-
-      SkFILEWStream stream(filePath.c_str());
-      SkPixmap pixmap;
-      if (!dstBitmap.peekPixels(&pixmap))
-        return false;
-      SkPngEncoder::Options opts;
-      return SkPngEncoder::Encode(&stream, pixmap, opts);
-    }
+  auto *canvas = static_cast<SkCanvas *>(pGraphics->GetDrawContext());
+  if (!canvas) {
+    fprintf(stderr, "[VRTCapture] GetDrawContext() returned null for '%s'.\n",
+            filePath.c_str());
+    return false;
   }
-#endif // IGRAPHICS_SKIA
 
-  fprintf(stderr,
-          "[VRTCapture] WARNING: Skia readback unavailable for '%s'.\n"
-          "  Ensure IGRAPHICS_SKIA is defined.\n",
-          filePath.c_str());
-  return false;
+  SkBitmap dstBitmap;
+  if (!dstBitmap.tryAllocPixels(SkImageInfo::MakeN32Premul(w, h))) {
+    return false;
+  }
+
+  if (!canvas->readPixels(dstBitmap, x, y)) {
+    fprintf(stderr,
+            "[VRTCapture] readPixels failed for '%s' "
+            "(region %d,%d %dx%d).\n",
+            filePath.c_str(), x, y, w, h);
+    return false;
+  }
+
+  SkFILEWStream stream(filePath.c_str());
+  SkPixmap pixmap;
+  if (!dstBitmap.peekPixels(&pixmap))
+    return false;
+  SkPngEncoder::Options opts;
+  return SkPngEncoder::Encode(&stream, pixmap, opts);
 }
 
 } // namespace VRTCapture

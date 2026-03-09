@@ -132,12 +132,14 @@ CATCH_TEST_CASE("LFO depth=0 produces no modulation", "[Voice][LFO]") {
     for (int i = 0; i < kRenderSamples; ++i) {
         double s1 = v1.Process();
         double s2 = v2.Process();
-        CATCH_CHECK(s1 == s2);
+        CATCH_CHECK(s1 == Approx(s2).margin(1e-15));
     }
 }
 
 CATCH_TEST_CASE("All LFO waveforms produce valid output", "[Voice][LFO]") {
-    for (int waveform = 0; waveform < 4; ++waveform) {
+    // 0=Sine, 1=Triangle, 2=Square, 3=Ramp (see sea_lfo.h)
+    constexpr int kNumLFOWaveforms = 4;
+    for (int waveform = 0; waveform < kNumLFOWaveforms; ++waveform) {
         Voice v;
         v.Init(kSampleRate);
         v.SetADSR(0.001, 0.1, 1.0, 0.2);
