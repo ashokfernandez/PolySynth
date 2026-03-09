@@ -459,12 +459,38 @@ jobs:
             release-assets/windows/PolySynth-windows-vst3.zip
 
   # ---------------------------------------------------------------------------
-  # Job: Pico RP2350 Compile Check
-  # Ensures Pico firmware compiles after every change — no hardware needed.
-  # Runs independently of the desktop pipeline.
+  # Pico Layer 1: Native Host Tests with Embedded Configuration
+  # Runs DSP unit tests with POLYSYNTH_USE_FLOAT, MAX_VOICES=4, effects OFF.
+  # Catches float precision, voice-count, and deploy-flag regressions.
   # ---------------------------------------------------------------------------
-  pico-compile-check:
-    name: Pico / Compile Check (RP2350)
+  pico-native-embedded-tests:
+    name: Pico / Layer 1 – Native Embedded Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+
+      - name: Configure and build embedded test target
+        run: |
+          cmake -S tests -B tests/build_embedded \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake --build tests/build_embedded --target run_tests_embedded --parallel
+
+      - name: Run embedded-config unit tests
+        run: tests/build_embedded/run_tests_embedded -r compact
+
+  # ---------------------------------------------------------------------------
+  # Pico Layer 2a: ARM Cross-Compile Check (RP2350)
+  # Proves firmware compiles for the actual target hardware.
+  # ---------------------------------------------------------------------------
+  pico-arm-compile-check:
+    name: Pico / Layer 2a – ARM Compile (RP2350)
     runs-on: ubuntu-latest
 
     steps:
@@ -480,7 +506,7 @@ jobs:
           chmod +x scripts/download_pico_sdk.sh
           ./scripts/download_pico_sdk.sh
 
-      - name: Build Pico firmware
+      - name: Build Pico firmware (RP2350)
         run: |
           cmake -S src/platform/pico -B build/pico \
             -DPICO_SDK_PATH=${{ github.workspace }}/external/pico-sdk \
@@ -492,6 +518,67 @@ jobs:
           test -f build/pico/polysynth_pico.uf2
           echo "polysynth_pico.uf2 generated successfully"
           ls -lh build/pico/polysynth_pico.uf2
+
+      - name: Check binary size
+        run: arm-none-eabi-size build/pico/polysynth_pico.elf
+
+  # ---------------------------------------------------------------------------
+  # Pico Layer 2b: Wokwi Emulated Firmware Test (RP2040 proxy)
+  # Runs actual firmware in Wokwi simulator, checks serial output.
+  # Only runs when WOKWI_CLI_TOKEN is configured (optional for forks).
+  # ---------------------------------------------------------------------------
+  pico-emulation-test:
+    name: Pico / Layer 2b – Wokwi Emulation
+    runs-on: ubuntu-latest
+    needs: pico-arm-compile-check
+    if: ${{ vars.WOKWI_ENABLED == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Download Pico SDK
+        run: |
+          chmod +x scripts/download_pico_sdk.sh
+          ./scripts/download_pico_sdk.sh
+
+      - name: Build Pico firmware for emulation (RP2040 proxy)
+        run: |
+          cmake -S src/platform/pico -B build/pico-emu \
+            -DPICO_SDK_PATH=${{ github.workspace }}/external/pico-sdk \
+            -DPICO_BOARD=pico_w \
+            -G Ninja
+          cmake --build build/pico-emu
+
+      - name: Run firmware in Wokwi emulator
+        uses: wokwi/wokwi-ci-action@v1
+        with:
+          token: ${{ secrets.WOKWI_CLI_TOKEN }}
+          path: src/platform/pico/wokwi
+          timeout: 30000
+          expect_text: "[TEST:ALL_PASSED]"
+          fail_text: "[TEST:FAIL]"
+          serial_log_file: wokwi-serial.log
+
+      - name: Upload serial log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wokwi-serial-log
+          path: wokwi-serial.log
+          if-no-files-found: ignore
+
+      - name: Upload logic analyzer trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wokwi-logic-trace
+          path: src/platform/pico/wokwi/wokwi-logic.vcd
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   # Job 8: Build PolySynth WAM Demo (unchanged – now depends on safety gate)

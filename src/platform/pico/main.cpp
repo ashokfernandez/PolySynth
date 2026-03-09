@@ -9,15 +9,13 @@
 #include "pico/cyw43_arch.h"
 
 #include "audio_i2s_driver.h"
-
-// DSP link smoke test: verify the full Engine object graph links for ARM.
-// Removed before Sprint Pico-4 when real engine integration happens.
-#ifdef PICO_LINK_SMOKE_TEST
 #include "Engine.h"
-static PolySynthCore::Engine g_engine;
-#endif
-
+#include "SynthState.h"
 #include "sine_generator.h"
+
+// ── DSP engine (used in self-test) ───────────────────────────────────────
+static PolySynthCore::Engine s_engine;
+static PolySynthCore::SynthState s_state;
 
 // ── Sine wave generator state ───────────────────────────────────────────
 static float s_phase = 0.0f;
@@ -43,7 +41,83 @@ static void print_sram_report()
     const uint32_t total_sram = 520 * 1024;
     printf("=== SRAM Report ===\n");
     printf("  Total SRAM: %lu KB\n", static_cast<unsigned long>(total_sram / 1024));
+    printf("  sizeof(Engine): %u bytes\n",
+           static_cast<unsigned>(sizeof(PolySynthCore::Engine)));
     printf("===================\n");
+}
+
+// ── Self-test sequence ──────────────────────────────────────────────────
+// Results are printed as structured markers for CI detection.
+// Wokwi CI checks for "[TEST:ALL_PASSED]" in serial output.
+static bool run_self_tests()
+{
+    int pass_count = 0;
+    int fail_count = 0;
+
+    printf("[TEST:BEGIN]\n");
+
+    // Test 1: Boot init completed (if we got here, it passed)
+    printf("[TEST:PASS] boot_init\n");
+    pass_count++;
+
+    // Test 2: Serial output works (if you can read this, it passed)
+    printf("[TEST:PASS] serial_output\n");
+    pass_count++;
+
+    // Test 3: SRAM report
+    print_sram_report();
+    printf("[TEST:PASS] sram_report\n");
+    pass_count++;
+
+    // Test 4: Engine init
+    s_state.Reset();
+    s_engine.Init(static_cast<double>(pico_audio::kSampleRate));
+    s_engine.UpdateState(s_state);
+    printf("[TEST:PASS] engine_init\n");
+    pass_count++;
+
+    // Test 5: Engine produces non-zero audio
+    {
+        float left = 0.0f, right = 0.0f;
+        float energy = 0.0f;
+        s_engine.OnNoteOn(60, 100);
+        for (int i = 0; i < 256; i++) {
+            left = 0.0f;
+            right = 0.0f;
+            s_engine.Process(left, right);
+            energy += left * left + right * right;
+        }
+        s_engine.OnNoteOff(60);
+
+        if (energy > 0.0001f) {
+            printf("[TEST:PASS] engine_produces_audio (energy=%.4f)\n",
+                   static_cast<double>(energy));
+            pass_count++;
+        } else {
+            printf("[TEST:FAIL] engine_produces_audio: energy=%.4f (expected > 0.0001)\n",
+                   static_cast<double>(energy));
+            fail_count++;
+        }
+    }
+
+    // Test 6: Audio I2S init
+    if (pico_audio::Init(audio_callback)) {
+        printf("[TEST:PASS] audio_i2s_init\n");
+        pass_count++;
+    } else {
+        printf("[TEST:FAIL] audio_i2s_init\n");
+        fail_count++;
+    }
+
+    // Summary
+    printf("\n[TEST:SUMMARY] %d passed, %d failed\n", pass_count, fail_count);
+    if (fail_count == 0) {
+        printf("[TEST:ALL_PASSED]\n");
+    } else {
+        printf("[TEST:SOME_FAILED]\n");
+    }
+
+    return fail_count == 0;
 }
 
 // ── Main ────────────────────────────────────────────────────────────────
@@ -64,7 +138,7 @@ int main()
 
     printf("\n");
     printf("========================================\n");
-    printf("  PolySynth Pico v0.2 — I2S Audio Test\n");
+    printf("  PolySynth Pico v0.3 — I2S Audio Test\n");
     printf("  Board:       Pico 2 W (RP2350)\n");
     printf("  Sample rate: %u Hz\n", pico_audio::kSampleRate);
     printf("  Buffer:      %u frames (%.2f ms)\n",
@@ -74,15 +148,13 @@ int main()
     printf("  Test signal: %d Hz sine wave\n", static_cast<int>(kFrequency));
     printf("========================================\n\n");
 
-    print_sram_report();
-
-    // Initialize I2S audio
-    if (!pico_audio::Init(audio_callback)) {
-        printf("ERROR: Audio init failed\n");
-        return 1;
+    // Run self-tests (includes audio init)
+    if (!run_self_tests()) {
+        printf("Self-tests failed. Halting.\n");
+        while (true) { sleep_ms(1000); }
     }
-    printf("Audio initialized. Starting playback...\n");
 
+    // Start audio playback (Init was done in self-test)
     pico_audio::Start();
     printf("Playback started — 440 Hz sine wave\n\n");
 

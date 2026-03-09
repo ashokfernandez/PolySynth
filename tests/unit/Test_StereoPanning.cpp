@@ -8,7 +8,7 @@ TEST_CASE("Stereo: center pan gives equal L/R", "[StereoPanning]") {
 
   vm.OnNoteOn(60, 100);
 
-  double left = 0.0, right = 0.0;
+  PolySynthCore::sample_t left = 0.0, right = 0.0;
   // Let the voice output generate some signal
   for (int i = 0; i < 100; i++) {
     vm.ProcessStereo(left, right);
@@ -30,8 +30,8 @@ TEST_CASE("Stereo: Hard Pan Left isolates signal to left channel",
 
   vm.OnNoteOn(60, 100);
 
-  double left = 0.0, right = 0.0;
-  double leftAccum = 0.0, rightAccum = 0.0;
+  PolySynthCore::sample_t left = 0.0, right = 0.0;
+  PolySynthCore::sample_t leftAccum = 0.0, rightAccum = 0.0;
 
   for (int i = 0; i < 100; i++) {
     vm.ProcessStereo(left, right);
@@ -60,13 +60,13 @@ TEST_CASE("Stereo: Hard Pan Right isolates signal to right channel",
   // Turn off Voice 0 so it doesn't bleed left
   vm.OnNoteOff(60);
   // Process out the stolen/release fade for Voice 0
-  double tempL, tempR;
+  PolySynthCore::sample_t tempL = 0.0, tempR = 0.0;
   for (int i = 0; i < 5000; i++) {
     vm.ProcessStereo(tempL, tempR);
   }
 
-  double left = 0.0, right = 0.0;
-  double leftAccum = 0.0, rightAccum = 0.0;
+  PolySynthCore::sample_t left = 0.0, right = 0.0;
+  PolySynthCore::sample_t leftAccum = 0.0, rightAccum = 0.0;
 
   for (int i = 0; i < 100; i++) {
     vm.ProcessStereo(left, right);

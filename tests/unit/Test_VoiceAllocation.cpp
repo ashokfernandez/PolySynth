@@ -23,19 +23,19 @@ CATCH_TEST_CASE("Polyphony limit reduction kills excess", "[VoiceAllocation]") {
   VoiceManager vm;
   vm.Init(48000.0);
 
-  // Start 8 voices
-  for (int i = 0; i < 8; i++) {
+  // Start kMaxVoices voices
+  for (int i = 0; i < kMaxVoices; i++) {
     vm.OnNoteOn(60 + i, 100);
   }
-  CATCH_REQUIRE(vm.GetActiveVoiceCount() == 8);
+  CATCH_REQUIRE(vm.GetActiveVoiceCount() == kMaxVoices);
 
-  // Reduce limit to 4 — excess voices should be killed
-  vm.SetPolyphonyLimit(4);
+  // Reduce limit to half — excess voices should be killed
+  vm.SetPolyphonyLimit(kMaxVoices / 2);
   // Steal fade is 20ms at 48kHz = 960 samples; process 1200 to be safe.
   for (int i = 0; i < 1200; i++)
     vm.Process();
 
-  CATCH_REQUIRE(vm.GetActiveVoiceCount() <= 4);
+  CATCH_REQUIRE(vm.GetActiveVoiceCount() <= kMaxVoices / 2);
 }
 
 CATCH_TEST_CASE("Mono mode: polyphony limit 1", "[VoiceAllocation]") {
@@ -127,27 +127,27 @@ bool engineProcessAllFinite(Engine& engine, int n) {
 }
 } // namespace
 
-CATCH_TEST_CASE("32 rapid NoteOn into 8-voice polyphony", "[VoiceAllocation][Stress]") {
+CATCH_TEST_CASE("32 rapid NoteOn into max polyphony", "[VoiceAllocation][Stress]") {
   Engine engine;
   engine.Init(48000.0);
   SynthState state;
-  state.polyphony = 8;
+  state.polyphony = kMaxVoices;
   engine.UpdateState(state);
 
   for (int note = 40; note < 72; ++note) {
     engine.OnNoteOn(note, 100);
   }
-  CATCH_REQUIRE(engine.GetActiveVoiceCount() <= 8);
+  CATCH_REQUIRE(engine.GetActiveVoiceCount() <= kMaxVoices);
 
   // Process and verify no crash
   CATCH_CHECK(engineProcessAllFinite(engine, 1024));
 }
 
-CATCH_TEST_CASE("Unison overflow: 3 notes x 4 unison into 8 voices", "[VoiceAllocation][Stress]") {
+CATCH_TEST_CASE("Unison overflow: notes x unison into max voices", "[VoiceAllocation][Stress]") {
   Engine engine;
   engine.Init(48000.0);
   SynthState state;
-  state.polyphony = 8;
+  state.polyphony = kMaxVoices;
   state.unisonCount = 4;
   engine.UpdateState(state);
 
@@ -162,18 +162,18 @@ CATCH_TEST_CASE("Sustain pedal + rapid notes + release stress", "[VoiceAllocatio
   Engine engine;
   engine.Init(48000.0);
   SynthState state;
-  state.polyphony = 8;
+  state.polyphony = kMaxVoices;
   engine.UpdateState(state);
 
   engine.OnSustainPedal(true);
-  for (int note = 60; note < 68; ++note) {
+  for (int note = 60; note < 60 + kMaxVoices; ++note) {
     engine.OnNoteOn(note, 100);
   }
-  for (int note = 60; note < 68; ++note) {
+  for (int note = 60; note < 60 + kMaxVoices; ++note) {
     engine.OnNoteOff(note);
   }
-  // 4 more notes while sustained
-  for (int note = 70; note < 74; ++note) {
+  // More notes while sustained
+  for (int note = 70; note < 70 + kMaxVoices / 2; ++note) {
     engine.OnNoteOn(note, 100);
   }
   engine.OnSustainPedal(false);

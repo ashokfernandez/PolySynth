@@ -110,6 +110,33 @@ endif()
 # run_tests invocation line, so no ctest property needed here.
 
 # ---------------------------------------------------------------------------
+# Embedded-configuration test target
+# Compiles the same DSP code with Pico-equivalent flags on the host machine.
+# Layer 1 of the Pico CI pipeline — catches float precision and
+# voice-count regressions without needing ARM cross-compilation.
+# ---------------------------------------------------------------------------
+add_executable(run_tests_embedded
+    ${UNIT_TEST_SOURCES}
+    unit/Test_EmbeddedConfig.cpp
+)
+
+target_compile_definitions(run_tests_embedded PRIVATE
+    POLYSYNTH_USE_FLOAT
+    SEA_PLATFORM_EMBEDDED
+    POLYSYNTH_MAX_VOICES=4
+)
+
+target_link_libraries(run_tests_embedded PRIVATE SEA_DSP SEA_Util)
+
+target_compile_options(run_tests_embedded PRIVATE
+    -Wall -Wextra
+    -Wdouble-promotion
+)
+
+polysynth_enable_compiler_warnings(run_tests_embedded)
+polysynth_apply_sanitizers(run_tests_embedded)
+
+# ---------------------------------------------------------------------------
 # Demo executables
 # ---------------------------------------------------------------------------
 set(ALL_DEMO_TARGETS

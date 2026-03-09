@@ -58,7 +58,7 @@ CATCH_TEST_CASE("All SynthState fields at maximum value", "[Engine][Boundaries]"
     engine.Init(kSampleRate);
     SynthState state;
     state.masterGain = 1.0;
-    state.polyphony = 16;
+    state.polyphony = kMaxVoices;
     state.unisonCount = 8;
     state.unisonSpread = 1.0;
     state.stereoSpread = 1.0;
@@ -124,13 +124,13 @@ CATCH_TEST_CASE("Zero-duration envelope", "[Voice][Boundaries]") {
     CATCH_CHECK(processAllFinite(v, 512));
 }
 
-CATCH_TEST_CASE("Max polyphony 16 simultaneous notes", "[Engine][Boundaries]") {
+CATCH_TEST_CASE("Max polyphony simultaneous notes", "[Engine][Boundaries]") {
     Engine engine;
     engine.Init(kSampleRate);
     SynthState state;
-    state.polyphony = 16;
+    state.polyphony = kMaxVoices;
     engine.UpdateState(state);
-    for (int note = 48; note < 64; ++note) {
+    for (int note = 48; note < 48 + kMaxVoices; ++note) {
         engine.OnNoteOn(note, 127);
     }
     CATCH_CHECK(engineProcessAllFinite(engine, kRenderSamples));
