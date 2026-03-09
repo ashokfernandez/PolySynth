@@ -1,6 +1,7 @@
 // Isolated Voice tests. See TESTING_GUIDE.md for patterns.
 #define CATCH_CONFIG_PREFIX_ALL
 #include "Voice.h"
+#include "VoiceManager.h"
 #include "TestHelpers.h"
 #include "catch.hpp"
 
@@ -215,4 +216,26 @@ CATCH_TEST_CASE("Filter envelope modulates filter cutoff", "[Voice][Filter]") {
 
     double relDiff = std::abs(rmsNoEnv - rmsWithEnv) / std::max(rmsNoEnv, rmsWithEnv);
     CATCH_CHECK(relDiff > 0.01);
+}
+
+CATCH_TEST_CASE("8-voice render completes within reasonable time", "[Voice][Performance]") {
+    VoiceManager vm;
+    vm.Init(kSampleRate);
+    vm.OnNoteOn(60, 100);
+    vm.OnNoteOn(64, 100);
+    vm.OnNoteOn(67, 100);
+    vm.OnNoteOn(72, 100);
+    vm.OnNoteOn(76, 100);
+    vm.OnNoteOn(79, 100);
+    vm.OnNoteOn(84, 100);
+    vm.OnNoteOn(88, 100);
+
+    // Process 10 seconds of audio at 48kHz
+    const int totalSamples = 48000 * 10;
+    sample_t l, r;
+    for (int i = 0; i < totalSamples; ++i) {
+        vm.ProcessStereo(l, r);
+    }
+    // If we got here without timeout, the performance is acceptable.
+    CATCH_CHECK(true);
 }

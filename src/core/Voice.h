@@ -23,9 +23,11 @@ public:
     mOscA.Init(sampleRate);
     mOscB.Init(sampleRate);
     mOscA.SetFrequency(440.0);
-    mOscB.SetFrequency(440.0 * std::pow(2.0, mDetuneB / 1200.0));
+    mDetuneFactor = std::pow(2.0, mDetuneB / 1200.0);
+    mOscB.SetFrequency(440.0 * mDetuneFactor);
     mTargetFreq = 440.0;
     mGlideTime = 0.0;
+    mGlideAlpha = 1.0;
 
     mBasePulseWidthA = 0.5;
     mBasePulseWidthB = 0.5;
@@ -82,7 +84,7 @@ public:
       // Normal retrigger: jump to frequency immediately
       mFreq = newFreq;
       mOscA.SetFrequency(mFreq);
-      mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
+      mOscB.SetFrequency(mFreq * mDetuneFactor);
       mOscA.Reset();
       mOscB.Reset();
     }
@@ -110,7 +112,7 @@ public:
     mFreq *= factor;
     mCurrentPitch = static_cast<float>(mFreq);
     mOscA.SetFrequency(mFreq);
-    mOscB.SetFrequency(mFreq * std::pow(2.0, mDetuneB / 1200.0));
+    mOscB.SetFrequency(mFreq * mDetuneFactor);
   }
 
   inline sample_t Process() {
@@ -131,8 +133,7 @@ public:
 
     // Portamento: glide toward target frequency
     if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > kGlideSnapThresholdHz) {
-      sample_t alpha = 1.0 - std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate));
-      mFreq += (mTargetFreq - mFreq) * alpha;
+      mFreq += (mTargetFreq - mFreq) * mGlideAlpha;
       // Snap to target when close enough
       if (std::abs(mFreq - mTargetFreq) < kGlideSnapThresholdHz) {
         mFreq = mTargetFreq;
@@ -145,7 +146,7 @@ public:
 
     // Pitch Modulation (Vibrato)
     sample_t modFreqA = mFreq;
-    sample_t modFreqB = mFreq * std::pow(2.0, mDetuneB / 1200.0);
+    sample_t modFreqB = mFreq * mDetuneFactor;
 
     if (mLfoPitchDepth > 0.0) {
       sample_t modMult = (1.0 + lfoVal * mLfoPitchDepth * kLfoPitchScale);
@@ -288,7 +289,14 @@ public:
     return rs;
   }
 
-  void SetGlideTime(sample_t seconds) { mGlideTime = std::max(sample_t(0.0), seconds); }
+  void SetGlideTime(sample_t seconds) {
+    mGlideTime = std::max(sample_t(0.0), seconds);
+    if (mGlideTime > 0.0) {
+      mGlideAlpha = 1.0 - std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate));
+    } else {
+      mGlideAlpha = 1.0; // Instant snap
+    }
+  }
 
   void SetADSR(sample_t a, sample_t d, sample_t s, sample_t r) {
     mAmpEnv.SetParams(a, d, s, r);
@@ -329,6 +337,7 @@ public:
     mMixA = std::clamp(mixA, sample_t(0.0), sample_t(1.0));
     mMixB = std::clamp(mixB, sample_t(0.0), sample_t(1.0));
     mDetuneB = detuneB;
+    mDetuneFactor = std::pow(2.0, mDetuneB / 1200.0);
   }
 
   void SetLFO(int type, sample_t rate, sample_t depth) {
@@ -411,6 +420,10 @@ private:
 
   sample_t mTargetFreq = 440.0;
   sample_t mGlideTime = 0.0;
+
+  // --- Cached values (recomputed in setters, not per-sample) ---
+  sample_t mDetuneFactor = 1.0;  // = pow(2.0, mDetuneB / 1200.0)
+  sample_t mGlideAlpha = 1.0;   // = 1.0 - exp(-kGlideTimeConstant / (mGlideTime * mSampleRate))
 
   sample_t mSampleRate = 48000.0;
 };

@@ -13,6 +13,10 @@ class VoiceManager {
 public:
   static constexpr int kNumVoices = kMaxVoices;
 
+  // Pre-computed headroom scaling: 1/sqrt(kNumVoices)
+  static inline const sample_t kHeadroomScale =
+      1.0 / std::sqrt(static_cast<sample_t>(kNumVoices));
+
   VoiceManager() = default;
 
   void Init(sample_t sampleRate) {
@@ -115,7 +119,7 @@ public:
     for (auto &voice : mVoices) {
       sum += voice.Process();
     }
-    return sum * (1.0 / std::sqrt(static_cast<sample_t>(kNumVoices)));
+    return sum * kHeadroomScale;
   }
 
   inline void ProcessStereo(sample_t &outLeft, sample_t &outRight) {
@@ -134,9 +138,8 @@ public:
       outRight += mono * std::sin(theta);
     }
     // Headroom scaling
-    sample_t scale = 1.0 / std::sqrt(static_cast<sample_t>(kNumVoices));
-    outLeft *= scale;
-    outRight *= scale;
+    outLeft *= kHeadroomScale;
+    outRight *= kHeadroomScale;
   }
 
   void SetGlideTime(sample_t seconds) {
