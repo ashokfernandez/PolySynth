@@ -8,12 +8,30 @@ This file captures cross-sprint review/retro feedback that should inform future 
 - Keep each note actionable (what to change, where, and why).
 - When a note is resolved, move it to a `Resolved` subsection and reference the commit/PR.
 - Prefer clarifying plan docs over relying on reviewer tribal knowledge.
+- **Write the retro as the final step of each sprint PR, while context is fresh.**
 
 ---
 
-## Sprint 1 (Scaffolding) — Retro
+## Cross-Initiative Learnings
 
-### Open follow-ups for future sprints
+Top recurring themes distilled from 15 sprint retros across 3 initiatives:
+
+1. **Test convention consistency** — Use `CATCH_CONFIG_PREFIX_ALL`, `Approx` for floats, short-form includes. Recurring in Voice Manager + Architecture Review sprints.
+2. **Multi-build-system maintenance** — CMake, Xcode, and WAM makefiles must all be updated in parallel when touching headers or dependencies (VM Sprint 4 CI, NSM Sprint 3).
+3. **`#if IPLUG_EDITOR` guards** — Every `GetUI()` call needs guards for WAM processor builds. Recurring across VM Sprint 4 and NSM sprints.
+4. **Plan specs need validation** — Don't treat plan docs as authoritative until tested. Wrong Bm7b5 notes (VM Sprint 3), untested Linux APP target (NSM Sprint 3).
+5. **LLM reasoning traces are not documentation** — "Thinking out loud" comments must be cleaned before commit (VM Sprint 4 CI).
+6. **Don't add includes speculatively** — Only add headers when the code that needs them lands in the same commit (VM Sprint 2).
+7. **Static fallbacks → compile-time errors** — When a dependency becomes mandatory, convert runtime fallbacks to `#error` immediately (AR Sprint 6).
+8. **Pre-push local verification** — `just ci-pr && just vrt-run` catches most CI failures locally. Multiple retros document issues that local runs would have prevented.
+
+---
+
+## Voice Manager Initiative
+
+### VM Sprint 1 (Scaffolding) — Retro
+
+#### Open follow-ups for future sprints
 
 1. **Clarify `VoiceManager::Reset()` sample-rate contract in plan docs**
    - Ambiguity observed: should `Reset()` restore to canonical 44.1k defaults for reproducibility, or to runtime `mSampleRate` for physical correctness?
@@ -29,7 +47,7 @@ This file captures cross-sprint review/retro feedback that should inform future 
    - The current plan says goldens unchanged until later, but review comments may still request behavior changes that invalidate goldens.
    - **Action:** add a short decision tree in Sprint docs: "if behavioral fix conflicts with current goldens, choose X and document Y."
 
-4. **Make “test harness prerequisites” explicit**
+4. **Make "test harness prerequisites" explicit**
    - Local test runs depend on `json.hpp` in `external/iPlug2/Dependencies/Extras/nlohmann/`.
    - **Action:** add one line to test setup docs indicating dependency/bootstrap expectation.
 
@@ -48,7 +66,7 @@ This file captures cross-sprint review/retro feedback that should inform future 
    - **Action:** Both were retracted in round 2 after re-reading the spec. The retro note in the PR itself documents the misreading.
    - **Lesson:** Re-read the plan's pseudocode before flagging deviations. The spec may be more prescriptive than expected on seemingly incidental details. Adding a "review guardrails" section to each sprint plan would prevent this.
 
-### What would have made execution more successful from the start
+#### What would have made execution more successful from the start
 
 - A single, explicit "source of truth" section for **behavior invariants per sprint** (e.g., steal semantics, reset semantics, golden invariants).
 - A short "review guardrails" checklist in each sprint plan:
@@ -59,9 +77,9 @@ This file captures cross-sprint review/retro feedback that should inform future 
 
 ---
 
-## Sprint 2 (Core Allocation) — Retro
+### VM Sprint 2 (Core Allocation) — Retro
 
-### Issues & Resolutions
+#### Issues & Resolutions
 
 1. **Active-count scan scope mismatch in `AllocateSlot`**
    - **Problem:** The active-voice count loop iterated over `MaxSlots` (the full array), but the free-slot search only scanned `[0, mPolyphonyLimit)`. If voices above the polyphony limit were still fading out after a limit reduction, they were counted as active but invisible to the search — causing `AllocateSlot` to return -1 (no slot available) even when slots inside the limit were free.
@@ -93,20 +111,20 @@ This file captures cross-sprint review/retro feedback that should inform future 
    - **Action:** Comment block added explaining aliases are not duplicated to avoid circular includes.
    - **Lesson:** Comment-only tasks are easy to skip because they feel trivial. Include them in the PR checklist explicitly.
 
-### What worked well
+#### What worked well
 
 - **`EnforcePolyphonyLimit` using `std::sort` + stack-allocated `Victim` array** was a clean, RT-safe approach — no heap, linear time for small `MaxSlots`, and easily auditable.
 - **Deletion of `FindFreeVoice` / `FindVoiceToSteal`** with no legacy wrapper left behind kept the codebase clean. The allocator fully replaced the old logic with no dead code.
 - **Demo targets gaining `SEA_Util` linkage** was caught proactively — `VoiceManager.h` now transitively pulls in `sea_voice_allocator.h`, so any TU that includes VoiceManager needs the library. All demo targets were updated in the same PR.
 
-### Technical Debt / Future Improvements
+#### Technical Debt / Future Improvements
 
 - **`ShouldHold` is note-agnostic.** Per-note sustain (where only certain notes are held by the pedal) would require tracking which notes were active at pedal-down time. This is the correct model for legato and half-pedal techniques. Tracked for a future sprint.
 - **`mRoundRobinIndex` is not reset on `Init()`.** If `VoiceManager::Init()` is called mid-session, cycle-mode allocation will continue from wherever the round-robin index was, rather than from 0. Low priority but worth noting.
 
-## Sprint 3 (Theory Engine) — Retro
+### VM Sprint 3 (Theory Engine) — Retro
 
-### Issues & Resolutions
+#### Issues & Resolutions
 
 1. **Negative Modulo Undefined Behavior**
    - **Problem:** `note % 12` in C++ returns a negative value for negative inputs (e.g., `-1 % 12 == -1`), which caused out-of-bounds bit shifts when building the pitch class mask.
@@ -127,23 +145,23 @@ This file captures cross-sprint review/retro feedback that should inform future 
    - **Action:** Implementation correctly used `{59, 62, 65, 69}` (B, D, F, A — 10 semitones from B). The spec had a wrong note.
    - **Lesson:** Music theory test cases should be double-checked by counting semitone intervals, not just copying note numbers from memory. A quick sanity check (note - root = expected interval) catches these before they reach a PR.
 
-### What worked well
+#### What worked well
 
 - **TDD for Music Theory:** Writing the 12 major triads test case up-front immediately caught a one-off error in the rotation logic that would have been hard to debug purely by reading the code.
 - **Stateless/All-Static Design:** The engine is extremely easy to test and integrate because it has no side effects and requires no initialization. This fits the `sea::` library goal of "building blocks."
 - **Bass-note bonus (+2) for root-position scoring** cleanly resolved augmented chord ambiguity (C/E/Ab aug all produce the same bitmask — the bonus reliably picks the root matching the lowest sounding note).
 - **`bestScore <= 0` gate** means a chord with as many extraneous notes as template notes scores exactly 0 and is rejected as invalid — the right behaviour for dense clusters without a separate cluster-detection pass.
 
-### Technical Debt / Future Improvements
+#### Technical Debt / Future Improvements
 
 - **Omitted 5ths:** Current templates require the perfect 5th. In jazz/pop, the 5th is often omitted. A future improvement could allow "essential tone" matching (Root + 3rd + 7th).
 - **Scale Detection:** The bitmask logic here is a perfect foundation for a `ScaleEngine` (detecting the most likely key/mode of a sequence).
 - **Augmented chord inversions are inherently ambiguous.** C aug in first inversion `{E, Ab, C}` is reported as "Eaug" (root position) because all three enharmonic roots score equally and the bass-note bonus picks E. This is consistent with how most notation software handles it, but worth documenting for future UI work.
 - **`extraBits` uses XOR not AND-NOT** — since the match condition guarantees the template is a subset of the rotated mask, these are equivalent. Worth a comment for future readers who may find the XOR surprising.
 
-## Sprint 4 (UI Integration & Advanced Voice Management) — Retro
+### VM Sprint 4 (UI Integration & Advanced Voice Management) — Retro
 
-### Issues & Resolutions
+#### Issues & Resolutions
 
 1. **Launch Crash due to Font Name Mismatches**
    - **Problem:** Application crashed immediately on launch with an assertion failure in `IGraphicsNanoVG`.
@@ -170,89 +188,298 @@ This file captures cross-sprint review/retro feedback that should inform future 
    - **Problem:** Preset selector and Save button alignment was inconsistent; version text was cluttering the footer.
    - **Action:** Refined `BuildHeader` and `BuildFooter` with consistent centering logic and removed non-essential text elements.
 
-11. **Thread Safety in UI Visualization (Active Voice Count & Held Notes)**
-    - **Problem:** `OnIdle()` (UI thread) was reading `GetActiveVoiceCount()` and `GetHeldNotes()` directly from the DSP object, iterating over voices that are modified by the Audio thread. This is a race condition.
-    - **Action:** Implemented atomic caching in `PolySynthDSP`. The Audio thread updates `std::atomic` variables (`mVisualActiveVoiceCount` and bitmasks for `mVisualHeldNotes`) at the end of `ProcessBlock`. The UI thread reads these atomics.
-    - **Lesson:** Never iterate non-atomic DSP structures (like `VoiceManager::mVoices`) directly from the UI thread. Use atomic mirrors or lock-free queues for visual data.
+6. **Thread Safety in UI Visualization (Active Voice Count & Held Notes)**
+   - **Problem:** `OnIdle()` (UI thread) was reading `GetActiveVoiceCount()` and `GetHeldNotes()` directly from the DSP object, iterating over voices that are modified by the Audio thread. This is a race condition.
+   - **Action:** Implemented atomic caching in `PolySynthDSP`. The Audio thread updates `std::atomic` variables (`mVisualActiveVoiceCount` and bitmasks for `mVisualHeldNotes`) at the end of `ProcessBlock`. The UI thread reads these atomics.
+   - **Lesson:** Never iterate non-atomic DSP structures (like `VoiceManager::mVoices`) directly from the UI thread. Use atomic mirrors or lock-free queues for visual data.
 
-### CI Stabilization (post-implementation review by separate agent)
+#### CI Stabilization (post-implementation review by separate agent)
 
 A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 implementation agent had finished. Three CI jobs were failing: Build Gallery WAM, Build PolySynth WAM Demo, and Build Component Gallery Storybook. The fixes required four commits across five files. Below is what was found and what could have been done better.
 
-#### Issues found
+##### Issues found
 
-6. **Missing `#include "PolyTheme.h"` in `Envelope.h`**
+7. **Missing `#include "PolyTheme.h"` in `Envelope.h`**
    - **Problem:** `Envelope.h` referenced `PolyTheme::ControlBG`, `PolyTheme::AccentCyan`, etc. but never included the header. The desktop Xcode build happened to pull it in transitively, but the WAM web builds (Gallery and Storybook) compiled `Envelope.h` in a different include order where the transitive path didn't exist.
    - **Action:** Added `#include "PolyTheme.h"` to `Envelope.h`.
    - **Lesson:** Every header should include what it uses directly. Never rely on transitive includes — they break when compilation order or include paths change between build targets.
 
-7. **Missing `SEA_Util` include path in WAM build makefiles**
+8. **Missing `SEA_Util` include path in WAM build makefiles**
    - **Problem:** `VoiceManager.h` (added in Sprint 2) includes `<sea_util/sea_voice_allocator.h>`, but `PolySynth-web.mk` only had `SEA_DSP` in its `WAM_CFLAGS` and `WEB_CFLAGS`. The WAM processor build couldn't find the header.
    - **Action:** Added `SEA_UTIL_INCLUDE` variable and appended `-I$(SEA_UTIL_INCLUDE)` to both `WAM_CFLAGS` and `WEB_CFLAGS`.
    - **Lesson:** When a new library dependency is added to the core (Sprint 2 added `SEA_Util`), *all* build targets that compile core headers must be updated — not just CMake/native builds. The WAM makefile-based builds are a separate build system that must be maintained in parallel. This was noted as working well in Sprint 2's retro ("Demo targets gaining `SEA_Util` linkage was caught proactively"), but the WAM web makefiles were missed.
 
-8. **Unguarded `GetUI()` calls in `PolySynth.cpp` for WAM processor build**
+9. **Unguarded `GetUI()` calls in `PolySynth.cpp` for WAM processor build**
    - **Problem:** `OnIdle()` and `OnParamChange()` called `GetUI()` and cast to `PresetSaveButton*` without `#if IPLUG_EDITOR` guards. The WAM processor build defines `IPLUG_DSP=1` with `NO_IGRAPHICS`, so `GetUI()` doesn't exist and `PresetSaveButton` is not included.
    - **Action:** Wrapped the editor-only blocks in `#if IPLUG_EDITOR` / `#endif`.
    - **Lesson:** iPlug2 compiles the same `.cpp` file in multiple configurations (editor+DSP for controller, DSP-only for processor). Any code that touches UI must be guarded. The Sprint 4 agent should have audited all `GetUI()` calls against the preprocessor stack before committing.
 
-9. **Dead code and copy-paste artifacts in `VoiceManager.h`**
-   - **Problem:** Three issues were being hidden by cppcheck suppressions added during the CI hardening pipeline:
-     - Duplicate `rs.panPosition = mPanPosition;` line (copy-paste)
-     - `pan` variable computed then immediately re-assigned the same expression, surrounded by 20+ lines of "thinking out loud" comments
-     - Local `const double kPi` shadowing the identical `kPi` from `types.h`, with 7 lines of stream-of-consciousness comments debating which constant to use
-   - **Action:** Removed dead code, removed rambling comments, removed 3 unnecessary suppressions (`redundantAssignment`, `redundantInitialization`, `shadowVariable`).
-   - **Lesson:** LLM-generated "thinking out loud" comments (e.g., "Let's check if kPi is defined in types.h? It's likely M_PI. Plan said kPi.") must never be committed to production source. These are reasoning traces, not documentation. The implementing agent should have cleaned up its draft comments before finalizing the PR. Similarly, duplicate lines should have been caught by a self-review pass or by running cppcheck locally before pushing.
+10. **Dead code and copy-paste artifacts in `VoiceManager.h`**
+    - **Problem:** Three issues were being hidden by cppcheck suppressions added during the CI hardening pipeline:
+      - Duplicate `rs.panPosition = mPanPosition;` line (copy-paste)
+      - `pan` variable computed then immediately re-assigned the same expression, surrounded by 20+ lines of "thinking out loud" comments
+      - Local `const double kPi` shadowing the identical `kPi` from `types.h`, with 7 lines of stream-of-consciousness comments debating which constant to use
+    - **Action:** Removed dead code, removed rambling comments, removed 3 unnecessary suppressions (`redundantAssignment`, `redundantInitialization`, `shadowVariable`).
+    - **Lesson:** LLM-generated "thinking out loud" comments (e.g., "Let's check if kPi is defined in types.h? It's likely M_PI. Plan said kPi.") must never be committed to production source. These are reasoning traces, not documentation. The implementing agent should have cleaned up its draft comments before finalizing the PR. Similarly, duplicate lines should have been caught by a self-review pass or by running cppcheck locally before pushing.
 
-10. **New cppcheck 2.19 checks not covered by suppressions**
+11. **New cppcheck 2.19 checks not covered by suppressions**
     - **Problem:** `suspiciousFloatingPointCast` (test code) and `dangerousTypeCast` (WAV writer) are new checks in cppcheck 2.19 that weren't in the CI's older version. They would break CI on a future cppcheck upgrade.
     - **Action:** Added targeted suppressions for both in test/utility code only.
     - **Lesson:** When adding a CI static analysis gate, pin the tool version or periodically run with the latest version locally to catch new checks before they surprise CI.
 
-#### Process observations
+##### Process observations
 
-- **The implementing agent never ran the WAM web build.** The CI had three distinct web build jobs (Gallery WAM, PolySynth WAM Demo, Component Gallery Storybook) and all three failed. A local `emmake` build or even a dry-run syntax check with `clang++ -fsyntax-only` using the WAM build flags would have caught issues 6, 7, and 8 before pushing.
-- **The implementing agent never ran cppcheck locally.** The dead code (issue 9) was already flagged by the static analysis pipeline, but instead of fixing the issues, suppressions were added to baseline them. This is appropriate for pre-existing issues in code you don't own, but not for code you just wrote in the same PR.
+- **The implementing agent never ran the WAM web build.** The CI had three distinct web build jobs (Gallery WAM, PolySynth WAM Demo, Component Gallery Storybook) and all three failed. A local `emmake` build or even a dry-run syntax check with `clang++ -fsyntax-only` using the WAM build flags would have caught issues 7, 8, and 9 before pushing.
+- **The implementing agent never ran cppcheck locally.** The dead code (issue 10) was already flagged by the static analysis pipeline, but instead of fixing the issues, suppressions were added to baseline them. This is appropriate for pre-existing issues in code you don't own, but not for code you just wrote in the same PR.
 - **Multiple build systems require parallel maintenance.** This project has CMake (for native tests), Xcode (for desktop plugin), and Makefiles (for WAM web builds). Adding a dependency or header in one build system does not propagate to the others. Future sprint plans should include a checklist item: "Update all build targets: CMake, Xcode, WAM makefiles."
 - **`#if IPLUG_EDITOR` guards are a recurring source of WAM build failures.** Sprint 4's retro item #2 already noted a preprocessor issue. A pre-commit check that scans for unguarded `GetUI()` calls (similar to the existing `check_ui_safety.py`) would prevent this class of error entirely.
 
-### Embedded Portability Refactor (Sprint 4 Follow-up)
+#### Embedded Portability Refactor (Sprint 4 Follow-up)
 
-13. **Hardcoded `double` and `uint64_t` types hindered embedded porting**
+12. **Hardcoded `double` and `uint64_t` types hindered embedded porting**
     - **Problem:** `VoiceManager` and `sea_voice_allocator` used `double` for audio/control signals and `uint64_t` for timestamps. This is suboptimal for embedded platforms (e.g. Cortex-M7) where `float` is native and `double` is software-emulated or slower, and 64-bit atomics are expensive.
     - **Action:** Refactored the entire voice architecture to use `sample_t` (configurable via `types.h`) for signals and `uint32_t` for timestamps. Updated `sea::VoiceAllocator` to use `float` for control parameters (spread, detune) as extreme precision isn't needed there.
     - **Lesson:** When designing a DSP library for both desktop and embedded (`SEA_DSP`/`SEA_Util`), strict type discipline is required. Use `sample_t` alias everywhere. Avoid `uint64_t` for sample counters unless the wrap-around time (< 24 hours at 48kHz for uint32) is a genuine problem. (Here, `uint32_t` voice ages/timestamps are relative and short-lived, so wrap-around is manageable or irrelevant).
 
-14. **Ninja migration exposed platform-specific ASan runtime options**
+13. **Ninja migration exposed platform-specific ASan runtime options**
     - **Problem:** During Ninja pipeline validation, `just asan-ninja` aborted on macOS because `ASAN_OPTIONS=detect_leaks=1` is unsupported by the Apple sanitizer runtime.
     - **Action:** Updated `scripts/dev.sh` to build ASan options dynamically: include `detect_leaks=1` only on Linux, while keeping `halt_on_error` and `print_stacktrace` across platforms. CI remains unchanged and still enforces leak checks on Linux.
     - **Lesson:** Sanitizer runtime flags are not universally portable. Keep sanitizer policy strict in Linux CI, but gate unsupported options in local developer scripts by host OS.
 
-15. **Storybook gallery 404 due to incomplete build artifact set**
+14. **Storybook gallery 404 due to incomplete build artifact set**
     - **Problem:** Component-gallery stories load iframe targets like `gallery/knob/index.html`, but CI built only `ComponentGallery/build-web/index.html` via `scripts/build_gallery_wam.sh`. Deployed Pages lacked per-component subdirectories, causing `/component-gallery/gallery/*/index.html` 404s.
     - **Action:** Switched gallery build paths to `scripts/tasks/build_gallery.sh` (which now runs `scripts/build_all_galleries.sh`), updated CI workflows to use that task, and added `scripts/tasks/check_gallery_story_assets.py` to assert each story target has a corresponding built page.
     - **Lesson:** If Storybook uses `staticDirs` for iframe content, CI must build the full static source tree, not just a base bundle. Add an explicit structural check so missing iframe targets fail the pipeline before deploy.
 
-16. **Gallery drift left obsolete components in deployed pages**
+15. **Gallery drift left obsolete components in deployed pages**
     - **Problem:** The gallery still exposed legacy iPlug demo variants (knob/fader/button/switch/etc.) and `gallery-pages-build` copied into `docs/component-gallery` without cleaning, so removed components persisted as stale folders.
     - **Action:** Reduced gallery variants/stories/specs to the PolySynth-relevant controls only (`envelope`, `polyknob`, `polysection`, `polytoggle`, `sectionframe`, `lcdpanel`, `presetsavebutton`) and updated `build_gallery_pages.sh` to clear `docs/component-gallery` before publishing.
     - **Lesson:** Static-site publish steps must replace the destination directory, not overlay it. If the component surface is curated, enforce it in one place (stories + build variant list) and keep smoke tests aligned with those IDs.
 
-17. **Release download UI can drift if generator and deployed page diverge**
-   - **Problem:** `docs/index.html` is generated by `scripts/generate_test_report.py`. Adding a manual download section directly in the generated file risks being overwritten the next time report generation runs.
-   - **Action:** Added release-download UI in the generator template and in the current docs page, plus CI generation of `docs/downloads.json` from GitHub Releases in `package-demo-site`.
-   - **Lesson:** For generated documentation pages, update the source generator first and treat the generated HTML as derived output to avoid regressions.
+16. **Release download UI can drift if generator and deployed page diverge**
+    - **Problem:** `docs/index.html` is generated by `scripts/generate_test_report.py`. Adding a manual download section directly in the generated file risks being overwritten the next time report generation runs.
+    - **Action:** Added release-download UI in the generator template and in the current docs page, plus CI generation of `docs/downloads.json` from GitHub Releases in `package-demo-site`.
+    - **Lesson:** For generated documentation pages, update the source generator first and treat the generated HTML as derived output to avoid regressions.
 
-18. **Desktop app launch crash passed existing gates**
-   - **Problem:** `PolySynth` desktop app crashed on launch despite passing unit/sanitizer/visual CI because a control used font name `"Roboto-Regular"` while desktop startup only loaded `"Regular"`/`"Bold"`, triggering an `IGraphicsNanoVG` text assert at first draw.
-   - **Action:** Standardized `PolyKnob` value text to `"Regular"`, hardened desktop font loading to resolve bundle-resource paths across bundle-ID variants, added `scripts/tasks/test_desktop_startup.sh` (process must stay alive for a minimum window), and wired it into `just desktop-smoke`, `just ci-pr`, and CI `native-ui-tests`.
-   - **Lesson:** Build success and screenshot tests are insufficient for startup safety. Keep a dedicated desktop launch smoke test in the default pre-flight path and PR CI on macOS.
+17. **Desktop app launch crash passed existing gates**
+    - **Problem:** `PolySynth` desktop app crashed on launch despite passing unit/sanitizer/visual CI because a control used font name `"Roboto-Regular"` while desktop startup only loaded `"Regular"`/`"Bold"`, triggering an `IGraphicsNanoVG` text assert at first draw.
+    - **Action:** Standardized `PolyKnob` value text to `"Regular"`, hardened desktop font loading to resolve bundle-resource paths across bundle-ID variants, added `scripts/tasks/test_desktop_startup.sh` (process must stay alive for a minimum window), and wired it into `just desktop-smoke`, `just ci-pr`, and CI `native-ui-tests`.
+    - **Lesson:** Build success and screenshot tests are insufficient for startup safety. Keep a dedicated desktop launch smoke test in the default pre-flight path and PR CI on macOS.
 
 ---
 
-## Native Sandbox Migration — Sprint 1 (Sandbox App Foundation) — Retro
+## Architecture Review Initiative
 
-### Issues & Resolutions
+### AR Sprint 1 (Extract Voice) — Retro
+
+_Commit `4a568d5`, fix `17bd978`_
+
+#### Issues & Resolutions
+
+1. **Missing header comments and silence check needed `std::abs` not `Catch::Approx`**
+   - **Problem:** Silence assertion in tests used `Catch::Approx(0.0)` which has a default epsilon that's too loose for verifying true silence. Header files lacked describing comments.
+   - **Action:** Switched to `std::abs(sample) < 1e-10` for silence checks. Added header comments to all new/modified files.
+   - **Lesson:** `Approx(0.0)` is inappropriate for "must be exactly zero" assertions — use an explicit absolute threshold instead.
+
+2. **Duplicated MIDI dispatch logic**
+   - **Problem:** MIDI note-on/off dispatch existed in both `PolySynth_DSP` and the newly extracted `VoiceManager`, creating ambiguity about which was the source of truth.
+   - **Action:** Consolidated all MIDI dispatch into `VoiceManager`. The duplicate in `PolySynth_DSP` was removed.
+   - **Lesson:** During extract refactors, the old call site must be deleted in the same commit that introduces the new one. Leaving both creates a "which one is real?" ambiguity.
+
+3. **Stale project file references**
+   - **Problem:** Xcode project files still referenced old file paths after the extraction move.
+   - **Action:** Updated all project file references in the same commit.
+   - **Lesson:** File moves must update all build systems (CMake, Xcode, makefiles) atomically.
+
+#### What worked well
+
+- Pure structural refactor with zero audio behavior changes — golden masters unchanged.
+- 12 new unit tests added, establishing the `TestHelpers.h` reuse pattern for future sprints.
+- Clean separation: `Voice` owns its DSP pipeline, `VoiceManager` owns allocation and dispatch.
+
+#### Technical Debt
+
+- None identified.
+
+---
+
+### AR Sprint 2 (Eliminate PolySynth_DSP) — Retro
+
+_Commit `9c55c58`, fix `17bd978`_
+
+#### Issues & Resolutions
+
+- Issues from this sprint were addressed in the combined Sprint 1 fix commit (`17bd978`), as both sprints were reviewed together.
+
+#### What worked well
+
+- Clean deletion of the `PolySynth_DSP` adapter layer — no wrapper or compatibility shim needed.
+- MIDI dispatch inlined to 8 lines in `PolySynth::ProcessMidiMsg`, removing an entire indirection layer.
+- `DemoSequencer` decoupled from DSP via callback pattern, eliminating a tight coupling that would have blocked future refactors.
+
+#### Technical Debt
+
+- None identified.
+
+---
+
+### AR Sprint 3 (Extract Magic Numbers) — Retro
+
+_Commits `042d7b3` + `deaca0a`, PR #56_
+
+#### Issues & Resolutions
+
+1. **`kGlideSnapThresholdHz` needed tighter `static_assert`**
+   - **Problem:** The threshold constant was validated with a loose range check. A tighter `static_assert` would catch accidental edits that change the musical meaning.
+   - **Action:** Added `static_assert(kGlideSnapThresholdHz > 0.0 && kGlideSnapThresholdHz < 1.0)` to enforce the "sub-Hz snap" semantics.
+
+2. **`kDelayFeedbackScale` / `kDelayMixScale` needed independence clarification**
+   - **Problem:** Both constants had similar values (0.7, 0.5) and a reviewer questioned whether they should be linked or independent.
+   - **Action:** Added comments clarifying that feedback scale controls stability (must be < 1.0 to prevent runaway) while mix scale is purely aesthetic. They are intentionally independent.
+
+3. **Missed magic `35.0` in `SetDelayTempo`**
+   - **Problem:** A hardcoded `35.0` (minimum BPM clamp) was not extracted in the initial pass.
+   - **Action:** Extracted as `kMinDelayBPM` with a comment explaining the musical rationale (below 35 BPM, delay times exceed reasonable buffer sizes).
+
+#### What worked well
+
+- Pure rename refactor — all 123 existing tests pass unchanged, confirming zero behavioral change.
+- Self-documenting constant names (e.g., `kVoiceStealFadeMs`, `kFilterFreqMin`) make the DSP code readable without cross-referencing comments.
+- Organized into logical groups: voice constants, filter constants, delay constants, etc.
+
+#### Technical Debt
+
+- None identified.
+
+---
+
+### AR Sprint 4 (Strengthen Test Pyramid) — Retro
+
+_Commit `a4fca83`, PR #58_
+
+#### Issues & Resolutions
+
+1. **Wrong Catch convention — needed `CATCH_CONFIG_PREFIX_ALL`**
+   - **Problem:** Tests used unprefixed `TEST_CASE` and `REQUIRE` macros, which conflict with other libraries and don't match the project's established convention.
+   - **Action:** Added `#define CATCH_CONFIG_PREFIX_ALL` and converted all macros to `CATCH_TEST_CASE`, `CATCH_REQUIRE`, `CATCH_CHECK`, etc.
+   - **Lesson:** Establish and enforce the Catch2 macro convention project-wide. Prefix-all prevents namespace collisions and makes test code greppable.
+
+2. **Absolute includes instead of short-form**
+   - **Problem:** Test files used full relative paths like `#include "../../core/VoiceManager.h"` instead of short-form `#include "VoiceManager.h"` with proper include paths set in CMake.
+   - **Action:** Switched to short-form includes and ensured CMake `target_include_directories` covered all necessary paths.
+
+3. **Missing boundary fields in test coverage**
+   - **Problem:** `mixNoise`, `unisonCount`, and several other `SynthState` fields were not exercised by any test, leaving gaps in the parameter coverage.
+   - **Action:** Added dedicated test cases for noise mix, unison, and other previously uncovered fields.
+
+4. **Stress test too long (48000 → 8192 samples)**
+   - **Problem:** The multi-voice stress test processed 48000 samples (1 second at 48kHz), making the test suite noticeably slow.
+   - **Action:** Reduced to 8192 samples — sufficient to exercise voice allocation, stealing, and release without unnecessary processing time.
+
+#### What worked well
+
+- 24 new tests across 4 files, bringing total from 123 to 147.
+- Shared `engineProcessAllFinite` helper eliminates boilerplate in integration tests.
+- All 147 tests pass on first run after the changes — no golden master regressions.
+
+#### Technical Debt
+
+- None identified.
+
+---
+
+### AR Sprint 5 (Performance Caching) — Retro
+
+_Commit `6ce8e87`, PR #59_
+
+#### Issues & Resolutions
+
+1. **Some `pow`/`exp` calls intentionally left uncached**
+   - **Problem:** A reviewer questioned why not all expensive math calls were cached. Some `pow`/`exp` calls receive different values per voice per block and cannot be cached at the parameter-change level.
+   - **Action:** Added comments documenting which calls are cached (parameter-dependent, changes only on knob turn) vs. per-call (voice-dependent, changes every sample). The distinction is: cache when the input is a parameter, don't cache when the input varies per voice/sample.
+   - **Lesson:** When optimizing DSP math, clearly document the caching boundary. "Why wasn't X cached?" is a predictable review question — answer it proactively in comments.
+
+#### What worked well
+
+- Clean separation of cached vs. per-call math — cached values live as member variables updated in `OnParamChange`, per-call math stays inline in `Process`.
+- 8-voice performance sanity test added to catch regressions.
+- Zero golden master changes — pure performance refactor with identical output.
+
+#### Technical Debt
+
+- Experimental `ModKnob` control added but not wired into the plugin UI. Should be either integrated or removed in a future sprint.
+
+---
+
+### AR Sprint 6 (LFO Tests, Docs & VRT Skia Fix) — Retro
+
+#### Issues & Resolutions
+
+1. **Exact floating-point equality in depth=0 LFO test**
+   - **Problem:** `CATCH_CHECK(s1 == s2)` used exact float equality to assert that two voices with LFO depth=0 produce identical output. This works because depth=0 means the LFO contribution is literally multiplied by zero, but it's fragile — any future change to the LFO path (e.g., a tiny epsilon depth) would break the test with no clear diagnostic.
+   - **Action:** Replaced with `CATCH_CHECK(s1 == Approx(s2).margin(1e-15))`.
+   - **Lesson:** Exact float `==` in tests is a code smell. Even when structurally correct, it signals "I haven't thought about what happens when this assumption breaks." Use `Approx` with an explicit margin and document why the margin is valid. Added as Design Principle #10.
+
+2. **Magic waveform count in LFO waveform loop**
+   - **Problem:** `for (int waveform = 0; waveform < 4; ...)` hardcoded the number of LFO waveforms. If a 5th waveform were added to `sea_lfo.h`, this test would silently skip it.
+   - **Action:** Replaced with `constexpr int kNumLFOWaveforms = 4;` and added a comment mapping values to waveform names (`0=Sine, 1=Triangle, 2=Square, 3=Ramp`).
+   - **Lesson:** Numeric loop bounds over enum/variant sets are magic numbers. Name the constant and document what it maps to. Added as Design Principle #9.
+
+3. **VRTCaptureHelper runtime fallback for missing Skia was dead code**
+   - **Problem:** After switching the ComponentGallery to the Skia backend, the `#ifdef IGRAPHICS_SKIA` / `#else` fallback path in `VRTCaptureHelper.h` became unreachable dead code. If someone accidentally built without Skia, they'd get a silent runtime failure (return false + stderr warning) rather than a clear build error.
+   - **Action:** Replaced `#ifdef IGRAPHICS_SKIA` with `#ifndef IGRAPHICS_SKIA #error` at the top of the file. Removed the runtime fallback branch and the `#ifdef` guards around the capture code, since Skia is now a hard requirement.
+   - **Lesson:** When a dependency becomes mandatory (not optional), convert runtime fallbacks to compile-time errors immediately. Dead fallback code is worse than no fallback — it suggests the code handles a case it actually can't.
+
+#### What worked well
+
+- **VRT Skia migration was well-motivated.** The PR description clearly explained why a "tests and docs only" sprint included a backend change. The tolerance tightening (20K/3% → 100/1%) is directly justified by the deterministic readback.
+- **LFO test design is behavioral, not structural.** Tests assert observable effects (zero-crossing counts, RMS differences, pan position changes) rather than internal LFO state, making them resilient to implementation changes.
+- **Signal flow comments in Voice::Process().** The 10-step overview turns a 200-line DSP function into something navigable without reading every line.
+
+#### Process observations
+
+- **Review feedback patterns are becoming systematic.** The three issues found in this sprint (magic numbers, float equality, dead fallback code) are instances of broader anti-patterns. They've been codified as Design Principles #9 and #10 to prevent recurrence.
+- **`ci-pr` gate caught the VRT flakiness.** Without `just ci-pr` as a mandatory pre-merge step, the NanoVG VRT issue could have persisted indefinitely. The gate works.
+
+---
+
+### AR Sprint 7 (Table-Driven Params) — Retro
+
+_Commits `3abccd7` + `5da356e`, PR #61_
+
+#### Issues & Resolutions
+
+1. **Initial `const char*` shape replaced with `ShapeKind` enum**
+   - **Problem:** The first implementation used raw `const char*` for parameter shape metadata (e.g., `"linear"`, `"frequency"`). This is fragile — typos compile silently and switch statements can't exhaustively match strings.
+   - **Action:** Replaced with a `ShapeKind` enum (`Linear`, `Frequency`, `Exponential`, etc.). The compiler now enforces exhaustive handling and typos are caught at compile time.
+   - **Lesson:** When metadata drives runtime behavior, use enums over strings. Type safety is worth the small upfront cost of defining the enum.
+
+2. **O(n) `FindParamMeta` replaced with O(1) lookup**
+   - **Problem:** The initial implementation used a linear scan of the parameter table to find metadata by param index. With 28+ parameters, this was called on every `OnParamChange` and every UI sync.
+   - **Action:** Replaced with a direct array index lookup (`kParamMeta[paramIdx]`), since parameter indices are contiguous integers starting at 0.
+   - **Lesson:** When the key space is a contiguous integer range, use an array, not a search. O(1) lookup is both faster and simpler.
+
+3. **Needed `standard-layout` `static_assert` for `offsetof`**
+   - **Problem:** The `ParamMeta` struct used `offsetof` for compile-time validation, but `offsetof` is only well-defined for standard-layout types. Without a `static_assert`, a future addition of a virtual method or non-trivial member would silently invoke undefined behavior.
+   - **Action:** Added `static_assert(std::is_standard_layout_v<ParamMeta>)`.
+
+#### What worked well
+
+- 120-line `switch` statement in `OnParamChange` reduced to a 28-entry table — parameter additions now require 2–3 edits instead of 5.
+- `SyncUIState` now correctly syncs voice allocation params (`polyphony`, `allocationMode`, `stealPriority`) that were previously missing from the manual switch statement.
+- Table structure is self-documenting — each row reads as a parameter specification (name, range, shape, default, group).
+
+#### Technical Debt
+
+- Manual verification steps (knob control, preset load, demo buttons) should be documented as a checklist for future parameter changes.
+
+---
+
+## Native Sandbox Migration Initiative
+
+### NSM Sprint 1 (Sandbox App Foundation) — Retro
+
+#### Issues & Resolutions
 
 1. **`just sandbox-build` and `just sandbox-run` missing from Justfile**
    - **Problem:** The Sprint 1 DoD explicitly requires both Justfile targets as the primary developer-facing entrypoints. Neither command nor its backing scripts (`scripts/tasks/build_sandbox.sh`, `scripts/tasks/run_sandbox.sh`) were committed in the initial implementation.
@@ -269,15 +496,15 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
    - **Action:** Accepted for Sprint 1 — the fallback path prints a clear diagnostic and returns false rather than crashing, and the note is prominently marked as a TODO. Sprint 2 must verify or correct the method name when the full iPlug2 dependency is available.
    - **Lesson:** When a key platform integration point can't be verified at implementation time, the fallback path must be robust (print diagnostic + return false, not crash), and the TODO must be at the call site rather than only in a comment at the top of the file. This was done correctly here.
 
-### What worked well
+#### What worked well
 
 - **`VRTCaptureHelper.h` isolation:** All Skia surface readback logic is confined to a single header under `#ifdef IGRAPHICS_SKIA`. The rest of the codebase calls only `VRTCapture::SaveRegionAsPNG` — no Skia internals leak into `ComponentGallery.cpp`.
-- **`#if IPLUG_EDITOR` discipline:** Every `GetUI()` call is inside an `IPLUG_EDITOR` guard. The WAM processor build failure class from Sprint 4 was avoided entirely.
+- **`#if IPLUG_EDITOR` discipline:** Every `GetUI()` call is inside an `IPLUG_EDITOR` guard. The WAM processor build failure class from VM Sprint 4 was avoided entirely.
 - **`PolyTheme` constants throughout:** No hardcoded font strings anywhere in the gallery code. Font resource names use the bundled TTF files and `PolyTheme` constants consistently.
 - **No SEA_DSP or audio engine pull-in:** The gallery CMake is clean — it only links iPlug2 and the UI controls.
 - **Warmup frame accumulation before VRT capture:** `OnIdle` waits for 3 dirty frames before triggering capture, ensuring controls have rendered at least once. This addresses a class of flaky capture bugs proactively.
 
-### Technical Debt / Open Items for Sprint 2
+#### Technical Debt / Open Items for Sprint 2
 
 - **Verify `IGraphicsSkia::GetSurface()`** against `external/iPlug2/IGraphics/IGraphicsSkia.h` once `just deps` has been run. Update or replace the call as needed.
 - **Clarify VRT invocation interface:** Decide whether `--vrt-capture-mode` CLI flag or `POLYSYNTH_VRT_MODE=1` env var is the canonical interface and update the Sprint 2 plan's smoke test accordingly.
@@ -285,9 +512,9 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
 
 ---
 
-## Native Sandbox Migration — Sprint 2 (Python VRT Engine + Integration) — Retro
+### NSM Sprint 2 (Python VRT Engine + Integration) — Retro
 
-### Issues & Resolutions
+#### Issues & Resolutions
 
 1. **Skia dependency missing from local environment**
    - **Problem:** Attempting to use `IGRAPHICS_SKIA` for deterministic surface readback failed because the required Skia binaries and headers were missing from `external/iPlug2/Dependencies/Build/mac`. Building Skia from scratch is a heavy task unsuitable for a sprint iteration.
@@ -314,22 +541,22 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
    - **Action:** Updated `scripts/vrt_diff.py` to support logical top cropping (`crop_top_px`) scaled by capture ratio, normalize comparisons to the lower resolution, and configured `tests/Visual/vrt_config.json` with `crop_top_px: 28`; regenerated all seven native VRT baselines and added `tests/test_vrt_diff.py` coverage for crop scaling behavior.
    - **Lesson:** Native visual baselines captured on one platform must account for cross-platform window chrome and DPI differences in the diff engine, and unit tests must inject explicit config instead of relying on repository defaults.
 
-### What worked well
+#### What worked well
 
 - **Single source of truth in `vrt_config.json`**: Putting tolerance and expected components in a JSON file made the Python script much cleaner and allows for easy future adjustments without touching code.
 - **VRT tests with synthetic fixtures**: `tests/test_vrt_diff.py` successfully validates the diffing logic (identical, sub-threshold, failing, missing baseline) without needing the heavy sandbox binary, making it fast and portable.
 - **Python script as a clean CLI tool**: Using `argparse` with clear help text and consistent exit codes makes the VRT engine easy to integrate into any CI pipeline.
 
-### Technical Debt / Future Improvements
+#### Technical Debt / Future Improvements
 
 - **Full-window captures instead of cropped regions**: The `SaveWindowScreenshot` fallback captures the whole window (Sidebar + Component). While this works for regression, it's not as "pure" as individual component crops. A future improvement could be to implement cropping in `vrt_diff.py`.
 - **Audio device probing errors on headless environments**: The sandbox logs errors about `RtApiCore::probeDeviceInfo` on Mac when no audio output is available. This doesn't block screenshot generation but adds noise to the logs.
 
 ---
 
-## Native Sandbox Migration — Sprint 3 (CI/CD Pipeline Swap) — Retro
+### NSM Sprint 3 (CI/CD Pipeline Swap) — Retro
 
-### Issues & Resolutions
+#### Issues & Resolutions
 
 1. **iPlug2 APP target does not compile on Linux — sprint plan specified `ubuntu-latest` for VRT jobs**
    - **Problem:** The sprint 3 spec stated `runs-on: ubuntu-latest` for `native-visual-regression` (in `visual-tests.yml`) and `native-ui-tests` (in `ci.yml`). The iPlug2 APP standalone target is not supported on Linux: `IPlugTimer.h` has `#error NOT IMPLEMENTED` for `OS_LINUX`, and `IPlugAPP_host.h` pulls in `swell.h` (a Cocoa abstraction layer that does not exist on Linux). The APP CMake library (`APP.cmake`) prints `"Error - Linux not yet supported"` but still unconditionally links the broken sources, causing immediate compilation failure.
@@ -357,19 +584,19 @@ A separate agent was brought in to fix CI failures on PR #39 after the Sprint 4 
    - **Problem:** The initial commit had three sequential failures: (1) Linux APP compilation failure, (2) macOS PEP 668 pip failure, (3) CMakeLists.txt format scope issue. Each was a separate push. This meant the PR had a run of broken CI states visible in its history before stabilising.
    - **Lesson:** Before pushing a CI pipeline change, simulate the full runner environment locally or in a test branch. For macOS CI specifically: check that pip usage goes through a venv, check that the APP target compiles, and verify the CMakeLists.txt `FORMATS` scope. A one-page "macOS CI checklist" added to the sprint plan would have caught all three issues before the first push.
 
-### What worked well
+#### What worked well
 
 - **YAML structure changes were correct first-time.** The dependency graph (removing `build-storybook-site`, adding `native-ui-tests`, updating `needs:` for `build-macos`/`build-windows`, stripping Storybook from `package-demo-site`) required no corrections — only the runner platform and Python install method needed fixing.
 - **Storybook/Playwright references were fully removed.** No `apt-get`, `npm ci`, `setup-node`, `PLAYWRIGHT_BROWSERS_PATH`, or Storybook artifact references remained after the initial rewrite.
 - **`FORMATS APP` fix is an improvement beyond the bug fix.** Explicitly naming `FORMATS APP` makes the CMakeLists.txt self-documenting and avoids wasted build time on plugin formats that CI never uses.
 
-### Process observations
+#### Process observations
 
 - **The sprint plan's target platform (ubuntu-latest) was never validated during Sprint 1/2.** The plan spec was written ahead of implementation and treated as authoritative, but the Linux APP compilation requirement in Sprint 1 DoD was never checked off. Sprint 3 inherited an incorrect baseline assumption and only discovered it when CI ran.
 - **macOS runner Python environment is different from Linux.** On Ubuntu, `pip3 install` works system-wide. On macOS (Homebrew Python), it does not. This difference must be accounted for any time a workflow is ported from Ubuntu to macOS.
 - **All three failures were discoverable by local simulation.** A one-time "dry-run CI locally" pass — building the APP on macOS, running pip install in a fresh shell, checking CMake target list — would have caught all three before any push.
 
-### Additions to cross-sprint guardrails (from this retro)
+#### Additions to cross-sprint guardrails (from this retro)
 
 The following should be added to the "Cross-Sprint Guardrails" section of `00_overview.md`:
 
@@ -379,9 +606,9 @@ The following should be added to the "Cross-Sprint Guardrails" section of `00_ov
 
 ---
 
-## Native Sandbox Migration — Sprint 4 (Legacy Cleanup + Validation) — Retro
+### NSM Sprint 4 (Legacy Cleanup + Validation) — Retro
 
-### Issues & Resolutions
+#### Issues & Resolutions
 
 1. **Sprint 4 cleanup commit existed but `main` had not advanced to it**
    - **Problem:** The legacy-cleanup work (PR #49 scope) was present on `sprint/4-legacy-cleanup`, but `main` still contained pre-cleanup Storybook/Playwright artifacts and obsolete gallery commands.
@@ -400,43 +627,11 @@ The following should be added to the "Cross-Sprint Guardrails" section of `00_ov
 
 ---
 
-## Sprint 6 (LFO Tests, Docs & VRT Skia Fix) — Retro
-
-### Issues & Resolutions
-
-1. **Exact floating-point equality in depth=0 LFO test**
-   - **Problem:** `CATCH_CHECK(s1 == s2)` used exact float equality to assert that two voices with LFO depth=0 produce identical output. This works because depth=0 means the LFO contribution is literally multiplied by zero, but it's fragile — any future change to the LFO path (e.g., a tiny epsilon depth) would break the test with no clear diagnostic.
-   - **Action:** Replaced with `CATCH_CHECK(s1 == Approx(s2).margin(1e-15))`.
-   - **Lesson:** Exact float `==` in tests is a code smell. Even when structurally correct, it signals "I haven't thought about what happens when this assumption breaks." Use `Approx` with an explicit margin and document why the margin is valid. Added as Design Principle #10.
-
-2. **Magic waveform count in LFO waveform loop**
-   - **Problem:** `for (int waveform = 0; waveform < 4; ...)` hardcoded the number of LFO waveforms. If a 5th waveform were added to `sea_lfo.h`, this test would silently skip it.
-   - **Action:** Replaced with `constexpr int kNumLFOWaveforms = 4;` and added a comment mapping values to waveform names (`0=Sine, 1=Triangle, 2=Square, 3=Ramp`).
-   - **Lesson:** Numeric loop bounds over enum/variant sets are magic numbers. Name the constant and document what it maps to. Added as Design Principle #9.
-
-3. **VRTCaptureHelper runtime fallback for missing Skia was dead code**
-   - **Problem:** After switching the ComponentGallery to the Skia backend, the `#ifdef IGRAPHICS_SKIA` / `#else` fallback path in `VRTCaptureHelper.h` became unreachable dead code. If someone accidentally built without Skia, they'd get a silent runtime failure (return false + stderr warning) rather than a clear build error.
-   - **Action:** Replaced `#ifdef IGRAPHICS_SKIA` with `#ifndef IGRAPHICS_SKIA #error` at the top of the file. Removed the runtime fallback branch and the `#ifdef` guards around the capture code, since Skia is now a hard requirement.
-   - **Lesson:** When a dependency becomes mandatory (not optional), convert runtime fallbacks to compile-time errors immediately. Dead fallback code is worse than no fallback — it suggests the code handles a case it actually can't.
-
-### What worked well
-
-- **VRT Skia migration was well-motivated.** The PR description clearly explained why a "tests and docs only" sprint included a backend change. The tolerance tightening (20K/3% → 100/1%) is directly justified by the deterministic readback.
-- **LFO test design is behavioral, not structural.** Tests assert observable effects (zero-crossing counts, RMS differences, pan position changes) rather than internal LFO state, making them resilient to implementation changes.
-- **Signal flow comments in Voice::Process().** The 10-step overview turns a 200-line DSP function into something navigable without reading every line.
-
-### Process observations
-
-- **Review feedback patterns are becoming systematic.** The three issues found in this sprint (magic numbers, float equality, dead fallback code) are instances of broader anti-patterns. They've been codified as Design Principles #9 and #10 to prevent recurrence.
-- **`ci-pr` gate caught the VRT flakiness.** Without `just ci-pr` as a mandatory pre-merge step, the NanoVG VRT issue could have persisted indefinitely. The gate works.
-
----
-
 ## Resolved notes
 
-- **Sprint 1 scaffolding** — all issues resolved and merged in PR #36 (squash commit to main).
+- **VM Sprint 1 scaffolding** — all issues resolved and merged in PR #36 (squash commit to main).
   - `mLastAmpEnvVal` populated, fade-gain order fixed, `Sustain` enum commented, `VoiceEvent` annotated, README conventions completed, timestamp test strengthened, poly test uses `kMaxVoices` constants.
-- **Sprint 2 core allocation** — all issues resolved across two review rounds, merged in PR #37.
+- **VM Sprint 2 core allocation** — all issues resolved across two review rounds, merged in PR #37.
   - Active-count bounds bug fixed, dead includes removed, static_assert trait checks added, unused variable cleaned up, `ShouldHold` parameter suppressed, Task 2.2 comment block added.
-- **Sprint 3 theory engine** — clean implementation, merged in PR #38 in a single review pass.
+- **VM Sprint 3 theory engine** — clean implementation, merged in PR #38 in a single review pass.
   - Plan's Bm7b5 note error caught and corrected in implementation. Three extra robustness tests (negative notes, large count, large MIDI values) added beyond spec.

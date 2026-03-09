@@ -16,17 +16,8 @@ This folder contains strategy docs, execution plans, and archived planning artif
 - Testing strategy plan: [`plans/active/04_testing_strategy.md`](active/04_testing_strategy.md)
 - Program management plan: [`plans/active/05_program_management.md`](active/05_program_management.md)
 - Roadmap: [`plans/active/roadmap.md`](active/roadmap.md)
-- Sprint retrospective notes: [`plans/SPRINT_RETROSPECTIVE_NOTES.md`](SPRINT_RETROSPECTIVE_NOTES.md)
-
-## Domain Plans
-
-- UI strategy (archived): [`plans/archive/ui_strategy.md`](archive/ui_strategy.md)
 - Release pipeline: [`plans/active/release_pipeline.md`](active/release_pipeline.md)
-- DSP refactor plans:
-  - [`plans/active/dsp_refactor.md`](active/dsp_refactor.md)
-  - [`plans/active/dsp-refactor-claude.md`](active/dsp-refactor-claude.md)
-  - [`plans/active/dsp-refactor-claude-v2.md`](active/dsp-refactor-claude-v2.md)
-- Voice manager sprint track (completed, merged in PR #39): [`plans/archive/voice-manager/`](archive/voice-manager)
+- Sprint retrospective notes: [`plans/SPRINT_RETROSPECTIVE_NOTES.md`](SPRINT_RETROSPECTIVE_NOTES.md)
 
 ## Specs
 
@@ -38,12 +29,17 @@ This folder contains strategy docs, execution plans, and archived planning artif
 
 ## Archive
 
-- Archived plans: [`plans/archive/`](archive)
+Completed initiatives and superseded plans:
+
+- Voice Manager (4 sprints, merged PR #39): [`plans/archive/voice-manager/`](archive/voice-manager)
+- Architecture Review (7 sprints, merged PRs #56–#61): [`plans/archive/architecture-review/`](archive/architecture-review)
+- Native Sandbox Migration (4 sprints, merged PRs #44–#49): [`plans/archive/native-sandbox-migration/`](archive/native-sandbox-migration)
+- DSP Refactor (superseded): [`plans/archive/dsp-refactor/`](archive/dsp-refactor)
+- Legacy plans: [`plans/archive/`](archive) (rescue plan, UI strategy, implementation phases)
 
 ## Conventions
 
 - Keep active plans under `plans/active/`.
-- Move superseded plans into `plans/archive/`.
-- Prefer adding links here when introducing a new planning document.
-- Legacy top-level filenames are preserved as lightweight "Moved" stubs for
-  compatibility with old links.
+- Move completed initiatives to `plans/archive/` when the final sprint merges.
+- Update this index and `plans/active/README.md` when moving files.
+- Don't leave redirect stubs — git history preserves old paths.

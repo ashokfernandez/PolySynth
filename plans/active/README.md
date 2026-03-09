@@ -4,23 +4,13 @@ These are the current, non-archived planning documents.
 
 ## Core
 
-- Vision and strategy: [`plans/active/01_vision_and_strategy.md`](01_vision_and_strategy.md)
-- Architecture plan: [`plans/active/02_architecture.md`](02_architecture.md)
-- Agentic workflow: [`plans/active/03_agentic_workflow.md`](03_agentic_workflow.md)
-- Testing strategy: [`plans/active/04_testing_strategy.md`](04_testing_strategy.md)
-- Program management: [`plans/active/05_program_management.md`](05_program_management.md)
-- Roadmap: [`plans/active/roadmap.md`](roadmap.md)
+- Vision and strategy: [`01_vision_and_strategy.md`](01_vision_and_strategy.md)
+- Architecture plan: [`02_architecture.md`](02_architecture.md)
+- Agentic workflow: [`03_agentic_workflow.md`](03_agentic_workflow.md)
+- Testing strategy: [`04_testing_strategy.md`](04_testing_strategy.md)
+- Program management: [`05_program_management.md`](05_program_management.md)
+- Roadmap: [`roadmap.md`](roadmap.md)
 
 ## Domain
 
-- UI strategy (archived): [`plans/archive/ui_strategy.md`](../archive/ui_strategy.md)
-- Release pipeline: [`plans/active/release_pipeline.md`](release_pipeline.md)
-- DSP refactor:
-  - [`plans/active/dsp_refactor.md`](dsp_refactor.md)
-  - [`plans/active/dsp-refactor-claude.md`](dsp-refactor-claude.md)
-  - [`plans/active/dsp-refactor-claude-v2.md`](dsp-refactor-claude-v2.md)
-
-## Sprint Tracks
-
-- **Architecture Review & Refactoring** (7 sprints): [`architecture-review/00_overview.md`](architecture-review/00_overview.md)
-  - Voice extraction, PolySynth_DSP removal, magic numbers, test pyramid, performance caching, LFO tests, table-driven params
+- Release pipeline: [`release_pipeline.md`](release_pipeline.md)
