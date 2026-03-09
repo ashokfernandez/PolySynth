@@ -33,10 +33,10 @@ Port the PolySynth DSP engine to run standalone on a Raspberry Pi Pico 2 W (RP23
 Pico-1 (Toolchain)
   ├── Pico-2 (CI/CD & Emulation Pipeline)  ←── Testing foundation
   │     └── All subsequent sprints require CI green
-  └── Pico-3 (I2S Audio)
-        └── Pico-4 (DSP Integration)
-              ├── Pico-5 (Effects Architecture)
-              └── Pico-6 (Serial Control) ← also depends on Pico-5
+  └──┬── Pico-3 (I2S Audio) ← depends on Pico-1 AND Pico-2
+     └── Pico-4 (DSP Integration)
+           ├── Pico-5 (Effects Architecture)
+           └── Pico-6 (Serial Control) ← also depends on Pico-5
 ```
 
 ---
@@ -56,7 +56,7 @@ Every PR must pass both testing layers before merging. No code reaches `main` wi
 │  │  • Catch2 unit tests     │  │  • cmake --build for ARM      │  │
 │  │  • Embedded config flags │  │  • -Wdouble-promotion clean   │  │
 │  │  • Float precision DSP   │  │  • .uf2 produced              │  │
-│  │  • Deploy flag combos    │  │  • .elf size verified          │  │
+│  │  • Deploy flag combos    │  │  • .elf size verified           │  │
 │  │  • Command parser tests  │  │                                │  │
 │  └──────────────────────────┘  └────────────────────────────────┘  │
 │                                                                     │

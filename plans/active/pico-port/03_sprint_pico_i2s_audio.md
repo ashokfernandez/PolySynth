@@ -39,7 +39,7 @@ Configure PIO-based I2S with DMA for the PCM5101A DAC (Waveshare Pico-Audio HAT)
 
 ---
 
-## Task 2.1: Evaluate and Set Up I2S Approach
+## Task 3.1: Evaluate and Set Up I2S Approach
 
 ### What
 
@@ -64,7 +64,7 @@ This task is a design decision only. Document it in this plan — no code change
 
 ---
 
-## Task 2.2: Create PIO I2S Program
+## Task 3.2: Create PIO I2S Program
 
 ### What
 
@@ -148,7 +148,7 @@ PIO instructions can set "side-set" pins simultaneously with the main instructio
 
 ---
 
-## Task 2.3: Create I2S Audio Driver
+## Task 3.3: Create I2S Audio Driver
 
 ### What
 
@@ -412,7 +412,7 @@ The PIO program consumes 32-bit words from its TX FIFO (one word per channel). W
 
 ---
 
-## Task 2.4: Implement 440Hz Sine Wave Test
+## Task 3.4: Implement 440Hz Sine Wave Test
 
 ### What
 
@@ -423,7 +423,7 @@ Replace the LED blink loop in `main.cpp` with a 440Hz sine wave audio test. This
 **`/src/platform/pico/main.cpp`** — Replace with:
 
 ```cpp
-// PolySynth Pico — Sprint 2: I2S Audio Hello World
+// PolySynth Pico — Sprint Pico-3: I2S Audio Hello World
 // Outputs a 440Hz sine wave through the Waveshare Pico-Audio HAT.
 
 #include <cstdio>
@@ -576,7 +576,7 @@ int main()
 
 ---
 
-## Task 2.5: Update CMakeLists.txt for Audio Sources
+## Task 3.5: Update CMakeLists.txt for Audio Sources
 
 ### What
 
@@ -621,7 +621,7 @@ target_link_libraries(polysynth_pico PRIVATE
 
 ---
 
-## Task 2.6: Buffer Size Tuning (Optional — Stretch Goal)
+## Task 3.6: Buffer Size Tuning (Optional — Stretch Goal)
 
 ### What
 

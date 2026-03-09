@@ -47,7 +47,7 @@ Establish a rigorous two-layer automated testing pipeline so that every PR is ve
 │  │  • Catch2 unit tests     │  │  • cmake --build for ARM      │  │
 │  │  • Embedded config flags │  │  • -Wdouble-promotion clean   │  │
 │  │  • Float precision DSP   │  │  • .uf2 produced              │  │
-│  │  • Deploy flag combos    │  │  • .elf map verified           │  │
+│  │  • Deploy flag combos    │  │  • .elf size verified           │  │
 │  │  • Command parser tests  │  │                                │  │
 │  └──────────────────────────┘  └────────────────────────────────┘  │
 │                                                                     │
@@ -127,27 +127,58 @@ endif()
 
 ### TDD: Tests That Must Pass Under Embedded Config
 
-Some existing tests will need `#if` guards or tolerance adjustments for the embedded configuration. Document which tests need modification:
+Some existing tests will need `#if` guards or tolerance adjustments for the embedded configuration. The following tests have been audited and need modification:
+
+#### Hardcoded Voice Counts (must use `kMaxVoices` instead)
+
+| File | Lines | Issue |
+|------|-------|-------|
+| `Test_VoiceAllocation.cpp` | 30, 38, 140 | Hardcoded `8` for polyphony limit and active voice checks |
+| `Test_SynthState.cpp` | 169 | `CATCH_CHECK(state.polyphony <= 16)` — must use `kMaxVoices` |
+| `Test_VoiceAllocator_Regressions.cpp` | 25-26 | `alloc.SetPolyphonyLimit(8)` — use `kMaxVoices` or a smaller value that works for both configs |
+
+**Fix pattern:** Replace hardcoded numbers with `PolySynthCore::kMaxVoices`:
 
 ```cpp
-// Example: Test that uses kMaxVoices
-TEST_CASE("VoiceManager handles max voices", "[VoiceManager]") {
-    PolySynthCore::VoiceManager vm;
-    vm.Init(48000.0);
+// BEFORE:
+CATCH_REQUIRE(vm.GetActiveVoiceCount() == 8);
 
-    // Fill all available voices
-    for (int i = 0; i < PolySynthCore::kMaxVoices; i++) {
-        vm.OnNoteOn(60 + i, 100);
-    }
-    REQUIRE(vm.GetActiveVoiceCount() == PolySynthCore::kMaxVoices);
-
-    // Next note triggers stealing
-    vm.OnNoteOn(60 + PolySynthCore::kMaxVoices, 100);
-    REQUIRE(vm.GetActiveVoiceCount() == PolySynthCore::kMaxVoices);
-}
+// AFTER:
+CATCH_REQUIRE(vm.GetActiveVoiceCount() == PolySynthCore::kMaxVoices);
 ```
 
-Tests that hard-code `16` or `8` for voice count must use `kMaxVoices` instead.
+#### Tight Approx Tolerances (may fail with float precision)
+
+| File | Lines | Issue |
+|------|-------|-------|
+| `Test_Effects.cpp` | 52-53 | `Approx(0.2).margin(1e-6)` — too tight for float, relax to `1e-4` |
+| `Test_LFO.cpp` | 15-16, 73-103 | 15+ tests with `Approx().margin(1e-6)` — relax to `1e-4` |
+
+**Fix pattern:** Increase tolerance margins:
+```cpp
+// BEFORE:
+REQUIRE(output == Approx(0.6).margin(1e-6));
+
+// AFTER:
+REQUIRE(output == Approx(0.6).margin(1e-4));
+```
+
+#### Effects Tests (need `#if` guards or separate target)
+
+| File | Lines | Issue |
+|------|-------|-------|
+| `Test_Effects.cpp` | 9, 41, 58 | Instantiates `VintageDelay<double>`, `VintageChorus<double>`, `LookaheadLimiter<double>` — these effects are not deployed on embedded. Wrap in `#if defined(POLYSYNTH_DEPLOY_*)` guards or exclude from embedded test target. |
+
+**Fix pattern:** Guard effect-specific tests:
+```cpp
+#if defined(POLYSYNTH_DEPLOY_DELAY)
+TEST_CASE("VintageDelay: bypass produces silence", "[Effects]") { ... }
+#endif
+```
+
+#### Explicit `double` Declarations (widespread, low priority)
+
+Many test files use `double` explicitly for sample rate and output variables (`Test_VAFilters.cpp`, `Test_BiquadFilter.cpp`, `Test_Voice.cpp`, `Test_Engine_Audio.cpp`). These generally work because the DSP classes accept `double` parameters at control rate. Only per-sample accumulator variables need to use `sample_t` if precision matters. **Low priority — fix opportunistically.**
 
 ### File to Create
 
@@ -357,9 +388,12 @@ For emulation testing purposes, the behavioral differences don't matter — we'r
 ```toml
 [wokwi]
 version = 1
-firmware = "../../../build/pico-emu/polysynth_pico.uf2"
-elf = "../../../build/pico-emu/polysynth_pico.elf"
+firmware = "../../../../build/pico-emu/polysynth_pico.uf2"
+elf = "../../../../build/pico-emu/polysynth_pico.elf"
 ```
+
+> **Path explanation:** The `wokwi/` directory is 4 levels deep from the repo root:
+> `src/platform/pico/wokwi/` → `../../..` reaches `src/`, `../../../..` reaches the repo root.
 
 ### Implementation Notes for Juniors
 
@@ -543,6 +577,10 @@ static void run_self_tests()
     }
 
     // Test 6: Audio I2S init
+    // NOTE: pico_audio::Init() is not available until Sprint Pico-3 (I2S Audio).
+    // In Sprint Pico-2, stub this test behind a compile guard or skip it.
+    // Once Sprint Pico-3 lands the I2S driver, remove the guard.
+#if defined(PICO_HAS_I2S_DRIVER)  // Defined by CMakeLists.txt after Sprint Pico-3
     if (pico_audio::Init(audio_callback)) {
         printf("[TEST:PASS] audio_i2s_init\n");
         pass_count++;
@@ -550,6 +588,9 @@ static void run_self_tests()
         printf("[TEST:FAIL] audio_i2s_init\n");
         fail_count++;
     }
+#else
+    printf("[TEST:SKIP] audio_i2s_init (I2S driver not yet available)\n");
+#endif
 
     // Summary
     printf("\n[TEST:SUMMARY] %d passed, %d failed\n", pass_count, fail_count);
@@ -671,9 +712,31 @@ Add two new CI jobs to `/.github/workflows/ci.yml`:
         run: |
           arm-none-eabi-size build/pico/polysynth_pico.elf
 
+      - name: Build RP2040 proxy firmware for Wokwi emulation
+        env:
+          PICO_SDK_PATH: /tmp/pico-sdk
+        run: |
+          cmake -S src/platform/pico -B build/pico-emu \
+            -DPICO_SDK_PATH=$PICO_SDK_PATH \
+            -DPICO_BOARD=pico_w \
+            -G Ninja
+          cmake --build build/pico-emu
+
+      - name: Upload emulation firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pico-emu-firmware
+          path: |
+            build/pico-emu/polysynth_pico.uf2
+            build/pico-emu/polysynth_pico.elf
+
   # ---------------------------------------------------------------------------
   # Pico Layer 2b: Wokwi Emulated Firmware Test (RP2040 proxy)
   # Runs actual firmware in Wokwi simulator, checks serial output.
+  #
+  # NOTE: This job downloads the RP2040 .uf2 artifact from pico-arm-compile-check
+  # to avoid duplicating the ARM toolchain setup. The Layer 2a job uploads both
+  # the RP2350 and RP2040 proxy builds as artifacts.
   # ---------------------------------------------------------------------------
   pico-emulation-test:
     name: Pico / Layer 2b – Wokwi Emulation
@@ -685,25 +748,11 @@ Add two new CI jobs to `/.github/workflows/ci.yml`:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install ARM toolchain
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
-
-      - name: Clone Pico SDK v2.1.0
-        run: |
-          git clone --depth 1 --branch 2.1.0 https://github.com/raspberrypi/pico-sdk.git /tmp/pico-sdk
-          cd /tmp/pico-sdk && git submodule update --init --depth 1
-
-      - name: Build Pico firmware for emulation (RP2040 proxy)
-        env:
-          PICO_SDK_PATH: /tmp/pico-sdk
-        run: |
-          cmake -S src/platform/pico -B build/pico-emu \
-            -DPICO_SDK_PATH=$PICO_SDK_PATH \
-            -DPICO_BOARD=pico_w \
-            -G Ninja
-          cmake --build build/pico-emu
+      - name: Download emulation firmware from Layer 2a
+        uses: actions/download-artifact@v4
+        with:
+          name: pico-emu-firmware
+          path: build/pico-emu
 
       - name: Run firmware in Wokwi emulator
         uses: wokwi/wokwi-ci-action@v1
@@ -741,6 +790,10 @@ The Wokwi emulation job uses `if: ${{ secrets.WOKWI_CLI_TOKEN != '' }}`. This me
 
 This follows the [Wokwi CI docs](https://docs.wokwi.com/wokwi-ci/github-actions) recommendation for open-source projects.
 
+### Design Decision: Artifact Sharing Between Layer 2a and 2b
+
+The Layer 2a job (ARM cross-compile) builds both the RP2350 firmware and the RP2040 proxy firmware for Wokwi. The RP2040 proxy `.uf2` and `.elf` are uploaded as a CI artifact, which the Layer 2b job downloads. This avoids duplicating the ARM toolchain installation and Pico SDK clone (~2 minutes of CI time saved per PR).
+
 ### Acceptance Criteria
 
 - [ ] Layer 1 job runs and passes on PR
@@ -759,12 +812,43 @@ This follows the [Wokwi CI docs](https://docs.wokwi.com/wokwi-ci/github-actions)
 
 Create a [Wokwi Automation Scenario](https://docs.wokwi.com/wokwi-ci/automation-scenarios) YAML file that performs more sophisticated testing — e.g., sending serial commands and verifying responses.
 
+### Phasing: Incremental Per Sprint
+
+This scenario is **built incrementally** as features land. In Sprint Pico-2, only the boot self-test step is active. Serial command steps are added in Sprint Pico-6 when the serial protocol is implemented.
+
+| Sprint | Steps Available |
+|--------|----------------|
+| **Pico-2** | `[TEST:ALL_PASSED]` boot check only |
+| **Pico-3** | Add `[TEST:PASS] audio_i2s_init` check |
+| **Pico-6** | Add full serial protocol steps (NOTE_ON, STATUS, SET, ERR) |
+
 ### File to Create
 
 **`/src/platform/pico/wokwi/test_boot.yaml`**
 
+The initial version (Sprint Pico-2) only validates the boot self-test:
+
 ```yaml
-# Wokwi Automation Scenario: Boot + Serial Protocol Test
+# Wokwi Automation Scenario: Boot Self-Test
+# Verifies firmware boots and self-tests pass.
+#
+# This scenario is extended incrementally:
+#   - Sprint Pico-2: Boot self-test only (below)
+#   - Sprint Pico-3: Add audio_i2s_init check
+#   - Sprint Pico-6: Add serial protocol steps (NOTE_ON, STATUS, SET, ERR)
+
+name: Boot Self-Test
+
+steps:
+  # Wait for self-test to complete
+  - wait-serial: "[TEST:ALL_PASSED]"
+    timeout: 15000
+```
+
+The full version (after Sprint Pico-6) will extend to:
+
+```yaml
+# Wokwi Automation Scenario: Boot + Serial Protocol Test (Sprint Pico-6)
 # Tests that firmware boots, self-tests pass, and serial commands work.
 
 name: Boot and Serial Protocol Test
@@ -774,7 +858,7 @@ steps:
   - wait-serial: "[TEST:ALL_PASSED]"
     timeout: 15000
 
-  # Test serial command protocol
+  # Test serial command protocol (added in Sprint Pico-6)
   - serial-type: "STATUS\n"
   - wait-serial: "STATUS:"
     timeout: 5000

@@ -16,17 +16,17 @@
 
 ## Goal
 
-Port the core DSP library (SEA_DSP + core Engine + VoiceManager + Voice) to compile cleanly for the RP2350 ARM target. Connect the voice engine to the I2S audio pipeline and produce real synthesizer audio through the DAC. This sprint focuses on getting the core voice path working — effects come in Sprint 4.
+Port the core DSP library (SEA_DSP + core Engine + VoiceManager + Voice) to compile cleanly for the RP2350 ARM target. Connect the voice engine to the I2S audio pipeline and produce real synthesizer audio through the DAC. This sprint focuses on getting the core voice path working — effects come in Sprint Pico-5.
 
 ### Philosophy: "Compile Everything, Deploy Core"
 
-The full SEA_DSP library must compile for ARM Cortex-M33 with zero errors. This proves the codebase is truly portable. But the deployed binary in this sprint only includes: Oscillators, Filters, Envelopes, LFO, VoiceManager — no effects (Chorus, Delay, Limiter). Effects are handled in Sprint 4.
+The full SEA_DSP library must compile for ARM Cortex-M33 with zero errors. This proves the codebase is truly portable. But the deployed binary in this sprint only includes: Oscillators, Filters, Envelopes, LFO, VoiceManager — no effects (Chorus, Delay, Limiter). Effects are handled in Sprint Pico-5.
 
 ---
 
 ## Prerequisites
 
-- Sprint Pico-2 complete (440Hz sine wave playing through DAC, zero underruns)
+- Sprint Pico-3 complete (440Hz sine wave playing through DAC, zero underruns)
 - Familiarity with `/src/core/Engine.h`, `Voice.h`, `VoiceManager.h`, `SynthState.h`
 - Understanding of `sample_t` (float on Pico, double on desktop) and `sea::Real`
 
@@ -77,7 +77,7 @@ Create a single header that centralizes all Pico-specific compile-time configura
 // Total estimate:          ~40 KB / 520 KB available
 //
 // Effects are disabled in this sprint:
-// VintageChorus:           ~19 KB  (Sprint 4: deployable with static buffers)
+// VintageChorus:           ~19 KB  (Sprint Pico-5: deployable with static buffers)
 // VintageDelay:            ~750 KB (IMPOSSIBLE at 2s delay — reduce to 50-100ms)
 // LookaheadLimiter:        ~330 KB (IMPOSSIBLE — replace with soft clipper)
 
@@ -92,7 +92,7 @@ Create a single header that centralizes all Pico-specific compile-time configura
 
 - [ ] File exists and documents all configuration
 - [ ] No functional code — purely defines and documentation
-- [ ] Memory budget documented for Sprint 4 reference
+- [ ] Memory budget documented for Sprint Pico-5 reference
 
 ---
 
@@ -237,7 +237,7 @@ Replace the sine wave test with the actual PolySynth engine. The DMA audio callb
 **`/src/platform/pico/main.cpp`** — Major update:
 
 ```cpp
-// PolySynth Pico — Sprint 3: Core DSP Integration
+// PolySynth Pico — Sprint Pico-4: Core DSP Integration
 // Full voice engine connected to I2S audio pipeline.
 
 #include <cstdio>
@@ -506,7 +506,7 @@ target_link_options(polysynth_pico PRIVATE -Wl,-Map=polysynth_pico.map)
 - [ ] `data + bss` < 100 KB
 - [ ] No `std::vector` symbols in audio path code
 - [ ] SRAM usage printed via serial matches map file analysis
-- [ ] Results documented for Sprint 4 effects planning
+- [ ] Results documented for Sprint Pico-5 effects planning
 
 ---
 
@@ -600,6 +600,6 @@ If CPU exceeds 30%, investigate:
 - [ ] No changes to `SynthState` field types (must remain `double` for control-rate precision)
 - [ ] `-Wdouble-promotion` fixes only affect per-sample code, not control-rate code
 - [ ] Engine::Process() call is per-sample (not per-buffer) — matching desktop behavior
-- [ ] `tanhf()` soft clipper is temporary — replaced by proper limiter system in Sprint 4
+- [ ] `tanhf()` soft clipper is temporary — replaced by proper limiter system in Sprint Pico-5
 - [ ] `just build && just test` passes — no desktop regressions
 - [ ] Map file analysis included in PR description (data + bss < 100 KB)

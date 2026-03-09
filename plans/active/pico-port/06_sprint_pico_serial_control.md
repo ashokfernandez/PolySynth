@@ -23,14 +23,14 @@ Implement a USB Serial text-based command protocol to control all synth paramete
 
 ## Prerequisites
 
-- Sprint Pico-3 complete (Engine producing audio, waveform switching works)
-- Sprint Pico-4 complete (effects deploy flags, PicoSoftClipper)
+- Sprint Pico-4 complete (Engine producing audio, waveform switching works)
+- Sprint Pico-5 complete (effects deploy flags, PicoSoftClipper)
 - Familiarity with `SynthState.h` (40+ parameters)
 - Python 3 + `pyserial` for the control script
 
 ---
 
-## Task 5.1: Design Serial Protocol
+## Task 6.1: Design Serial Protocol
 
 ### What
 
@@ -111,7 +111,7 @@ fxLimiterThreshold
 
 ---
 
-## Task 5.2: Implement Command Parser
+## Task 6.2: Implement Command Parser
 
 ### What
 
@@ -126,7 +126,7 @@ Create a zero-allocation command parser that tokenizes input lines and dispatche
 
 // PolySynth Pico — Serial Command Protocol
 // Text-based serial interface for controlling the synthesizer.
-// See sprint plan 05 for protocol specification.
+// See sprint plan 06 (Pico-6) for protocol specification.
 
 #include <cstdint>
 
@@ -641,7 +641,7 @@ TEST_CASE("CommandParser: NOTE_ON partial arguments", "[CommandParser]") {
 
 ---
 
-## Task 5.3: Integrate Serial Control in Main Loop
+## Task 6.3: Integrate Serial Control in Main Loop
 
 ### What
 
@@ -794,7 +794,7 @@ This is single-threaded bare-metal code. The audio callback runs in an interrupt
 
 ---
 
-## Task 5.4: Create Python Interactive Controller
+## Task 6.4: Create Python Interactive Controller
 
 ### What
 
@@ -1003,7 +1003,7 @@ if __name__ == "__main__":
 
 ---
 
-## Task 5.5: Update CMakeLists.txt
+## Task 6.5: Update CMakeLists.txt
 
 ### What
 

@@ -16,7 +16,7 @@
 
 ## Goal
 
-Establish a compile-time feature-flag architecture that lets every DSP component compile for ARM, but selectively controls what gets linked into the deployed binary. Analyze every effect for embedded feasibility. Replace the temporary `tanhf()` soft clipper from Sprint 3 with a proper `PicoSoftClipper` class. Produce a documented effects deployment matrix.
+Establish a compile-time feature-flag architecture that lets every DSP component compile for ARM, but selectively controls what gets linked into the deployed binary. Analyze every effect for embedded feasibility. Replace the temporary `tanhf()` soft clipper from Sprint Pico-4 with a proper `PicoSoftClipper` class. Produce a documented effects deployment matrix.
 
 ### Philosophy: "Port Everything, Deploy Selectively"
 
@@ -26,8 +26,8 @@ Every SEA_DSP effect header must compile cleanly for ARM. But the linked binary 
 
 ## Prerequisites
 
-- Sprint Pico-3 complete (Engine producing audio through DAC, CPU < 30%)
-- Understanding of memory budget constraints from Sprint 3's `.elf` map file analysis
+- Sprint Pico-4 complete (Engine producing audio through DAC, CPU < 30%)
+- Understanding of memory budget constraints from Sprint Pico-4's `.elf` map file analysis
 - Familiarity with `Engine.h` effects chain: voices → gain → chorus → delay → limiter
 
 ---
@@ -58,7 +58,7 @@ Include this analysis in the PR description and update this plan file with actua
 **Solution path:**
 - SEA_DSP's `DelayLine` class supports an `Init(T* external_buffer, size_t)` overload that uses externally-provided static buffers
 - Create static `float[]` buffers at file scope and pass them to `Init()`
-- This is a future sprint task (Sprint 5+ roadmap) — not this sprint
+- This is a future sprint task (future sprint roadmap) — not this sprint
 
 **Deploy flag:** `POLYSYNTH_DEPLOY_CHORUS` — OFF by default on Pico
 
@@ -137,7 +137,7 @@ Total:              16384 × 5 × 4 = 327,680 bytes ≈ 330 KB
 ### Acceptance Criteria
 
 - [ ] Analysis documented for Chorus, Delay, and Limiter
-- [ ] Memory calculations verified against actual `.elf` map data from Sprint 3
+- [ ] Memory calculations verified against actual `.elf` map data from Sprint Pico-4
 - [ ] Deployment matrix table completed
 
 ---
@@ -528,7 +528,7 @@ cmake -S src/platform/pico -B build/pico-l -DPOLYSYNTH_DEPLOY_LIMITER=ON ...
 
 ### What
 
-Replace the ad-hoc `tanhf()` in Sprint 3's audio callback with the proper `PicoSoftClipper` class. This gives us a named, tested, configurable output protection stage.
+Replace the ad-hoc `tanhf()` in Sprint Pico-4's audio callback with the proper `PicoSoftClipper` class. This gives us a named, tested, configurable output protection stage.
 
 ### File to Modify
 
