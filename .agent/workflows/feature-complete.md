@@ -159,7 +159,9 @@ git commit -m "Add demo for <feature>"
 git push origin main
 ```
 
-After pushing, run `just vrt-baseline` to update visual regression baselines if UI changed.
+The demo page will update at: https://ashokfernandez.github.io/PolySynth/
+
+If UI changed, also run `just vrt-baseline` to update visual regression baselines.
 
 ---
 
