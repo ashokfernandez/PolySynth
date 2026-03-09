@@ -27,7 +27,11 @@ GUARDED_APIS = [
     "PluginPath",  # same signature, same issue
 ]
 
-GUARD_OPEN_RE = re.compile(r"#\s*ifndef\s+WEB_API|#\s*if\s+.*!.*defined\s*\(\s*WEB_API\s*\)")
+GUARD_OPEN_RE = re.compile(
+    r"#\s*ifndef\s+WEB_API"
+    r"|#\s*if\s+.*!.*defined\s*\(\s*WEB_API\s*\)"
+    r"|#\s*(if|elif)\s+defined\s*\(\s*OS_(MAC|WIN)\s*\)"
+)
 GUARD_CLOSE_RE = re.compile(r"#\s*endif")
 
 API_CALL_RE = re.compile(r"\b(" + "|".join(re.escape(a) for a in GUARDED_APIS) + r")\s*\(")
@@ -45,6 +49,7 @@ def check_file(path: Path) -> list[str]:
     # Simple single-pass state machine tracking preprocessor guard depth.
     # We track all #if/#ifdef/#ifndef to correctly match #endifs.
     any_if_re = re.compile(r"#\s*(if|ifdef|ifndef)\b")
+    elif_re = re.compile(r"#\s*elif\b")
     endif_re = re.compile(r"#\s*endif\b")
 
     guard_stack = []  # True = this level is a WEB_API guard, False = other
@@ -52,7 +57,13 @@ def check_file(path: Path) -> list[str]:
     for lineno, line in enumerate(lines, 1):
         stripped = line.strip()
 
-        # Check if this line opens a WEB_API guard
+        # Check if this is an #elif (updates top of stack, not a new level)
+        if elif_re.match(stripped):
+            if guard_stack:
+                guard_stack[-1] = bool(GUARD_OPEN_RE.search(stripped))
+            continue
+
+        # Check if this line opens a WEB_API / OS_MAC / OS_WIN guard
         if GUARD_OPEN_RE.search(stripped):
             guard_stack.append(True)
             continue
