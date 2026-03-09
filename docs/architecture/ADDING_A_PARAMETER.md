@@ -64,8 +64,10 @@ For a standard `InitDouble` parameter (most common):
  0., 100., 1., 50.,
  ParamMeta::MapKind::kDivide, 100.0,
  PM_DOUBLE(myNewParam),
- ParamMeta::InitKind::kInitDouble, nullptr},
+ ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 ```
+
+Available shapes: `kLinear` (default), `kExp` (ShapeExp), `kPow3` (ShapePowCurve(3)).
 
 For an `InitInt` parameter:
 ```cpp
@@ -73,7 +75,7 @@ For an `InitInt` parameter:
  1., 16., 1., 8.,
  ParamMeta::MapKind::kCast, 1.0,
  PM_INT(myNewParam),
- ParamMeta::InitKind::kInitInt, nullptr},
+ ParamMeta::InitKind::kInitInt, ParamMeta::ShapeKind::kLinear},
 ```
 
 For an `InitMilliseconds` parameter:
@@ -82,7 +84,7 @@ For an `InitMilliseconds` parameter:
  0., 1000., 0.1, 100.,
  ParamMeta::MapKind::kDivide, 1000.0,
  PM_DOUBLE(myNewParam),
- ParamMeta::InitKind::kInitMilliseconds, nullptr},
+ ParamMeta::InitKind::kInitMilliseconds, ParamMeta::ShapeKind::kLinear},
 ```
 
 The `static_assert` at the bottom of `ParamMeta.h` will fail if you add an enum entry but forget the table entry (or vice versa).

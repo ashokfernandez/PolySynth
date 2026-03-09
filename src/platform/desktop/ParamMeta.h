@@ -2,7 +2,10 @@
 
 #include "PolySynth.h" // EParams enum + SynthState (via transitive include)
 #include <cstddef>
-#include <cstring>
+#include <type_traits>
+
+static_assert(std::is_standard_layout_v<PolySynthCore::SynthState>,
+              "SynthState must be standard-layout for offsetof-based access");
 
 // Describes how a UI parameter maps to a SynthState field.
 // Used by the constructor, OnParamChange, and SyncUIState to avoid
@@ -40,9 +43,9 @@ struct ParamMeta {
   enum class InitKind { kInitDouble, kInitInt, kInitMilliseconds };
   InitKind initKind;
 
-  // nullptr = linear, "exp" = ShapeExp, "pow3" = ShapePowCurve(3)
   // Only used when initKind == kInitDouble.
-  const char *shape;
+  enum class ShapeKind { kLinear, kExp, kPow3 };
+  ShapeKind shape;
 };
 
 // IMPORTANT: The table only supports `double` and `int` SynthState fields.
@@ -64,38 +67,38 @@ static const ParamMeta kParamTable[] = {
      0., 100., 1.25, 75.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(masterGain),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamNoteGlideTime, "Glide", nullptr, "ms",
      0., 30., 0.1, 0.,
      ParamMeta::MapKind::kDivide, 1000.0,
      PM_DOUBLE(glideTime),
-     ParamMeta::InitKind::kInitMilliseconds, nullptr},
+     ParamMeta::InitKind::kInitMilliseconds, ParamMeta::ShapeKind::kLinear},
 
     // ── Amp Envelope ──
     {kParamAttack, "Attack", "ADSR", "ms",
      1., 1000., 0.1, 10.,
      ParamMeta::MapKind::kDivide, 1000.0,
      PM_DOUBLE(ampAttack),
-     ParamMeta::InitKind::kInitDouble, "pow3"},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kPow3},
 
     {kParamDecay, "Decay", "ADSR", "ms",
      1., 1000., 0.1, 100.,
      ParamMeta::MapKind::kDivide, 1000.0,
      PM_DOUBLE(ampDecay),
-     ParamMeta::InitKind::kInitDouble, "pow3"},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kPow3},
 
     {kParamSustain, "Sustain", "ADSR", "%",
      0., 100., 1., 100.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(ampSustain),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamRelease, "Release", "ADSR", "ms",
      2., 1000., 0.1, 100.,
      ParamMeta::MapKind::kDivide, 1000.0,
      PM_DOUBLE(ampRelease),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     // ── LFO ──
     // NOTE: LFO Shape and LFO Rate use InitEnum/InitFrequency — special cases.
@@ -104,26 +107,26 @@ static const ParamMeta kParamTable[] = {
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(lfoDepth),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     // ── Filter ──
     {kParamFilterCutoff, "Cutoff", "Filter", "Hz",
      20., 20000., 1., 2000.,
      ParamMeta::MapKind::kDirect, 1.0,
      PM_DOUBLE(filterCutoff),
-     ParamMeta::InitKind::kInitDouble, "exp"},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kExp},
 
     {kParamFilterResonance, "Reso", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(filterResonance),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamFilterEnvAmount, "Contour", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(filterEnvAmount),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     // ── Oscillators ──
     // NOTE: OscWave, OscBWave use InitEnum — special cases.
@@ -132,7 +135,7 @@ static const ParamMeta kParamTable[] = {
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(mixOscB),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
     // SPECIAL CASE: OscMix writes to mixOscB via the table, but also requires
     // setting mixOscA = 1.0 - mixOscB. Handled explicitly in OnParamChange.
 
@@ -140,50 +143,50 @@ static const ParamMeta kParamTable[] = {
      0., 100., 1., 50.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(oscAPulseWidth),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamOscPulseWidthB, "PWB", nullptr, "%",
      0., 100., 1., 50.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(oscBPulseWidth),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     // ── Poly-Mod ──
     {kParamPolyModOscBToFreqA, "FM Depth", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(polyModOscBToFreqA),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamPolyModOscBToPWM, "PWM Mod", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(polyModOscBToPWM),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamPolyModOscBToFilter, "B-V", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(polyModOscBToFilter),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamPolyModFilterEnvToFreqA, "Env FM", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(polyModFilterEnvToFreqA),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamPolyModFilterEnvToPWM, "Env PWM", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(polyModFilterEnvToPWM),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamPolyModFilterEnvToFilter, "Env VCF", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(polyModFilterEnvToFilter),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     // ── FX: Chorus ──
     // NOTE: ChorusRate uses InitFrequency — special case.
@@ -192,13 +195,13 @@ static const ParamMeta kParamTable[] = {
      0., 100., 1., 50.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(fxChorusDepth),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamChorusMix, "Mix", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(fxChorusMix),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     // ── FX: Delay ──
     // NOTE: DelayTime uses InitMilliseconds — special case (not in table).
@@ -207,20 +210,20 @@ static const ParamMeta kParamTable[] = {
      0., 95., 1., 35.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(fxDelayFeedback),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamDelayMix, "Mix", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(fxDelayMix),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     // ── FX: Limiter ──
     {kParamLimiterThreshold, "Lmt", nullptr, "%",
      0., 100., 1., 5.,
      ParamMeta::MapKind::kInvert, 100.0,
      PM_DOUBLE(fxLimiterThreshold),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     // ── Voice Allocation ──
     // NOTE: AllocationMode, StealPriority use InitEnum — special cases.
@@ -229,25 +232,25 @@ static const ParamMeta kParamTable[] = {
      1., 16., 1., 8.,
      ParamMeta::MapKind::kCast, 1.0,
      PM_INT(polyphony),
-     ParamMeta::InitKind::kInitInt, nullptr},
+     ParamMeta::InitKind::kInitInt, ParamMeta::ShapeKind::kLinear},
 
     {kParamUnisonCount, "Uni", nullptr, nullptr,
      1., 8., 1., 1.,
      ParamMeta::MapKind::kCast, 1.0,
      PM_INT(unisonCount),
-     ParamMeta::InitKind::kInitInt, nullptr},
+     ParamMeta::InitKind::kInitInt, ParamMeta::ShapeKind::kLinear},
 
     {kParamUnisonSpread, "Sprd", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(unisonSpread),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 
     {kParamStereoSpread, "Width", nullptr, "%",
      0., 100., 1., 0.,
      ParamMeta::MapKind::kDivide, 100.0,
      PM_DOUBLE(stereoSpread),
-     ParamMeta::InitKind::kInitDouble, nullptr},
+     ParamMeta::InitKind::kInitDouble, ParamMeta::ShapeKind::kLinear},
 };
 // clang-format on
 
@@ -315,11 +318,17 @@ inline double StateToUIValue(const ParamMeta &meta,
   return stateValue;
 }
 
-// Find the table entry for a given param ID, or nullptr.
+// O(1) lookup: paramId → table entry (or nullptr for special-case params).
+// Lazily built on first call; the table has kNumParams slots.
 inline const ParamMeta *FindParamMeta(int paramId) {
-  for (int i = 0; i < kParamTableSize; ++i) {
-    if (kParamTable[i].paramId == paramId)
-      return &kParamTable[i];
+  static const ParamMeta *lookup[kNumParams] = {};
+  static bool initialized = false;
+  if (!initialized) {
+    for (int i = 0; i < kParamTableSize; ++i)
+      lookup[kParamTable[i].paramId] = &kParamTable[i];
+    initialized = true;
   }
-  return nullptr;
+  if (paramId < 0 || paramId >= kNumParams)
+    return nullptr;
+  return lookup[paramId];
 }

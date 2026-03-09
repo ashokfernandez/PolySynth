@@ -119,24 +119,30 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
     const auto &m = kParamTable[i];
     switch (m.initKind) {
     case ParamMeta::InitKind::kInitDouble:
-      if (m.shape && strcmp(m.shape, "exp") == 0) {
+      switch (m.shape) {
+      case ParamMeta::ShapeKind::kExp:
         GetParam(m.paramId)
             ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
                          m.unit ? m.unit : "", IParam::kFlagsNone,
                          m.group ? m.group : "", IParam::ShapeExp());
-      } else if (m.shape && strcmp(m.shape, "pow3") == 0) {
+        break;
+      case ParamMeta::ShapeKind::kPow3:
         GetParam(m.paramId)
             ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
                          m.unit ? m.unit : "", IParam::kFlagsNone,
                          m.group ? m.group : "", IParam::ShapePowCurve(3.));
-      } else if (m.group) {
-        GetParam(m.paramId)
-            ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
-                         m.unit ? m.unit : "", IParam::kFlagsNone, m.group);
-      } else {
-        GetParam(m.paramId)
-            ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
-                         m.unit ? m.unit : "");
+        break;
+      case ParamMeta::ShapeKind::kLinear:
+        if (m.group) {
+          GetParam(m.paramId)
+              ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
+                           m.unit ? m.unit : "", IParam::kFlagsNone, m.group);
+        } else {
+          GetParam(m.paramId)
+              ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
+                           m.unit ? m.unit : "");
+        }
+        break;
       }
       break;
     case ParamMeta::InitKind::kInitInt:
