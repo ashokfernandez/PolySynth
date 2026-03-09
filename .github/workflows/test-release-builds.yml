@@ -1,0 +1,102 @@
+name: Test Release Builds
+
+on:
+  workflow_dispatch:
+
+env:
+  CCACHE_DIR: ~/.cache/ccache
+
+jobs:
+  build-macos:
+    name: Build Release (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install just
+        uses: taiki-e/install-action@just
+
+      - name: Download project external dependencies
+        run: just deps
+
+      - name: Download iPlug2 prebuilt Skia libs
+        run: |
+          cd external/iPlug2/Dependencies
+          chmod +x download-prebuilt-libs.sh
+          ./download-prebuilt-libs.sh mac
+
+      - name: Build unsigned macOS release bundles
+        run: just plugin-release-mac
+
+      - name: Create macOS installer package
+        run: just plugin-package-mac
+
+      - name: Upload macOS release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polysynth-release-macos
+          path: .artifacts/releases/macos/PolySynth-*-macOS.pkg
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Release (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Download project external dependencies
+        shell: bash
+        run: |
+          chmod +x scripts/download_dependencies.sh
+          ./scripts/download_dependencies.sh
+
+      - name: Download iPlug2 prebuilt Skia libs
+        shell: bash
+        run: |
+          cd external/iPlug2/Dependencies
+          chmod +x download-prebuilt-libs.sh
+          ./download-prebuilt-libs.sh win
+
+      - name: Build Windows VST3 (Release|x64)
+        run: |
+          msbuild src\platform\desktop\PolySynth.sln -m -t:PolySynth-vst3 -p:Configuration=Release -p:Platform=x64
+
+      - name: Package Windows VST3 zip
+        shell: bash
+        run: |
+          BUNDLE="src/platform/desktop/build-win/PolySynth.vst3"
+          OUT_DIR=".artifacts/releases/windows"
+          ZIP_PATH="${OUT_DIR}/PolySynth-windows-vst3.zip"
+          if [ ! -d "$BUNDLE" ]; then
+            echo "Failed to locate built bundle at $BUNDLE" >&2
+            exit 1
+          fi
+          mkdir -p "$OUT_DIR"
+          rm -rf "${OUT_DIR}/PolySynth.vst3" "$ZIP_PATH"
+          cp -R "$BUNDLE" "$OUT_DIR/"
+          python3 -c "
+          import os, sys, zipfile
+          bundle, zip_path = sys.argv[1], sys.argv[2]
+          root_name = os.path.basename(bundle.rstrip('/\\\\'))
+          with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as a:
+              for base, _, files in os.walk(bundle):
+                  for f in files:
+                      fp = os.path.join(base, f)
+                      a.write(fp, os.path.join(root_name, os.path.relpath(fp, bundle)))
+          " "$OUT_DIR/PolySynth.vst3" "$ZIP_PATH"
+
+      - name: Upload Windows release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polysynth-release-windows
+          path: .artifacts/releases/windows/PolySynth-windows-vst3.zip
+          if-no-files-found: error
