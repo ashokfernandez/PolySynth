@@ -1,6 +1,6 @@
 # Adding a Parameter to PolySynth
 
-This is the most common type of change. A new synth parameter touches multiple files in a specific order. Missing any step causes bugs that may be silent — the checklist below is designed so that automated tests catch most omissions.
+This is the most common type of change. Thanks to the table-driven parameter system (Sprint 7), adding a new parameter now requires editing only **2-3 locations** instead of the previous 5.
 
 ---
 
@@ -44,11 +44,9 @@ Place it in the same section as related fields (Filter, LFO, FX, etc.).
 
 **If you skip this:** The round-trip test in `Test_SynthState.cpp` will fail. This is caught automatically.
 
-### Step 3: Add the parameter enum
+### Step 3: Add the parameter enum + table entry
 
-**File:** `src/platform/desktop/PolySynth.h`
-
-Add an entry to the `EParams` enum, before `kNumParams`:
+**File:** `src/platform/desktop/PolySynth.h` — add to `EParams` enum:
 
 ```cpp
 enum EParams {
@@ -58,59 +56,45 @@ enum EParams {
 };
 ```
 
-**If you skip this:** The constructor won't reference it, so no UI control will exist. Obvious at runtime.
+**File:** `src/platform/desktop/ParamMeta.h` — add a table entry:
 
-### Step 4: Initialize the parameter in the constructor
-
-**File:** `src/platform/desktop/PolySynth.cpp` (constructor)
-
-Add parameter initialization using the SynthState default:
-
+For a standard `InitDouble` parameter (most common):
 ```cpp
-GetParam(kParamMyNewParam)
-    ->InitDouble("Label", state.myNewParam * kToPercentage, 0., 100., 1., "%");
+{kParamMyNewParam, "Label", nullptr, "%",
+ 0., 100., 1., 50.,
+ ParamMeta::MapKind::kDivide, 100.0,
+ PM_DOUBLE(myNewParam),
+ ParamMeta::InitKind::kInitDouble, nullptr},
 ```
 
-Use the appropriate `Init*` method:
-- `InitDouble` for continuous values (with scaling: `kToPercentage = 100.0`, `kToMs = 1000.0`)
-- `InitEnum` for discrete choices
-- `InitBool` for toggles
-- `InitFrequency` for Hz values with logarithmic curves
-- `InitMilliseconds` for time values
-
-**If you skip this:** The parameter exists in the enum but has no name, range, or default. UI will show garbage.
-
-### Step 5: Add OnParamChange handler
-
-**File:** `src/platform/desktop/PolySynth.cpp` (inside `OnParamChange`, `#if IPLUG_DSP` block)
-
-Add a case to the switch statement:
-
+For an `InitInt` parameter:
 ```cpp
-case kParamMyNewParam:
-    mState.myNewParam = value / kToPercentage;  // Reverse the display scaling
-    break;
+{kParamMyNewParam, "Label", nullptr, nullptr,
+ 1., 16., 1., 8.,
+ ParamMeta::MapKind::kCast, 1.0,
+ PM_INT(myNewParam),
+ ParamMeta::InitKind::kInitInt, nullptr},
 ```
 
-The conversion must be the exact inverse of what you used in Step 4.
-
-**If you skip this:** The UI control moves but the synth state never updates. Silent bug — no test catches this automatically.
-
-### Step 6: Add SyncUIState handler
-
-**File:** `src/platform/desktop/PolySynth.cpp` (inside `SyncUIState`, `#if IPLUG_DSP` block)
-
-Add the reverse mapping:
-
+For an `InitMilliseconds` parameter:
 ```cpp
-GetParam(kParamMyNewParam)->Set(mState.myNewParam * kToPercentage);
+{kParamMyNewParam, "Label", nullptr, "ms",
+ 0., 1000., 0.1, 100.,
+ ParamMeta::MapKind::kDivide, 1000.0,
+ PM_DOUBLE(myNewParam),
+ ParamMeta::InitKind::kInitMilliseconds, nullptr},
 ```
 
-This must use the same scaling as Step 4, applied to the SynthState value.
+The `static_assert` at the bottom of `ParamMeta.h` will fail if you add an enum entry but forget the table entry (or vice versa).
 
-**If you skip this:** Preset loads won't update this parameter's UI control. The knob will show stale values after loading a preset.
+**Special-case params:** If the parameter needs `InitEnum`, `InitFrequency`, or `InitBool`, it cannot use the table. Instead:
+1. Add the enum entry to `EParams`
+2. Add explicit `Init*` call in the constructor (special cases section)
+3. Add explicit case in `OnParamChange` (special cases switch)
+4. Add explicit `Set()` call in `SyncUIState` (special cases section)
+5. Update the `static_assert` count in `ParamMeta.h`
 
-### Step 7: Wire into the DSP engine
+### Step 4: Wire into the DSP engine
 
 **File:** `src/core/Engine.h` (or `VoiceManager.h` / `Voice.h` as appropriate)
 
@@ -126,9 +110,9 @@ Or, if it affects FX:
 mChorus.SetMyNewParam(state.myNewParam);
 ```
 
-**If you skip this:** The state field updates, presets save/load it, but it has zero audio effect. The "unimplemented field" test pattern (if present) would catch this.
+**If you skip this:** The state field updates, presets save/load it, but it has zero audio effect.
 
-### Step 8: Add a UI control
+### Step 5: Add a UI control
 
 **File:** `src/platform/desktop/PolySynth.cpp` (inside the appropriate `BuildXxx` method)
 
@@ -136,9 +120,9 @@ mChorus.SetMyNewParam(state.myNewParam);
 AttachStackedControl(g, innerRect, kParamMyNewParam, "LABEL", style);
 ```
 
-**If you skip this:** Parameter works via MIDI/automation but has no on-screen control. Noticeable but not a crash.
+**If you skip this:** Parameter works via MIDI/automation but has no on-screen control.
 
-### Step 9: Update tests
+### Step 6: Update tests
 
 **File:** `tests/unit/Test_SynthState.cpp`
 
@@ -160,14 +144,12 @@ And in the verification:
 CATCH_CHECK(loaded.myNewParam == original.myNewParam);
 ```
 
-### Step 10: Verify
+### Step 7: Verify
 
 ```bash
-# Build and run unit tests
-cd tests && mkdir -p build && cd build && cmake .. && make && ./run_tests
-
-# Verify golden masters (should pass if audio didn't change, or regenerate if it did)
-cd ../.. && python3 scripts/golden_master.py --verify
+just check       # lint + unit tests
+just ci-pr       # full PR gate (includes desktop build + smoke test)
+just vrt-run     # VRT verification
 ```
 
 ---
@@ -179,6 +161,7 @@ cd ../.. && python3 scripts/golden_master.py --verify
 | Missing `SERIALIZE` / `DESERIALIZE` | Round-trip test in `Test_SynthState.cpp` |
 | Field not reset by `Reset()` | Reset-equals-default test in `Test_SynthState.cpp` |
 | Adding a constructor to SynthState | `static_assert(is_aggregate_v<SynthState>)` |
+| Missing table entry or wrong special-case count | `static_assert` in `ParamMeta.h` |
 | Unintended audio change | `golden_master.py --verify` in CI |
 | Missing build flag guard | WAM build in CI (compiles with IPLUG_EDITOR only) |
 
@@ -186,19 +169,18 @@ cd ../.. && python3 scripts/golden_master.py --verify
 
 | Omission | How to catch it |
 |---|---|
-| Missing `OnParamChange` case | Manual testing — move the knob, listen |
-| Missing `SyncUIState` line | Load a preset, check if the knob updates |
-| Wrong scaling (×100 vs ×1000) | Manual testing, or a future parameter metadata test |
+| Wrong scaling (MapKind or divisor) | Manual testing — move the knob, listen |
 | Missing UI control | Visual inspection |
+| Missing DSP engine wiring | Manual testing — parameter has no audio effect |
 
 ---
 
-## Quick Reference: Scaling Conventions
+## Quick Reference: MapKind Conventions
 
-| SynthState unit | Display unit | Multiplier | Example |
-|---|---|---|---|
-| 0.0 - 1.0 | 0 - 100% | `kToPercentage = 100.0` | Gain, resonance, mix |
-| Seconds | Milliseconds | `kToMs = 1000.0` | Attack, decay, delay time |
-| Hz | Hz | 1.0 (no scaling) | Cutoff, LFO rate |
-| Enum (int) | Enum (int) | 1.0 (cast to int) | Waveform, filter model |
-| Inverted 0-1 | 0-100% | `(1.0 - value) * kToPercentage` | Limiter threshold |
+| SynthState unit | Display unit | MapKind | Divisor | Example |
+|---|---|---|---|---|
+| 0.0 - 1.0 | 0 - 100% | `kDivide` | 100.0 | Gain, resonance, mix |
+| Seconds | Milliseconds | `kDivide` | 1000.0 | Attack, decay, glide |
+| Hz | Hz | `kDirect` | 1.0 | Cutoff |
+| Enum (int) | Enum (int) | `kCast` | 1.0 | Polyphony, unison count |
+| Inverted 0-1 | 0-100% | `kInvert` | 100.0 | Limiter threshold |

@@ -16,6 +16,7 @@ using namespace igraphics;
 #include "PresetSaveButton.h"
 #include "SectionFrame.h"
 #endif
+#include "ParamMeta.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -23,7 +24,6 @@ using namespace igraphics;
 #include <vector>
 
 namespace {
-static const double kToPercentage = 100.0;
 static const double kToMs = 1000.0;
 
 #if IPLUG_EDITOR
@@ -73,46 +73,27 @@ void AttachStackedControl(IGraphics *pGraphics, IRECT bounds, int paramIdx,
 #if IPLUG_DSP
 void PolySynthPlugin::SyncUIState() {
   mIsUpdatingUI = true;
-  GetParam(kParamGain)->Set(mState.masterGain * kToPercentage);
-  GetParam(kParamNoteGlideTime)->Set(mState.glideTime * kToMs);
-  GetParam(kParamAttack)->Set(mState.ampAttack * kToMs);
-  GetParam(kParamDecay)->Set(mState.ampDecay * kToMs);
-  GetParam(kParamSustain)->Set(mState.ampSustain * kToPercentage);
-  GetParam(kParamRelease)->Set(mState.ampRelease * kToMs);
-  GetParam(kParamLFOShape)->Set((double)mState.lfoShape);
-  GetParam(kParamLFORateHz)->Set(mState.lfoRate);
-  GetParam(kParamLFODepth)->Set(mState.lfoDepth * kToPercentage);
-  GetParam(kParamFilterCutoff)->Set(mState.filterCutoff);
-  GetParam(kParamFilterResonance)->Set(mState.filterResonance * kToPercentage);
-  GetParam(kParamFilterEnvAmount)->Set(mState.filterEnvAmount * kToPercentage);
-  GetParam(kParamFilterModel)->Set((double)mState.filterModel);
-  GetParam(kParamOscWave)->Set((double)mState.oscAWaveform);
-  GetParam(kParamOscBWave)->Set((double)mState.oscBWaveform);
-  GetParam(kParamOscMix)->Set(mState.mixOscB * kToPercentage);
-  GetParam(kParamOscPulseWidthA)->Set(mState.oscAPulseWidth * kToPercentage);
-  GetParam(kParamOscPulseWidthB)->Set(mState.oscBPulseWidth * kToPercentage);
-  GetParam(kParamChorusRate)->Set(mState.fxChorusRate);
-  GetParam(kParamChorusDepth)->Set(mState.fxChorusDepth * kToPercentage);
-  GetParam(kParamChorusMix)->Set(mState.fxChorusMix * kToPercentage);
-  GetParam(kParamDelayTime)->Set(mState.fxDelayTime * kToMs);
-  GetParam(kParamDelayFeedback)->Set(mState.fxDelayFeedback * kToPercentage);
-  GetParam(kParamDelayMix)->Set(mState.fxDelayMix * kToPercentage);
-  GetParam(kParamLimiterThreshold)
-      ->Set((1.0 - mState.fxLimiterThreshold) * kToPercentage);
-  GetParam(kParamPolyModOscBToFreqA)
-      ->Set(mState.polyModOscBToFreqA * kToPercentage);
-  GetParam(kParamPolyModOscBToPWM)
-      ->Set(mState.polyModOscBToPWM * kToPercentage);
-  GetParam(kParamPolyModOscBToFilter)
-      ->Set(mState.polyModOscBToFilter * kToPercentage);
-  GetParam(kParamPolyModFilterEnvToFreqA)
-      ->Set(mState.polyModFilterEnvToFreqA * kToPercentage);
-  GetParam(kParamPolyModFilterEnvToPWM)
-      ->Set(mState.polyModFilterEnvToPWM * kToPercentage);
-  GetParam(kParamPolyModFilterEnvToFilter)
-      ->Set(mState.polyModFilterEnvToFilter * kToPercentage);
 
-  // Sync demo buttons based on current sequencer mode
+  // Table-driven sync
+  for (int i = 0; i < kParamTableSize; ++i) {
+    const auto &m = kParamTable[i];
+    GetParam(m.paramId)->Set(StateToUIValue(m, mState));
+  }
+
+  // Special cases: enums, frequency, and milliseconds params
+  GetParam(kParamLFOShape)->Set(static_cast<double>(mState.lfoShape));
+  GetParam(kParamLFORateHz)->Set(mState.lfoRate);
+  GetParam(kParamOscWave)->Set(static_cast<double>(mState.oscAWaveform));
+  GetParam(kParamOscBWave)->Set(static_cast<double>(mState.oscBWaveform));
+  GetParam(kParamFilterModel)->Set(static_cast<double>(mState.filterModel));
+  GetParam(kParamChorusRate)->Set(mState.fxChorusRate);
+  GetParam(kParamDelayTime)->Set(mState.fxDelayTime * kToMs);
+  GetParam(kParamAllocationMode)
+      ->Set(static_cast<double>(mState.allocationMode));
+  GetParam(kParamStealPriority)
+      ->Set(static_cast<double>(mState.stealPriority));
+
+  // Demo buttons
   GetParam(kParamDemoMono)
       ->Set(mDemoSequencer.GetMode() == DemoSequencer::Mode::Mono ? 1.0 : 0.0);
   GetParam(kParamDemoPoly)
@@ -133,107 +114,63 @@ PolySynthPlugin::PolySynthPlugin(const InstanceInfo &info)
   mState.Reset();
   PolySynthCore::SynthState &state = mState;
 
-  GetParam(kParamGain)
-      ->InitDouble("Gain", state.masterGain * kToPercentage, 0., 100., 1.25,
-                   "%");
-  GetParam(kParamNoteGlideTime)
-      ->InitMilliseconds("Glide", state.glideTime * kToMs, 0.0, 30.);
-  GetParam(kParamAttack)
-      ->InitDouble("Attack", state.ampAttack * kToMs, 1., 1000., 0.1, "ms",
-                   IParam::kFlagsNone, "ADSR", IParam::ShapePowCurve(3.));
-  GetParam(kParamDecay)
-      ->InitDouble("Decay", state.ampDecay * kToMs, 1., 1000., 0.1, "ms",
-                   IParam::kFlagsNone, "ADSR", IParam::ShapePowCurve(3.));
-  GetParam(kParamSustain)
-      ->InitDouble("Sustain", state.ampSustain * kToPercentage, 0., 100., 1,
-                   "%", IParam::kFlagsNone, "ADSR");
-  GetParam(kParamRelease)
-      ->InitDouble("Release", state.ampRelease * kToMs, 2., 1000., 0.1, "ms",
-                   IParam::kFlagsNone, "ADSR");
+  // Table-driven parameter registration
+  for (int i = 0; i < kParamTableSize; ++i) {
+    const auto &m = kParamTable[i];
+    switch (m.initKind) {
+    case ParamMeta::InitKind::kInitDouble:
+      if (m.shape && strcmp(m.shape, "exp") == 0) {
+        GetParam(m.paramId)
+            ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
+                         m.unit ? m.unit : "", IParam::kFlagsNone,
+                         m.group ? m.group : "", IParam::ShapeExp());
+      } else if (m.shape && strcmp(m.shape, "pow3") == 0) {
+        GetParam(m.paramId)
+            ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
+                         m.unit ? m.unit : "", IParam::kFlagsNone,
+                         m.group ? m.group : "", IParam::ShapePowCurve(3.));
+      } else if (m.group) {
+        GetParam(m.paramId)
+            ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
+                         m.unit ? m.unit : "", IParam::kFlagsNone, m.group);
+      } else {
+        GetParam(m.paramId)
+            ->InitDouble(m.name, m.defaultVal, m.min, m.max, m.step,
+                         m.unit ? m.unit : "");
+      }
+      break;
+    case ParamMeta::InitKind::kInitInt:
+      GetParam(m.paramId)
+          ->InitInt(m.name, static_cast<int>(m.defaultVal),
+                    static_cast<int>(m.min), static_cast<int>(m.max));
+      break;
+    case ParamMeta::InitKind::kInitMilliseconds:
+      GetParam(m.paramId)
+          ->InitMilliseconds(m.name, m.defaultVal, m.min, m.max);
+      break;
+    }
+  }
 
+  // Special cases: enum, frequency, and bool params
   GetParam(kParamLFOShape)
       ->InitEnum("LFO", state.lfoShape, {"Sin", "Tri", "Sqr", "Saw"});
   GetParam(kParamLFORateHz)->InitFrequency("Rate", state.lfoRate, 0.01, 40.);
-  GetParam(kParamLFODepth)
-      ->InitDouble("Dep", state.lfoDepth * kToPercentage, 0., 100., 1., "%");
-
-  GetParam(kParamFilterCutoff)
-      ->InitDouble("Cutoff", state.filterCutoff, 20., 20000., 1., "Hz",
-                   IParam::kFlagsNone, "Filter", IParam::ShapeExp());
-  GetParam(kParamFilterResonance)
-      ->InitDouble("Reso", state.filterResonance * kToPercentage, 0., 100., 1.,
-                   "%");
-  GetParam(kParamFilterEnvAmount)
-      ->InitDouble("Contour", state.filterEnvAmount * kToPercentage, 0., 100.,
-                   1., "%");
-  GetParam(kParamFilterModel)
-      ->InitEnum("Model", state.filterModel, {"CL", "LD", "P12", "P24"});
-
   GetParam(kParamOscWave)
       ->InitEnum("OscA", state.oscAWaveform, {"SAW", "SQR", "TRI", "SIN"});
   GetParam(kParamOscBWave)
       ->InitEnum("OscB", state.oscBWaveform, {"SAW", "SQR", "TRI", "SIN"});
-  GetParam(kParamOscMix)
-      ->InitDouble("Osc Bal", state.mixOscB * kToPercentage, 0., 100., 1., "%");
-  GetParam(kParamOscPulseWidthA)
-      ->InitDouble("PWA", state.oscAPulseWidth * kToPercentage, 0., 100., 1.,
-                   "%");
-  GetParam(kParamOscPulseWidthB)
-      ->InitDouble("PWB", state.oscBPulseWidth * kToPercentage, 0., 100., 1.,
-                   "%");
-
-  GetParam(kParamPolyModOscBToFreqA)
-      ->InitDouble("FM Depth", state.polyModOscBToFreqA * kToPercentage, 0.,
-                   100., 1., "%");
-  GetParam(kParamPolyModOscBToPWM)
-      ->InitDouble("PWM Mod", state.polyModOscBToPWM * kToPercentage, 0., 100.,
-                   1., "%");
-  GetParam(kParamPolyModOscBToFilter)
-      ->InitDouble("B-V", state.polyModOscBToFilter * kToPercentage, 0., 100.,
-                   1., "%");
-  GetParam(kParamPolyModFilterEnvToFreqA)
-      ->InitDouble("Env FM", state.polyModFilterEnvToFreqA * kToPercentage, 0.,
-                   100., 1., "%");
-  GetParam(kParamPolyModFilterEnvToPWM)
-      ->InitDouble("Env PWM", state.polyModFilterEnvToPWM * kToPercentage, 0.,
-                   100., 1., "%");
-  GetParam(kParamPolyModFilterEnvToFilter)
-      ->InitDouble("Env VCF", state.polyModFilterEnvToFilter * kToPercentage,
-                   0., 100., 1., "%");
-
+  GetParam(kParamFilterModel)
+      ->InitEnum("Model", state.filterModel, {"CL", "LD", "P12", "P24"});
   GetParam(kParamChorusRate)
       ->InitFrequency("Rate", state.fxChorusRate, 0.05, 2.0);
-  GetParam(kParamChorusDepth)
-      ->InitDouble("Dep", state.fxChorusDepth * kToPercentage, 0., 100., 1.,
-                   "%");
-  GetParam(kParamChorusMix)
-      ->InitDouble("Mix", state.fxChorusMix * kToPercentage, 0., 100., 1., "%");
   GetParam(kParamDelayTime)
       ->InitMilliseconds("Time", state.fxDelayTime * kToMs, 50., 1200.);
-  GetParam(kParamDelayFeedback)
-      ->InitDouble("Fbk", state.fxDelayFeedback * kToPercentage, 0., 95., 1.,
-                   "%");
-  GetParam(kParamDelayMix)
-      ->InitDouble("Mix", state.fxDelayMix * kToPercentage, 0., 100., 1., "%");
-  GetParam(kParamLimiterThreshold)
-      ->InitDouble("Lmt", (1.0 - state.fxLimiterThreshold) * kToPercentage, 0.,
-                   100., 1., "%");
-
-  GetParam(kParamPolyphonyLimit)->InitInt("Poly", state.polyphony, 1, 16);
   GetParam(kParamAllocationMode)
       ->InitEnum("Alloc", state.allocationMode,
                  {"Oldest", "Lowest", "Highest"});
   GetParam(kParamStealPriority)
       ->InitEnum("Steal", state.stealPriority,
                  {"Oldest", "Lowest", "Quietest"});
-  GetParam(kParamUnisonCount)->InitInt("Uni", state.unisonCount, 1, 8);
-  GetParam(kParamUnisonSpread)
-      ->InitDouble("Sprd", state.unisonSpread * kToPercentage, 0., 100., 1.,
-                   "%");
-  GetParam(kParamStereoSpread)
-      ->InitDouble("Width", state.stereoSpread * kToPercentage, 0., 100., 1.,
-                   "%");
-
   GetParam(kParamPresetSelect)
       ->InitEnum("Patch", 0,
                  {"Init", "Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5",
@@ -955,188 +892,56 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
 #endif
 
   double value = GetParam(paramIdx)->Value();
-  switch (paramIdx) {
-  case kParamGain:
-    mState.masterGain = value / kToPercentage;
-    break;
-  case kParamNoteGlideTime:
-    mState.glideTime = value / kToMs;
-    break;
-  case kParamAttack:
-    mState.ampAttack = value / kToMs;
-    break;
-  case kParamDecay:
-    mState.ampDecay = value / kToMs;
-    break;
-  case kParamSustain:
-    mState.ampSustain = value / kToPercentage;
-    break;
-  case kParamRelease:
-    mState.ampRelease = value / kToMs;
-    break;
-  case kParamLFOShape:
-    mState.lfoShape = static_cast<int>(value);
-    break;
-  case kParamLFORateHz:
-    mState.lfoRate = value;
-    break;
-  case kParamLFODepth:
-    mState.lfoDepth = value / kToPercentage;
-    break;
-  case kParamFilterCutoff:
-    mState.filterCutoff = value;
-    break;
-  case kParamFilterResonance:
-    mState.filterResonance = value / kToPercentage;
-    break;
-  case kParamFilterEnvAmount:
-    mState.filterEnvAmount = value / kToPercentage;
-    break;
-  case kParamFilterModel:
-    mState.filterModel = static_cast<int>(value);
-    break;
-  case kParamOscWave:
-    mState.oscAWaveform = static_cast<int>(value);
-    break;
-  case kParamOscBWave:
-    mState.oscBWaveform = static_cast<int>(value);
-    break;
-  case kParamOscMix:
-    mState.mixOscA = 1.0 - (value / kToPercentage);
-    mState.mixOscB = value / kToPercentage;
-    break;
-  case kParamOscPulseWidthA:
-    mState.oscAPulseWidth = value / kToPercentage;
-    break;
-  case kParamOscPulseWidthB:
-    mState.oscBPulseWidth = value / kToPercentage;
-    break;
-  case kParamPolyModOscBToFreqA:
-    mState.polyModOscBToFreqA = value / kToPercentage;
-    break;
-  case kParamPolyModOscBToPWM:
-    mState.polyModOscBToPWM = value / kToPercentage;
-    break;
-  case kParamPolyModOscBToFilter:
-    mState.polyModOscBToFilter = value / kToPercentage;
-    break;
-  case kParamPolyModFilterEnvToFreqA:
-    mState.polyModFilterEnvToFreqA = value / kToPercentage;
-    break;
-  case kParamPolyModFilterEnvToPWM:
-    mState.polyModFilterEnvToPWM = value / kToPercentage;
-    break;
-  case kParamPolyModFilterEnvToFilter:
-    mState.polyModFilterEnvToFilter = value / kToPercentage;
-    break;
-  case kParamChorusRate:
-    mState.fxChorusRate = value;
-    break;
-  case kParamChorusDepth:
-    mState.fxChorusDepth = value / kToPercentage;
-    break;
-  case kParamChorusMix:
-    mState.fxChorusMix = value / kToPercentage;
-    break;
-  case kParamDelayTime:
-    mState.fxDelayTime = value / kToMs;
-    break;
-  case kParamDelayFeedback:
-    mState.fxDelayFeedback = value / kToPercentage;
-    break;
-  case kParamDelayMix:
-    mState.fxDelayMix = value / kToPercentage;
-    break;
-  case kParamLimiterThreshold:
-    mState.fxLimiterThreshold = 1.0 - (value / kToPercentage);
-    break;
-  case kParamPolyphonyLimit:
-    mState.polyphony = (int)value;
-    break;
-  case kParamAllocationMode:
-    mState.allocationMode = (int)value;
-    break;
-  case kParamStealPriority:
-    mState.stealPriority = (int)value;
-    break;
-  case kParamUnisonCount:
-    mState.unisonCount = (int)value;
-    break;
-  case kParamUnisonSpread:
-    mState.unisonSpread = value / kToPercentage;
-    break;
-  case kParamStereoSpread:
-    mState.stereoSpread = value / kToPercentage;
-    break;
-  case kParamPresetSelect:
-    mIsDirty = false;
-    OnMessage(kMsgTagLoadPreset, (int)value, 0, nullptr);
-    break;
 
-  case kParamDemoMono:
-    if (value > 0.5) { // Only act on press
-      if (mDemoSequencer.GetMode() == DemoSequencer::Mode::Mono) {
-        // Toggle Off
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate());
-        mPendingDSPReset.store(true, std::memory_order_release);
-        GetParam(kParamDemoMono)->Set(0.0);
-      } else {
-        // Switch to Mono
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Mono, GetSampleRate());
-        mPendingDSPReset.store(true, std::memory_order_release);
-        GetParam(kParamDemoPoly)->Set(0.0);
-        GetParam(kParamDemoFX)->Set(0.0);
-      }
-      SyncUIState();
+  // ── Table-driven parameters ──
+  const ParamMeta *meta = FindParamMeta(paramIdx);
+  if (meta) {
+    ApplyParamToState(*meta, value, mState);
+    // OscMix also sets mixOscA (dual-field update)
+    if (paramIdx == kParamOscMix)
+      mState.mixOscA = 1.0 - mState.mixOscB;
+  } else {
+    // ── Special cases (enums, frequency, milliseconds, demos, presets) ──
+    switch (paramIdx) {
+    case kParamLFOShape:
+      mState.lfoShape = static_cast<int>(value);
+      break;
+    case kParamLFORateHz:
+      mState.lfoRate = value;
+      break;
+    case kParamOscWave:
+      mState.oscAWaveform = static_cast<int>(value);
+      break;
+    case kParamOscBWave:
+      mState.oscBWaveform = static_cast<int>(value);
+      break;
+    case kParamFilterModel:
+      mState.filterModel = static_cast<int>(value);
+      break;
+    case kParamChorusRate:
+      mState.fxChorusRate = value;
+      break;
+    case kParamDelayTime:
+      mState.fxDelayTime = value / kToMs;
+      break;
+    case kParamAllocationMode:
+      mState.allocationMode = static_cast<int>(value);
+      break;
+    case kParamStealPriority:
+      mState.stealPriority = static_cast<int>(value);
+      break;
+    case kParamPresetSelect:
+      mIsDirty = false;
+      OnMessage(kMsgTagLoadPreset, static_cast<int>(value), 0, nullptr);
+      break;
+    case kParamDemoMono:
+    case kParamDemoPoly:
+    case kParamDemoFX:
+      HandleDemoButton(paramIdx, value);
+      break;
+    default:
+      break;
     }
-    // Ignore release (value <= 0.5)
-    break;
-
-  case kParamDemoPoly:
-    if (value > 0.5) { // Only act on press
-      if (mDemoSequencer.GetMode() == DemoSequencer::Mode::Poly) {
-        // Toggle Off
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate());
-        mPendingDSPReset.store(true, std::memory_order_release);
-        GetParam(kParamDemoPoly)->Set(0.0);
-      } else {
-        // Switch to Poly
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Poly, GetSampleRate());
-        mPendingDSPReset.store(true, std::memory_order_release);
-        GetParam(kParamDemoMono)->Set(0.0);
-        GetParam(kParamDemoFX)->Set(0.0);
-      }
-      SyncUIState();
-    }
-    // Ignore release
-    break;
-
-  case kParamDemoFX:
-    if (value > 0.5) { // Only act on press
-      if (mDemoSequencer.GetMode() == DemoSequencer::Mode::FX) {
-        // Toggle Off
-        mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate());
-        mPendingDSPReset.store(true, std::memory_order_release);
-        GetParam(kParamDemoFX)->Set(0.0);
-
-        mState.fxChorusMix = 0.0;
-        mState.fxDelayMix = 0.0;
-      } else {
-        // Switch to FX
-        mDemoSequencer.SetMode(DemoSequencer::Mode::FX, GetSampleRate());
-        mPendingDSPReset.store(true, std::memory_order_release);
-        GetParam(kParamDemoMono)->Set(0.0);
-        GetParam(kParamDemoPoly)->Set(0.0);
-
-        mState.fxChorusMix = 0.35;
-        mState.fxDelayMix = 0.35;
-      }
-      SyncUIState();
-    }
-    // Ignore release
-    break;
-  default:
-    break;
   }
 
 #if IPLUG_EDITOR
@@ -1156,6 +961,53 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
 #endif
 
   mStateQueue.TryPush(mState);
+}
+
+void PolySynthPlugin::HandleDemoButton(int paramIdx, double value) {
+  if (value <= 0.5)
+    return; // Ignore release
+
+  DemoSequencer::Mode targetMode;
+  switch (paramIdx) {
+  case kParamDemoMono:
+    targetMode = DemoSequencer::Mode::Mono;
+    break;
+  case kParamDemoPoly:
+    targetMode = DemoSequencer::Mode::Poly;
+    break;
+  case kParamDemoFX:
+    targetMode = DemoSequencer::Mode::FX;
+    break;
+  default:
+    return;
+  }
+
+  if (mDemoSequencer.GetMode() == targetMode) {
+    // Toggle off
+    mDemoSequencer.SetMode(DemoSequencer::Mode::Off, GetSampleRate());
+    mPendingDSPReset.store(true, std::memory_order_release);
+    GetParam(paramIdx)->Set(0.0);
+    if (targetMode == DemoSequencer::Mode::FX) {
+      mState.fxChorusMix = 0.0;
+      mState.fxDelayMix = 0.0;
+    }
+  } else {
+    // Switch to target mode
+    mDemoSequencer.SetMode(targetMode, GetSampleRate());
+    mPendingDSPReset.store(true, std::memory_order_release);
+    // Clear the other demo buttons
+    if (paramIdx != kParamDemoMono)
+      GetParam(kParamDemoMono)->Set(0.0);
+    if (paramIdx != kParamDemoPoly)
+      GetParam(kParamDemoPoly)->Set(0.0);
+    if (paramIdx != kParamDemoFX)
+      GetParam(kParamDemoFX)->Set(0.0);
+    if (targetMode == DemoSequencer::Mode::FX) {
+      mState.fxChorusMix = 0.35;
+      mState.fxDelayMix = 0.35;
+    }
+  }
+  SyncUIState();
 }
 
 bool PolySynthPlugin::OnMessage(int msgTag, int ctrlTag, int dataSize,

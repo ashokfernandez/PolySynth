@@ -176,6 +176,7 @@ public:
   void DispatchMidiToEngine(const iplug::IMidiMsg &msg);
 
 private:
+  void HandleDemoButton(int paramIdx, double value);
   PolySynthCore::Engine mEngine;
   iplug::DemoSequencer mDemoSequencer;
   bool mIsUpdatingUI = false;
