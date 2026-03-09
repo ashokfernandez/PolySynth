@@ -62,6 +62,11 @@ this codebase.  It is written by agents, for agents.
   relevant topic file and read it.  Skipping this step repeats mistakes that
   already cost hours.
 
+* **Before starting any sprint**, read the retro entries from the previous
+  sprint of the same initiative in `plans/SPRINT_RETROSPECTIVE_NOTES.md`.
+  Past retros document exactly which mistakes were made and what rules were
+  learned — ignoring them guarantees repeat failures.
+
 * **After solving a non-trivial problem**, you MUST add an entry to the
   appropriate file in `learnings/` (or create a new file if the topic is new).
   Use the format documented in `learnings/README.md`.  Do not wait to be asked.
@@ -133,7 +138,7 @@ You MUST act as a steward of the project's institutional memory.
 
 * **WHEN to document:** You MUST capture a learning whenever you resolve a build/UI failure, debug a complex DSP issue, receive an architectural correction, or apply the Bug Fixing Protocol (Section 9).
 * **WHERE to document:** You MUST append your learnings to `plans/SPRINT_RETROSPECTIVE_NOTES.md` under the current sprint's "Retro" or "Issues & Resolutions" section.
-* **Sprint DoD includes retro:** Every sprint's Definition of Done includes adding a retro entry in `plans/SPRINT_RETROSPECTIVE_NOTES.md`. No sprint is complete without it.
+* **Sprint DoD includes retro:** Every sprint's Definition of Done includes adding a retro entry in `plans/SPRINT_RETROSPECTIVE_NOTES.md`. No sprint is complete without it. Use the template in `plans/SPRINT_DOD_TEMPLATE.md` — reference it, don't copy-paste and drift.
 * **Archive completed initiatives:** When the final sprint of an initiative merges, immediately move its folder from `plans/active/` to `plans/archive/`.
 * **HOW to document:** You MUST use the exact three-part format:
   * **Problem:** A concise explanation of what failed or was ambiguous.

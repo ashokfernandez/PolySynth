@@ -9,6 +9,23 @@ This file captures cross-sprint review/retro feedback that should inform future 
 - When a note is resolved, move it to a `Resolved` subsection and reference the commit/PR.
 - Prefer clarifying plan docs over relying on reviewer tribal knowledge.
 - **Write the retro as the final step of each sprint PR, while context is fresh.**
+- **Every retro MUST end with a Quality Scorecard** (see template below).
+
+### Quality Scorecard Template
+
+Add this table at the end of every sprint retro section. It tracks quality trends across sprints — lower numbers are better.
+
+```markdown
+#### Quality Scorecard
+
+| Metric | Count | Notes |
+|---|---|---|
+| Build breaks during sprint | 0 | |
+| Plan corrections needed | 0 | Wrong APIs, wrong test data, etc. |
+| Retro items (problems found) | 0 | |
+| Learnings added | 0 | New entries in `learnings/` |
+| Test gaps discovered | 0 | Missing coverage found during work |
+```
 
 ---
 

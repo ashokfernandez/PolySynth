@@ -27,8 +27,7 @@ Every sprint PR must follow this template:
 - [ ] `just desktop-smoke` — Desktop app launches without crash
 
 ### Definition of Done Checklist
-[Copy the sprint-specific DoD checklist and check off each item]
-- [ ] Retro section added to `plans/SPRINT_RETROSPECTIVE_NOTES.md`
+[Copy from `plans/SPRINT_DOD_TEMPLATE.md` and add sprint-specific items]
 
 ### Reviewer Notes
 - Any decisions made during implementation that deviate from the sprint doc

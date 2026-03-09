@@ -18,6 +18,8 @@ This folder contains strategy docs, execution plans, and archived planning artif
 - Roadmap: [`plans/active/roadmap.md`](active/roadmap.md)
 - Release pipeline: [`plans/active/release_pipeline.md`](active/release_pipeline.md)
 - Sprint retrospective notes: [`plans/SPRINT_RETROSPECTIVE_NOTES.md`](SPRINT_RETROSPECTIVE_NOTES.md)
+- Sprint DoD template: [`plans/SPRINT_DOD_TEMPLATE.md`](SPRINT_DOD_TEMPLATE.md)
+- Process improvements: [`plans/PROCESS_IMPROVEMENTS.md`](PROCESS_IMPROVEMENTS.md)
 
 ## Specs
 
