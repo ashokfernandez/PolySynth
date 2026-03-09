@@ -481,6 +481,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install build dependencies
         run: brew install cmake ninja ccache python3
@@ -509,6 +511,30 @@ jobs:
           python3 -m venv .venv
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
           .venv/bin/pip install -r scripts/requirements-vrt.txt
+
+      # On PRs, generate baselines from the base branch so the diff is
+      # runner-consistent. On pushes to main, use the committed baselines.
+      - name: Checkout base branch for baseline generation
+        if: github.event_name == 'pull_request'
+        run: git checkout ${{ github.event.pull_request.base.sha }}
+
+      - name: Build PolySynthGallery (base)
+        if: github.event_name == 'pull_request'
+        run: |
+          cmake -S ComponentGallery -B ComponentGallery/build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build ComponentGallery/build --parallel $(nproc)
+
+      - name: Generate VRT baselines from base branch
+        if: github.event_name == 'pull_request'
+        run: bash scripts/tasks/run_vrt.sh --generate
+
+      - name: Checkout PR branch
+        if: github.event_name == 'pull_request'
+        run: git checkout ${{ github.event.pull_request.head.sha }}
 
       - name: Build PolySynthGallery sandbox
         run: |
