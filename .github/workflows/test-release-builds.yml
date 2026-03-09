@@ -79,4 +79,4 @@ jobs:
 
       - name: Build Windows VST3 (Release|x64)
         run: |
-          msbuild src\platform\desktop\projects\PolySynth-vst3.vcxproj -m -p:Configuration=Release -p:Platform=x64
+          msbuild src\platform\desktop\projects\PolySynth-vst3.vcxproj -m -p:Configuration=Release -p:Platform=x64 -p:SolutionDir=src\platform\desktop\

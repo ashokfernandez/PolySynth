@@ -6,7 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 DESKTOP_DIR="${ROOT_DIR}/src/platform/desktop"
-SOLUTION_PATH="${DESKTOP_DIR}/PolySynth.sln"
+VCXPROJ_PATH="${DESKTOP_DIR}/projects/PolySynth-vst3.vcxproj"
 BUILD_DIR="${DESKTOP_DIR}/build-win"
 BUNDLE_PATH="${BUILD_DIR}/PolySynth.vst3"
 OUT_DIR="${ROOT_DIR}/.artifacts/releases/windows"
@@ -23,11 +23,11 @@ if ! command -v msbuild >/dev/null 2>&1; then
 fi
 
 echo "Building Windows VST3 (Release|x64)..."
-msbuild "${SOLUTION_PATH}" \
+msbuild "${VCXPROJ_PATH}" \
   -m \
-  -t:PolySynth-vst3 \
   -p:Configuration=Release \
-  -p:Platform=x64
+  -p:Platform=x64 \
+  -p:SolutionDir="${DESKTOP_DIR}/"
 
 if [[ ! -d "${BUNDLE_PATH}" ]]; then
   echo "Failed to locate built bundle at ${BUNDLE_PATH}" >&2
