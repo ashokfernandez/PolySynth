@@ -201,6 +201,34 @@ version-set version:
 set-version version:
     bash ./scripts/cli.sh run set-version -- ./scripts/tasks/set_version.sh {{version}}
 
+# ── Pico RP2350 targets ──────────────────────────────────────────────────
+
+# Download Pico SDK to external/pico-sdk/ (idempotent).
+pico-deps:
+    bash ./scripts/download_pico_sdk.sh
+
+# Configure and build Pico firmware (.uf2).
+# Auto-downloads SDK if not present; discovers ARM toolchain automatically.
+pico-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bash ./scripts/download_pico_sdk.sh
+    export PICO_SDK_PATH="$(pwd)/external/pico-sdk"
+    # Discover ARM toolchain (validates version ≥ 12 for C++17)
+    ARM_BIN=$(bash ./scripts/find_arm_toolchain.sh)
+    export PATH="$ARM_BIN:$PATH"
+    cmake -S src/platform/pico -B build/pico -G Ninja -DPICO_SDK_PATH="$PICO_SDK_PATH"
+    cmake --build build/pico --parallel
+
+# Flash Pico firmware via picotool (device must be in BOOTSEL mode).
+pico-flash: pico-build
+    picotool load build/pico/polysynth_pico.uf2 -f
+    picotool reboot
+
+# Remove Pico build directory.
+pico-clean:
+    rm -rf build/pico build/pico-emu
+
 # Docs workflow
 # Validate docs structure (mirrors CI smoke test).
 docs-check:

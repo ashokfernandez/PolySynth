@@ -25,6 +25,7 @@ include_directories(../src/core)
 include_directories(../external/iPlug2/Dependencies/Extras/nlohmann)
 include_directories(utils)
 include_directories(mocks)
+include_directories(../src/platform/pico)
 
 # ---------------------------------------------------------------------------
 # Fetch Catch2 (single-header, v2)
@@ -84,6 +85,7 @@ set(UNIT_TEST_SOURCES
     unit/Test_UnusedFields.cpp
     unit/Test_Voice.cpp
     unit/Test_LFO_Routing.cpp
+    unit/Test_PicoAudio.cpp
     ../src/core/PresetManager.cpp
 )
 

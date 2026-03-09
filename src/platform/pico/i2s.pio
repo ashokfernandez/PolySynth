@@ -1,0 +1,35 @@
+; I2S output program for PCM5101A DAC
+; Format: I2S standard, MSB-first, 32-bit frame (16-bit data + 16-bit zero padding)
+;
+; Data: one left-justified 32-bit word per channel from FIFO
+;   upper 16 bits = int16 audio, lower 16 bits = zero padding
+;
+; Side-set: 2 pins — bit 0 = BCK (GPIO27), bit 1 = LRCK (GPIO28)
+;   0b00 = BCK low,  LRCK low  (left)
+;   0b01 = BCK high, LRCK low  (left)
+;   0b10 = BCK low,  LRCK high (right)
+;   0b11 = BCK high, LRCK high (right)
+;
+; Timing: 8 instructions, 32 BCK cycles per channel, 64 per frame.
+; Every instruction is one BCK half-cycle — no extra cycles.
+; LRCK transitions on the last 'out' of each channel (1-bit I2S delay).
+;
+; FIFO order: L, R, L, R, ... (interleaved 32-bit words)
+
+.program i2s_out
+.side_set 2
+
+; ── Left channel (LRCK = 0): 32 BCK cycles ──────────────────────────
+left_loop:
+    out pins, 1          side 0b00  ; BCK low,  LRCK low — shift out bit
+    jmp x--, left_loop   side 0b01  ; BCK high, LRCK low — DAC latches
+    out pins, 1          side 0b10  ; BCK low,  LRCK→high — last left bit + transition
+    set x, 30            side 0b11  ; BCK high, LRCK high — init right counter
+
+; ── Right channel (LRCK = 1): 32 BCK cycles ─────────────────────────
+right_loop:
+    out pins, 1          side 0b10  ; BCK low,  LRCK high — shift out bit
+    jmp x--, right_loop  side 0b11  ; BCK high, LRCK high — DAC latches
+    out pins, 1          side 0b00  ; BCK low,  LRCK→low — last right bit + transition
+public entry_point:
+    set x, 30            side 0b01  ; BCK high, LRCK low — init left counter
