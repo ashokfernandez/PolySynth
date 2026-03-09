@@ -272,9 +272,8 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
   bool robotoBoldLoaded = false;
 
   WDL_String resourcePath;
-#ifndef WEB_API
-  // BundleResourcePath takes a PluginIDType (const char* on macOS, HMODULE on
-  // Windows, void* on other platforms). The web build uses the fallback below.
+#if defined(OS_MAC)
+  // macOS: PluginIDType is const char*, try multiple bundle ID candidates.
   const char *bundleIDCandidates[] = {
       GetBundleID(), BUNDLE_ID, "com." PLUG_NAME ".app." BUNDLE_NAME};
 
@@ -312,7 +311,32 @@ void PolySynthPlugin::OnLayout(IGraphics *pGraphics) {
       break;
     }
   }
-#endif // !WEB_API
+#elif defined(OS_WIN)
+  // Windows: PluginIDType is HMODULE; use the plugin DLL handle.
+  {
+    extern HINSTANCE gHINSTANCE;
+    WDL_String candidatePath;
+    BundleResourcePath(candidatePath, gHINSTANCE);
+    if (candidatePath.GetLength()) {
+      WDL_String regularFontPath(candidatePath);
+      regularFontPath.Append("\\");
+      regularFontPath.Append(ROBOTO_FN);
+
+      WDL_String boldFontPath(candidatePath);
+      boldFontPath.Append("\\");
+      boldFontPath.Append(ROBOTO_BOLD_FN);
+
+      regularLoaded = pGraphics->LoadFont("Regular", regularFontPath.Get());
+      boldLoaded = pGraphics->LoadFont("Bold", boldFontPath.Get());
+      robotoRegularLoaded =
+          pGraphics->LoadFont("Roboto-Regular", regularFontPath.Get());
+      robotoBoldLoaded =
+          pGraphics->LoadFont("Roboto-Bold", boldFontPath.Get());
+      if (regularLoaded && boldLoaded)
+        resourcePath.Set(candidatePath.Get());
+    }
+  }
+#endif // OS_MAC / OS_WIN
 
   // Fallback for edge cases where bundle resource discovery fails.
   if (!regularLoaded)
