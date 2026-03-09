@@ -512,14 +512,17 @@ jobs:
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
           .venv/bin/pip install -r scripts/requirements-vrt.txt
 
-      # On PRs, generate baselines from the base branch so the diff is
-      # runner-consistent. On pushes to main, use the committed baselines.
-      - name: Checkout base branch for baseline generation
-        if: github.event_name == 'pull_request'
-        run: git checkout ${{ github.event.pull_request.base.sha }}
+      # Always generate baselines on the runner for consistency.
+      # PRs: use the PR base SHA. Pushes: use the previous commit (HEAD~1).
+      - name: Checkout base commit for baseline generation
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git checkout ${{ github.event.pull_request.base.sha }}
+          else
+            git checkout HEAD~1
+          fi
 
       - name: Build PolySynthGallery (base)
-        if: github.event_name == 'pull_request'
         run: |
           cmake -S ComponentGallery -B ComponentGallery/build \
             -G Ninja \
@@ -528,13 +531,16 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build ComponentGallery/build --parallel $(nproc)
 
-      - name: Generate VRT baselines from base branch
-        if: github.event_name == 'pull_request'
+      - name: Generate VRT baselines from base commit
         run: bash scripts/tasks/run_vrt.sh --generate
 
-      - name: Checkout PR branch
-        if: github.event_name == 'pull_request'
-        run: git checkout ${{ github.event.pull_request.head.sha }}
+      - name: Checkout current commit
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git checkout ${{ github.event.pull_request.head.sha }}
+          else
+            git checkout ${{ github.sha }}
+          fi
 
       - name: Build PolySynthGallery sandbox
         run: |
