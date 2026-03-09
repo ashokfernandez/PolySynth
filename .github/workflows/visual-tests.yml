@@ -12,8 +12,10 @@ jobs:
     runs-on: macos-14
 
     steps:
-      - name: Checkout
+      - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install C++ build dependencies
         run: brew install cmake ninja ccache python3
@@ -31,13 +33,23 @@ jobs:
           chmod +x scripts/download_dependencies.sh
           ./scripts/download_dependencies.sh
 
+      - name: Download iPlug2 prebuilt Skia libs
+        run: |
+          cd external/iPlug2/Dependencies
+          chmod +x download-prebuilt-libs.sh
+          ./download-prebuilt-libs.sh mac
+
       - name: Install Python VRT dependencies
         run: |
           python3 -m venv .venv
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
           .venv/bin/pip install -r scripts/requirements-vrt.txt
 
-      - name: Build PolySynthGallery sandbox
+      # ── Generate baselines from the base (main) branch ──
+      - name: Checkout base branch for baseline generation
+        run: git checkout ${{ github.event.pull_request.base.sha }}
+
+      - name: Build PolySynthGallery (base)
         run: |
           cmake -S ComponentGallery -B ComponentGallery/build \
             -G Ninja \
@@ -46,7 +58,23 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build ComponentGallery/build --parallel $(nproc)
 
-      - name: Run VRT
+      - name: Generate VRT baselines from base branch
+        run: bash scripts/tasks/run_vrt.sh --generate
+
+      # ── Build and verify the PR branch ──
+      - name: Checkout PR branch
+        run: git checkout ${{ github.event.pull_request.head.sha }}
+
+      - name: Rebuild PolySynthGallery (PR)
+        run: |
+          cmake -S ComponentGallery -B ComponentGallery/build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build ComponentGallery/build --parallel $(nproc)
+
+      - name: Run VRT verification against base branch baselines
         run: bash scripts/tasks/run_vrt.sh --verify
 
       - name: Upload diff artifacts on failure
