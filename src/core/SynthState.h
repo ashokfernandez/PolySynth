@@ -10,81 +10,81 @@ namespace PolySynthCore {
 // The Single Source of Truth for the Synth Engine
 struct SynthState {
   // --- Global -------------------------------
-  double masterGain = 0.75; // 0.0 to 1.0
+  float masterGain = 0.75f; // 0.0 to 1.0
   int polyphony = 8;        // 1 to 16
   bool unison = false;
-  double unisonDetune = 0.0; // 0.0 to 1.0 (Hz spread)
-  double glideTime = 0.0;    // Seconds
+  float unisonDetune = 0.0f; // 0.0 to 1.0 (Hz spread)
+  float glideTime = 0.0f;    // Seconds
 
   // --- Voice Allocation (Sprint 2) --------
   int allocationMode = 0;    // 0=Reset (scan from 0), 1=Cycle (round-robin)
   int stealPriority = 0;     // 0=Oldest, 1=LowestPitch, 2=LowestAmplitude
   int unisonCount = 1;       // 1-8 voices per note
-  double unisonSpread = 0.0; // 0.0-1.0 (detune amount)
-  double stereoSpread = 0.0; // 0.0-1.0 (stereo width)
+  float unisonSpread = 0.0f; // 0.0-1.0 (detune amount)
+  float stereoSpread = 0.0f; // 0.0-1.0 (stereo width)
 
   // --- Oscillator A -------------------------
   int oscAWaveform = 0;        // 0=Saw, 1=Square
-  double oscAFreq = 440.0;     // Hz (Base)
-  double oscAPulseWidth = 0.5; // 0.0 to 1.0
+  float oscAFreq = 440.0f;     // Hz (Base)
+  float oscAPulseWidth = 0.5f; // 0.0 to 1.0
   bool oscASync = false;       // Hard Sync to B?
 
   // --- Oscillator B -------------------------
   int oscBWaveform = 0;      // 0=Saw, 1=Square, 2=Tri
-  double oscBFreq = 440.0;   // Hz
-  double oscBFineTune = 0.0; // Semitones
-  double oscBPulseWidth = 0.5;
+  float oscBFreq = 440.0f;   // Hz
+  float oscBFineTune = 0.0f; // Semitones
+  float oscBPulseWidth = 0.5f;
   bool oscBLoFreq = false;        // LFO Mode?
   bool oscBKeyboardPoints = true; // Key tracking
 
   // --- Mixer --------------------------------
-  double mixOscA = 1.0;
-  double mixOscB = 0.0;
-  double mixNoise = 0.0;
+  float mixOscA = 1.0f;
+  float mixOscB = 0.0f;
+  float mixNoise = 0.0f;
 
   // --- Filter (VCF) -------------------------
-  double filterCutoff = 2000.0; // Hz
-  double filterResonance = 0.0; // 0.0 to 1.0
-  double filterEnvAmount = 0.0; // 0.0 to 1.0
+  float filterCutoff = 2000.0f; // Hz
+  float filterResonance = 0.0f; // 0.0 to 1.0
+  float filterEnvAmount = 0.0f; // 0.0 to 1.0
   int filterModel = 1;          // 0=Classic, 1=Ladder, 2=Cascade12, 3=Cascade24
   bool filterKeyboardTrack =
       false; // Full/Half/Off in hardware, uses float 0-1 for amount maybe?
 
   // --- Filter Envelope (ADSR) ---------------
-  double filterAttack = 0.01;
-  double filterDecay = 0.1;
-  double filterSustain = 0.5;
-  double filterRelease = 0.2;
+  float filterAttack = 0.01f;
+  float filterDecay = 0.1f;
+  float filterSustain = 0.5f;
+  float filterRelease = 0.2f;
 
   // --- Amp Envelope (ADSR) ------------------
-  double ampAttack = 0.01;
-  double ampDecay = 0.1;
-  double ampSustain = 1.0;
-  double ampRelease = 0.1;
+  float ampAttack = 0.01f;
+  float ampDecay = 0.1f;
+  float ampSustain = 1.0f;
+  float ampRelease = 0.1f;
 
   // --- LFO (Global) -------------------------
   int lfoShape = 0;      // 0=Sine, 1=Tri, 2=Square, 3=Saw, 4=Rnd
-  double lfoRate = 1.0;  // Hz
-  double lfoDepth = 0.0; // Global scale factor
+  float lfoRate = 1.0f;  // Hz
+  float lfoDepth = 0.0f; // Global scale factor
 
   // --- Poly-Mod (Modulation Matrix) ---------
   // Sources are Osc B and Filter Env
-  double polyModOscBToFreqA = 0.0; // FM amount
-  double polyModOscBToPWM = 0.0;
-  double polyModOscBToFilter = 0.0;
+  float polyModOscBToFreqA = 0.0f; // FM amount
+  float polyModOscBToPWM = 0.0f;
+  float polyModOscBToFilter = 0.0f;
 
-  double polyModFilterEnvToFreqA = 0.0;
-  double polyModFilterEnvToPWM = 0.0;
-  double polyModFilterEnvToFilter = 0.0; // This is usually "Filter Env Amount"
+  float polyModFilterEnvToFreqA = 0.0f;
+  float polyModFilterEnvToPWM = 0.0f;
+  float polyModFilterEnvToFilter = 0.0f; // This is usually "Filter Env Amount"
 
   // --- FX (Epic 4.1) ------------------------
-  double fxChorusRate = 0.25;       // Hz
-  double fxChorusDepth = 0.5;       // 0.0 to 1.0
-  double fxChorusMix = 0.0;         // 0.0 to 1.0
-  double fxDelayTime = 0.35;        // Seconds
-  double fxDelayFeedback = 0.35;    // 0.0 to 0.95
-  double fxDelayMix = 0.0;          // 0.0 to 1.0
-  double fxLimiterThreshold = 0.95; // 0.0 to 1.0
+  float fxChorusRate = 0.25f;       // Hz
+  float fxChorusDepth = 0.5f;       // 0.0 to 1.0
+  float fxChorusMix = 0.0f;         // 0.0 to 1.0
+  float fxDelayTime = 0.35f;        // Seconds
+  float fxDelayFeedback = 0.35f;    // 0.0 to 0.95
+  float fxDelayMix = 0.0f;          // 0.0 to 1.0
+  float fxLimiterThreshold = 0.95f; // 0.0 to 1.0
 
   // --- Helper Methods -----------------------
   void Reset() { *this = SynthState{}; }

@@ -929,7 +929,7 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
     ApplyParamToState(*meta, value, mState);
     // OscMix also sets mixOscA (dual-field update)
     if (paramIdx == kParamOscMix)
-      mState.mixOscA = 1.0 - mState.mixOscB;
+      mState.mixOscA = 1.0f - mState.mixOscB;
   } else {
     // ── Special cases (enums, frequency, milliseconds, demos, presets) ──
     switch (paramIdx) {
@@ -937,7 +937,7 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
       mState.lfoShape = static_cast<int>(value);
       break;
     case kParamLFORateHz:
-      mState.lfoRate = value;
+      mState.lfoRate = static_cast<float>(value);
       break;
     case kParamOscWave:
       mState.oscAWaveform = static_cast<int>(value);
@@ -949,10 +949,10 @@ void PolySynthPlugin::OnParamChange(int paramIdx) {
       mState.filterModel = static_cast<int>(value);
       break;
     case kParamChorusRate:
-      mState.fxChorusRate = value;
+      mState.fxChorusRate = static_cast<float>(value);
       break;
     case kParamDelayTime:
-      mState.fxDelayTime = value / kToMs;
+      mState.fxDelayTime = static_cast<float>(value / kToMs);
       break;
     case kParamAllocationMode:
       mState.allocationMode = static_cast<int>(value);
@@ -1018,8 +1018,8 @@ void PolySynthPlugin::HandleDemoButton(int paramIdx, double value) {
     mPendingDSPReset.store(true, std::memory_order_release);
     GetParam(paramIdx)->Set(0.0);
     if (targetMode == DemoSequencer::Mode::FX) {
-      mState.fxChorusMix = 0.0;
-      mState.fxDelayMix = 0.0;
+      mState.fxChorusMix = 0.0f;
+      mState.fxDelayMix = 0.0f;
     }
   } else {
     // Switch to target mode
@@ -1033,8 +1033,8 @@ void PolySynthPlugin::HandleDemoButton(int paramIdx, double value) {
     if (paramIdx != kParamDemoFX)
       GetParam(kParamDemoFX)->Set(0.0);
     if (targetMode == DemoSequencer::Mode::FX) {
-      mState.fxChorusMix = 0.35;
-      mState.fxDelayMix = 0.35;
+      mState.fxChorusMix = 0.35f;
+      mState.fxDelayMix = 0.35f;
     }
   }
   SyncUIState();

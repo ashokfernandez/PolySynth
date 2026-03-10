@@ -322,7 +322,7 @@ static void demo_tick(uint64_t now_us) {
 }
 
 // ── Serial parameter dispatch ────────────────────────────────────────────
-static bool set_param(PolySynthCore::SynthState& st, const char* name, double val) {
+static bool set_param(PolySynthCore::SynthState& st, const char* name, float val) {
     if (std::strcmp(name, "masterGain") == 0)         { st.masterGain = val; return true; }
     if (std::strcmp(name, "filterCutoff") == 0)        { st.filterCutoff = val; return true; }
     if (std::strcmp(name, "filterResonance") == 0)     { st.filterResonance = val; return true; }
@@ -347,12 +347,12 @@ static bool set_param(PolySynthCore::SynthState& st, const char* name, double va
     return false;
 }
 
-static bool get_param(const PolySynthCore::SynthState& st, const char* name, double& out) {
+static bool get_param(const PolySynthCore::SynthState& st, const char* name, float& out) {
     if (std::strcmp(name, "masterGain") == 0)         { out = st.masterGain; return true; }
     if (std::strcmp(name, "filterCutoff") == 0)        { out = st.filterCutoff; return true; }
     if (std::strcmp(name, "filterResonance") == 0)     { out = st.filterResonance; return true; }
     if (std::strcmp(name, "filterEnvAmount") == 0)     { out = st.filterEnvAmount; return true; }
-    if (std::strcmp(name, "filterModel") == 0)         { out = static_cast<double>(st.filterModel); return true; }
+    if (std::strcmp(name, "filterModel") == 0)         { out = static_cast<float>(st.filterModel); return true; }
     if (std::strcmp(name, "ampAttack") == 0)            { out = st.ampAttack; return true; }
     if (std::strcmp(name, "ampDecay") == 0)             { out = st.ampDecay; return true; }
     if (std::strcmp(name, "ampSustain") == 0)           { out = st.ampSustain; return true; }
@@ -361,11 +361,11 @@ static bool get_param(const PolySynthCore::SynthState& st, const char* name, dou
     if (std::strcmp(name, "filterDecay") == 0)          { out = st.filterDecay; return true; }
     if (std::strcmp(name, "filterSustain") == 0)        { out = st.filterSustain; return true; }
     if (std::strcmp(name, "filterRelease") == 0)        { out = st.filterRelease; return true; }
-    if (std::strcmp(name, "oscAWaveform") == 0)         { out = static_cast<double>(st.oscAWaveform); return true; }
-    if (std::strcmp(name, "oscBWaveform") == 0)         { out = static_cast<double>(st.oscBWaveform); return true; }
+    if (std::strcmp(name, "oscAWaveform") == 0)         { out = static_cast<float>(st.oscAWaveform); return true; }
+    if (std::strcmp(name, "oscBWaveform") == 0)         { out = static_cast<float>(st.oscBWaveform); return true; }
     if (std::strcmp(name, "mixOscA") == 0)              { out = st.mixOscA; return true; }
     if (std::strcmp(name, "mixOscB") == 0)              { out = st.mixOscB; return true; }
-    if (std::strcmp(name, "lfoShape") == 0)             { out = static_cast<double>(st.lfoShape); return true; }
+    if (std::strcmp(name, "lfoShape") == 0)             { out = static_cast<float>(st.lfoShape); return true; }
     if (std::strcmp(name, "lfoRate") == 0)              { out = st.lfoRate; return true; }
     if (std::strcmp(name, "lfoDepth") == 0)             { out = st.lfoDepth; return true; }
     if (std::strcmp(name, "glideTime") == 0)            { out = st.glideTime; return true; }
@@ -403,9 +403,9 @@ static void dispatch_command(const pico_serial::Command& cmd) {
 
         case Type::GET: {
             const auto& st = s_pendingState;
-            double val = 0.0;
+            float val = 0.0f;
             if (get_param(st, cmd.strArg, val)) {
-                printf("VAL: %s=%.4f\n", cmd.strArg, val);
+                printf("VAL: %s=%.4f\n", cmd.strArg, static_cast<double>(val));
             } else {
                 printf("ERR: unknown param '%s'\n", cmd.strArg);
             }

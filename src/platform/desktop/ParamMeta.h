@@ -34,7 +34,7 @@ struct ParamMeta {
 
   // ── SynthState Field Access ──
   size_t fieldOffset; // offsetof() into SynthState
-  bool isInt;         // true if the SynthState field is int (not double)
+  bool isInt;         // true if the SynthState field is int (not float)
 
   // ── iPlug2 Init & Shape ──
   //   kInitDouble:       InitDouble (most params)
@@ -48,7 +48,7 @@ struct ParamMeta {
   ShapeKind shape;
 };
 
-// IMPORTANT: The table only supports `double` and `int` SynthState fields.
+// IMPORTANT: The table only supports `float` and `int` SynthState fields.
 // `bool` fields (oscASync, oscBLoFreq, filterKeyboardTrack, etc.) and
 // enum/frequency/bool params use InitEnum/InitFrequency/InitBool and MUST
 // be handled as special cases — never add them to kParamTable.
@@ -273,29 +273,30 @@ static_assert(kParamTableSize + 9 + 4 == kNumParams,
 // ── Helper Functions ──
 
 // Write a UI value to the corresponding SynthState field.
+// iPlug2 provides double; we narrow to float for SynthState storage.
 inline void ApplyParamToState(const ParamMeta &meta, double uiValue,
                               PolySynthCore::SynthState &state) {
   char *base = reinterpret_cast<char *>(&state);
-  double stateValue;
+  float stateValue;
   switch (meta.mapKind) {
   case ParamMeta::MapKind::kDivide:
-    stateValue = uiValue / meta.divisor;
+    stateValue = static_cast<float>(uiValue / meta.divisor);
     break;
   case ParamMeta::MapKind::kDirect:
-    stateValue = uiValue;
+    stateValue = static_cast<float>(uiValue);
     break;
   case ParamMeta::MapKind::kCast:
     *reinterpret_cast<int *>(base + meta.fieldOffset) =
         static_cast<int>(uiValue);
     return;
   case ParamMeta::MapKind::kInvert:
-    stateValue = 1.0 - (uiValue / meta.divisor);
+    stateValue = static_cast<float>(1.0 - (uiValue / meta.divisor));
     break;
   }
-  *reinterpret_cast<double *>(base + meta.fieldOffset) = stateValue;
+  *reinterpret_cast<float *>(base + meta.fieldOffset) = stateValue;
 }
 
-// Read a SynthState field and convert to UI value.
+// Read a SynthState field and convert to UI value (double for iPlug2).
 inline double StateToUIValue(const ParamMeta &meta,
                              const PolySynthCore::SynthState &state) {
   const char *base = reinterpret_cast<const char *>(&state);
@@ -304,7 +305,7 @@ inline double StateToUIValue(const ParamMeta &meta,
     return static_cast<double>(intVal);
   }
   double stateValue =
-      *reinterpret_cast<const double *>(base + meta.fieldOffset);
+      *reinterpret_cast<const float *>(base + meta.fieldOffset);
   switch (meta.mapKind) {
   case ParamMeta::MapKind::kDivide:
     return stateValue * meta.divisor;

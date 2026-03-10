@@ -101,7 +101,14 @@ Key topic files:
 ## 🏗️ 5. ARCHITECTURE & DSP RULES (When/Then Triggers)
 
 * **WHEN adding new building blocks:** You MUST enforce the split principle. If a class has a `Process(sample)` method, it belongs in `SEA_DSP`. If it supports audio applications but does not process audio samples (e.g., allocators, thread-safe queues, music theory), it belongs in `SEA_Util`.
-* **WHEN defining numeric types:** You MUST enforce strict type discipline for embedded portability. Use the `sample_t` alias for signals instead of hardcoded `double`. Use `float` for control parameters (e.g., spread, detune). Use `uint32_t` for timestamps to avoid expensive 64-bit atomic operations on ARM platforms.
+* **WHEN defining numeric types:** You MUST enforce strict type discipline for embedded portability. Use the `sample_t` alias for per-sample signals instead of hardcoded `double`. Use `float` for control parameters — including `SynthState` fields, platform glue APIs (e.g., `PicoSynthApp::SetParam(float)`), and serial dispatch. Use `uint32_t` for timestamps to avoid expensive 64-bit atomic operations on ARM platforms. Note: iPlug2's `GetParam()->Value()` returns `double` — narrow to `float` with `static_cast<float>()` at the iPlug2 boundary (in `ParamMeta.h` / `OnParamChange`).
+* **WHEN writing embedded Pico code:** You MUST follow these additional constraints:
+  - **No `std::atomic<uint64_t>` in ISR context** — it's NOT lock-free on 32-bit ARM Cortex-M33 and silently uses spinlocks or disables interrupts. Use two `std::atomic<uint32_t>` or redesign the data flow.
+  - **Use `sample_t` (not `double`) for function signatures** in platform glue code (`PicoSynthApp`, audio callbacks). The `sample_t` alias resolves to `float` when `POLYSYNTH_USE_FLOAT` is defined.
+  - **Use `float` literals** (e.g., `1.0f` not `1.0`) in hot paths to avoid implicit double promotion. Enable `-Wdouble-promotion` to catch these at compile time.
+  - **Mark audio-critical functions** with `__time_critical_func` to place them in SRAM (avoids XIP cache misses during DMA ISR).
+  - **No heap allocation in ISR** — same as Principle #1, but also applies to `printf`, `std::string`, and any `libstdc++` functions that may allocate.
+  - **Verify atomics are lock-free** — use `static_assert(std::atomic<T>::is_always_lock_free)` for any atomic used in the ISR.
 * **WHEN writing math for music theory:** You MUST normalize modulo arithmetic for negative inputs (e.g., `if (val < 0) val += 12;`) because standard C++ `%` is a remainder operator and will cause out-of-bounds bit shifts for negative numbers.
 * **WHEN adding header includes:** You MUST include exactly what you use and never rely on transitive includes, as WAM web builds compile in different orders. Do not add speculative includes.
 
@@ -220,3 +227,5 @@ Before concluding your task, running `just ci-pr`, or submitting a PR, you MUST 
 6.  [ ] **Desktop Startup Smoke:** Have you run `just desktop-smoke` (or CI equivalent) to verify the desktop app reaches UI-loaded state without crashing?
 7.  [ ] **Multi-Build-System Sync:** Have you updated CMake, Xcode, and any platform-specific configs (e.g., Pico CMakeLists) that are affected by your changes?
 8.  [ ] **Embedded Tests:** If your change touches core DSP code, have you run `just test-embedded` to verify it compiles and passes under float precision with 4-voice limit?
+9.  [ ] **Embedded Type Discipline:** If your change touches Pico platform code, have you verified: no `double` in function signatures (use `sample_t` or `float`), no `std::atomic<uint64_t>` in ISR context, no implicit double promotions in hot paths, all audio-critical functions marked `__time_critical_func`?
+10. [ ] **Plan-Code Consistency:** If your change implements a sprint plan, have you verified the plan's pseudocode matches what you actually implemented (API signatures, config values, guard macros)?
