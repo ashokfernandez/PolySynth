@@ -102,6 +102,13 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
         float left = 0.0f, right = 0.0f;
         s_engine.Process(left, right);
 
+        // Output gain: compensate for conservative gain staging
+        // (velocity × filter × pan × headroom ≈ 0.12 for a single note).
+        // Boost before soft clip so tanh gracefully limits dense chords.
+        constexpr float kOutputGain = 4.0f;
+        left *= kOutputGain;
+        right *= kOutputGain;
+
         // Soft clip (Padé approximant — tanhf() is too expensive on Cortex-M33)
         // SSAT handles overflow: fast_tanh can exceed ±1.0 for |x|>3, so the
         // int32 multiply may exceed int16 range — SSAT saturates in one cycle.
