@@ -43,7 +43,7 @@ static PolySynthCore::SynthState s_pendingState;
 static PolySynthCore::SynthState s_stagedState;
 static std::atomic<bool> s_stateConsumed{true};
 static std::atomic<int> s_activeVoices{0};  // updated by audio ISR for diagnostics
-static float s_peakLevel = 0.0f;  // peak output level (pre-tanh), reset on read
+static std::atomic<float> s_peakLevel{0.0f};  // peak output level (pre-tanh), reset on read
 
 // Voice-change event ring buffer (ISR writes, main loop reads)
 struct VoiceEvent { int8_t from; int8_t to; };
@@ -51,7 +51,7 @@ static constexpr int kVoiceEventBufSize = 32;
 static VoiceEvent s_voiceEvents[kVoiceEventBufSize];
 static std::atomic<int> s_voiceEventHead{0};  // ISR writes
 static int s_voiceEventTail = 0;               // main loop reads
-static int s_prevVoiceCount = 0;
+static int s_prevVoiceCount = 0;  // ISR-private: only accessed from audio_callback
 
 static void enqueue_cmd(AudioCommand::Type type, uint8_t a1 = 0, uint8_t a2 = 0) {
     int head = s_cmdHead.load(std::memory_order_relaxed);
@@ -79,7 +79,10 @@ static inline int16_t saturate_to_i16(int32_t val) {
 }
 
 // ── Audio callback (called from DMA ISR) ─────────────────────────────────
-static void audio_callback(uint32_t* buffer, uint32_t num_frames)
+// __time_critical_func places this in SRAM, avoiding XIP flash cache misses
+// that cause variable-latency stalls (~10-100+ cycles per miss) during audio.
+// Since SEA_DSP is header-only and inlined here, the DSP code lands in SRAM too.
+static void __time_critical_func(audio_callback)(uint32_t* buffer, uint32_t num_frames)
 {
     // Drain command queue
     int tail = s_cmdTail.load(std::memory_order_relaxed);
@@ -119,11 +122,12 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
         left *= kOutputGain;
         right *= kOutputGain;
 
-        // Track peak level for diagnostics
+        // Track peak level for diagnostics (relaxed: diagnostic only, no ordering needed)
         float absL = left > 0 ? left : -left;
         float absR = right > 0 ? right : -right;
         float peak = absL > absR ? absL : absR;
-        if (peak > s_peakLevel) s_peakLevel = peak;
+        float prev = s_peakLevel.load(std::memory_order_relaxed);
+        if (peak > prev) s_peakLevel.store(peak, std::memory_order_relaxed);
 
         // Soft clip (Padé approximant — tanhf() is too expensive on Cortex-M33)
         // SSAT handles overflow: fast_tanh can exceed ±1.0 for |x|>3, so the
@@ -134,7 +138,10 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
         buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
     }
     // Update voice count for status reporting
-    s_engine.UpdateVisualization();
+    // NOTE: UpdateVisualization() removed — it uses std::atomic<uint64_t> which
+    // is NOT lock-free on 32-bit ARM (may disable interrupts or use spinlocks).
+    // GetActiveVoiceCount() iterates voices directly, safe from ISR context
+    // since voice state is only modified here via the command queue above.
     int vc = s_engine.GetActiveVoiceCount();
     s_activeVoices.store(vc, std::memory_order_relaxed);
     // Buffer voice-change events (NO printf from ISR — not thread-safe)
@@ -534,6 +541,19 @@ static bool run_self_tests()
 
 // ── Core 1 entry point — dedicated to audio DSP ──────────────────────────
 static void core1_audio_entry() {
+    // Flush denormals to zero: set FPSCR FZ (bit 24) and DN (bit 25).
+    // Denormal floats in filter tails can cost 10-80× more cycles than normal floats.
+    // On Cortex-M33 with hard-float ABI, this prevents performance cliffs when
+    // signals decay to near-zero (e.g. filter resonance ringing out).
+    {
+        uint32_t fpscr;
+        __asm volatile("vmrs %0, fpscr" : "=r"(fpscr));
+        fpscr |= (1u << 24) | (1u << 25);  // FZ=1, DN=1
+        __asm volatile("vmsr fpscr, %0" : : "r"(fpscr));
+        printf("[Core1] FPSCR set: FZ+DN enabled (0x%08lx)\n",
+               static_cast<unsigned long>(fpscr));
+    }
+
     // Init audio on core 1 so the DMA IRQ fires on this core
     if (!pico_audio::Init(audio_callback, 1)) {
         multicore_fifo_push_blocking(0);  // signal failure
@@ -650,8 +670,7 @@ int main()
                                    static_cast<float>(pico_audio::kSampleRate);
             float cpu_percent = (fill_time_us / buffer_time_us) * 100.0f;
 
-            float peak = s_peakLevel;
-            s_peakLevel = 0.0f;  // reset for next interval
+            float peak = s_peakLevel.exchange(0.0f, std::memory_order_relaxed);
 
             printf("[%lus] CPU: %.1f%% | Voices: %d | Peak: %.3f | Phase: %s\n",
                    static_cast<unsigned long>(report_counter * 5),

@@ -30,7 +30,8 @@ static constexpr uint PIN_LRCK = 28;  // Word select (side-set pin 1)
 
 // ── DMA interrupt handler ───────────────────────────────────────────────
 // Called when one DMA channel completes — triggers fill of the next buffer.
-static void dma_irq_handler()
+// __time_critical_func places this in SRAM to avoid XIP cache miss latency.
+static void __time_critical_func(dma_irq_handler)()
 {
     uint32_t start_us = time_us_32();
 

@@ -74,6 +74,8 @@ target_compile_options(polysynth_pico PRIVATE
     -Wdouble-promotion
     -fno-exceptions
     -fno-rtti
+    -ffast-math       # Reciprocal-math, FMA, reordering — safe: no NaN/Inf deps, Pico-only
+    -funroll-loops    # Helps ladder filter 4-stage loop and per-sample processing
 )
 
 target_include_directories(polysynth_pico PRIVATE
