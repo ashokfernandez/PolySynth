@@ -213,6 +213,7 @@ pico-build:
     #!/usr/bin/env bash
     set -euo pipefail
     bash ./scripts/download_pico_sdk.sh
+    bash ./scripts/download_freertos_kernel.sh
     export PICO_SDK_PATH="$(pwd)/external/pico-sdk"
     # Discover ARM toolchain (validates version ≥ 12 for C++17)
     ARM_BIN=$(bash ./scripts/find_arm_toolchain.sh)
@@ -246,6 +247,7 @@ pico-build-emu:
     #!/usr/bin/env bash
     set -euo pipefail
     bash ./scripts/download_pico_sdk.sh
+    bash ./scripts/download_freertos_kernel.sh
     export PICO_SDK_PATH="$(pwd)/external/pico-sdk"
     ARM_BIN=$(bash ./scripts/find_arm_toolchain.sh)
     export PATH="$ARM_BIN:$PATH"

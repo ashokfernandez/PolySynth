@@ -1,8 +1,10 @@
-// PolySynth Pico — Sprint 8: Architecture Decomposition
-// Slim entry point: boot, self-test, core 1 launch, serial polling loop.
-// DSP engine, command dispatch, demo, and self-test are in separate modules.
+// PolySynth Pico — Sprint 9: FreeRTOS Migration
+// FreeRTOS on Core 0 (serial task + idle heartbeat). Core 1 bare-metal (DMA ISR audio).
 
 #include <cstdio>
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
@@ -16,19 +18,16 @@
 #include "pico_self_test.h"
 
 static PicoSynthApp s_app;
-static PicoDemo s_demo;
 
 // ── Audio callback trampoline (static function → member call) ─────────────
 static void audio_callback(uint32_t* buffer, uint32_t numFrames) {
     s_app.AudioCallback(buffer, numFrames);
 }
 
-// ── Core 1 entry point — dedicated to audio DSP ──────────────────────────
+// ── Core 1 entry point — dedicated to audio DSP (bare-metal, no FreeRTOS) ─
 static void core1_audio_entry() {
     // Flush denormals to zero: set FPSCR FZ (bit 24) and DN (bit 25).
     // Denormal floats in filter tails can cost 10-80x more cycles than normal floats.
-    // On Cortex-M33 with hard-float ABI, this prevents performance cliffs when
-    // signals decay to near-zero (e.g. filter resonance ringing out).
     {
         uint32_t fpscr;
         __asm volatile("vmrs %0, fpscr" : "=r"(fpscr));
@@ -53,81 +52,33 @@ static void core1_audio_entry() {
     }
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────
-int main()
-{
-    stdio_init_all();
+// ── Serial task — runs on Core 0 under FreeRTOS ──────────────────────────
+// Handles serial command parsing, demo sequencing, voice event draining,
+// and periodic status reporting.
+static void serial_task(void* params) {
+    (void)params;
 
-    if (cyw43_arch_init()) {
-        printf("ERROR: CYW43 init failed\n");
-        return 1;
-    }
-
-    // Wait for USB serial
-    for (int i = 0; i < 30; i++) {
-        if (stdio_usb_connected()) break;
-        sleep_ms(100);
-    }
-
-    printf("\n");
-    printf("========================================\n");
-    printf("  PolySynth Pico v0.6 — Decomposed\n");
-    printf("  Board:       Pico 2 W (RP2350)\n");
-    printf("  Sample rate: %u Hz\n", pico_audio::kSampleRate);
-    printf("  Buffer:      %u frames (%.2f ms)\n",
-           pico_audio::kBufferFrames,
-           static_cast<float>(pico_audio::kBufferFrames) * 1000.0f /
-               static_cast<float>(pico_audio::kSampleRate));
-    printf("  Engine:      %u bytes (effects stripped)\n",
-           static_cast<unsigned>(sizeof(PolySynthCore::Engine)));
-    printf("========================================\n");
-    printf("Commands: NOTE_ON <n> <v>, NOTE_OFF <n>, SET <p> <v>,\n");
-    printf("          GET <p>, STATUS, PANIC, RESET, DEMO, STOP\n");
-    printf("========================================\n\n");
-
-    // Run self-tests (includes engine init + audio I2S test)
-    if (!pico_self_test::RunAll(s_app, audio_callback)) {
-        printf("Self-tests failed. Halting.\n");
-        while (true) { sleep_ms(1000); }
-    }
-
-    // Re-init engine cleanly after self-test
-    s_app.Init(static_cast<float>(pico_audio::kSampleRate));
-
-    // Launch core 1 for dedicated audio DSP
-    multicore_launch_core1(core1_audio_entry);
-    uint32_t audio_ok = multicore_fifo_pop_blocking();
-    if (!audio_ok) {
-        printf("ERROR: Audio init on core 1 failed, falling back to core 0\n");
-        pico_audio::Init(audio_callback);
-        pico_audio::Start();
-    }
-    printf("Audio started on core %d — running demo sequence\n", audio_ok ? 1 : 0);
-    printf("Type STOP to halt demo, or send commands\n\n");
-
-    // Start demo
-    s_demo.Start(time_us_64());
-
-    // Main loop: serial polling + demo + status
+    PicoDemo demo;
     pico_serial::CommandParser parser;
     uint32_t report_counter = 0;
     uint64_t last_report_us = time_us_64();
 
+    // Start demo
+    demo.Start(time_us_64());
+    printf("Type STOP to halt demo, or send commands\n\n");
+
     while (true) {
-        // Non-blocking serial polling
-        int ch = getchar_timeout_us(0);
+        // Non-blocking serial read with 1ms timeout — yields CPU to lower-priority tasks
+        int ch = getchar_timeout_us(1000);
         if (ch != PICO_ERROR_TIMEOUT) {
             if (parser.Feed(static_cast<char>(ch))) {
                 auto cmd = parser.Parse();
-                pico_commands::Dispatch(cmd, s_app, s_demo);
+                pico_commands::Dispatch(cmd, s_app, demo);
             }
         }
 
-        // Service CYW43 driver (required for pico_cyw43_arch_none)
-        cyw43_arch_poll();
-
         // Demo tick
-        s_demo.Update(time_us_64(), s_app);
+        demo.Update(time_us_64(), s_app);
 
         // Drain voice-change events
         int8_t from, to;
@@ -153,12 +104,94 @@ int main()
                    static_cast<double>(cpu_percent),
                    s_app.GetActiveVoiceCount(),
                    static_cast<double>(peak),
-                   s_demo.IsRunning() ? s_demo.CurrentPhaseName() : "OFF");
-
-            // Blink LED
-            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, report_counter % 2);
+                   demo.IsRunning() ? demo.CurrentPhaseName() : "OFF");
         }
     }
+}
 
-    return 0;
+// ── LED heartbeat — FreeRTOS idle hook ───────────────────────────────────
+// Blinks the onboard LED at 1Hz. No blink = system hung.
+// Called from the idle task — must NOT block or call any blocking FreeRTOS API.
+static bool s_led_state = false;
+static uint32_t s_last_led_toggle = 0;
+
+extern "C" void vApplicationIdleHook() {
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+    if (now - s_last_led_toggle >= 1000) {
+        s_led_state = !s_led_state;
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, s_led_state);
+        s_last_led_toggle = now;
+    }
+}
+
+// ── Stack overflow hook — required when configCHECK_FOR_STACK_OVERFLOW > 0 ─
+extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
+    (void)xTask;
+    printf("STACK OVERFLOW in task: %s\n", pcTaskName);
+    // Halt — stack overflow is unrecoverable
+    while (true) { __wfi(); }
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────
+int main()
+{
+    stdio_init_all();
+
+    if (cyw43_arch_init()) {
+        printf("ERROR: CYW43 init failed\n");
+        return 1;
+    }
+
+    // Wait for USB serial
+    for (int i = 0; i < 30; i++) {
+        if (stdio_usb_connected()) break;
+        sleep_ms(100);
+    }
+
+    printf("\n");
+    printf("========================================\n");
+    printf("  PolySynth Pico v0.9 — FreeRTOS\n");
+    printf("  Board:       Pico 2 W (RP2350)\n");
+    printf("  Sample rate: %u Hz\n", pico_audio::kSampleRate);
+    printf("  Buffer:      %u frames (%.2f ms)\n",
+           pico_audio::kBufferFrames,
+           static_cast<float>(pico_audio::kBufferFrames) * 1000.0f /
+               static_cast<float>(pico_audio::kSampleRate));
+    printf("  Engine:      %u bytes (effects stripped)\n",
+           static_cast<unsigned>(sizeof(PolySynthCore::Engine)));
+    printf("  RTOS:        FreeRTOS (Core 0 only)\n");
+    printf("========================================\n");
+    printf("Commands: NOTE_ON <n> <v>, NOTE_OFF <n>, SET <p> <v>,\n");
+    printf("          GET <p>, STATUS, PANIC, RESET, DEMO, STOP\n");
+    printf("========================================\n\n");
+
+    // Run self-tests (includes engine init + audio I2S test)
+    if (!pico_self_test::RunAll(s_app, audio_callback)) {
+        printf("Self-tests failed. Halting.\n");
+        while (true) { sleep_ms(1000); }
+    }
+
+    // Re-init engine cleanly after self-test
+    s_app.Init(static_cast<float>(pico_audio::kSampleRate));
+
+    // Launch core 1 for dedicated audio DSP (BEFORE vTaskStartScheduler)
+    multicore_launch_core1(core1_audio_entry);
+    uint32_t audio_ok = multicore_fifo_pop_blocking();
+    if (!audio_ok) {
+        printf("ERROR: Audio init on core 1 failed, falling back to core 0\n");
+        pico_audio::Init(audio_callback);
+        pico_audio::Start();
+    }
+    printf("Audio started on core %d\n", audio_ok ? 1 : 0);
+
+    // Create serial task — priority 4, 1024-word (4KB) stack
+    xTaskCreate(serial_task, "Serial", 1024, nullptr, 4, nullptr);
+
+    // Start FreeRTOS scheduler — never returns
+    printf("Starting FreeRTOS scheduler...\n");
+    vTaskStartScheduler();
+
+    // Should never reach here
+    printf("ERROR: FreeRTOS scheduler exited\n");
+    return 1;
 }
