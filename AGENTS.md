@@ -31,6 +31,12 @@ You MUST use `just` as the default interface for local development and verificat
 * `just desktop-build` / `just desktop-run` / `just desktop-rebuild` / `just desktop-smoke` / `just install-local`
 * `just sandbox-build` / `just sandbox-run` / `just gallery-test` / `just vrt-baseline` / `just vrt-run`
 
+**Pico Embedded Targets:**
+* `just pico-build` - cross-compile firmware for RP2350
+* `just pico-build-emu` - cross-compile for Wokwi emulation (RP2040 proxy)
+* `just test-embedded` - run unit tests with embedded config (`POLYSYNTH_USE_FLOAT`, `MAX_VOICES=4`)
+* `just pico-emu-test` - run firmware in Wokwi emulator (requires wokwi-cli)
+
 **Versioning and Release:**
 * `just version` — interactive TUI: shows current version + history, prompts for bump, commits/tags/pushes
 * `just version-show` — print current version and recent tags (non-interactive)
@@ -213,3 +219,4 @@ Before concluding your task, running `just ci-pr`, or submitting a PR, you MUST 
 5.  [ ] **Golden Master Policy:** If your fix changes runtime behavior, have you checked the decision tree for Golden Masters?
 6.  [ ] **Desktop Startup Smoke:** Have you run `just desktop-smoke` (or CI equivalent) to verify the desktop app reaches UI-loaded state without crashing?
 7.  [ ] **Multi-Build-System Sync:** Have you updated CMake, Xcode, and any platform-specific configs (e.g., Pico CMakeLists) that are affected by your changes?
+8.  [ ] **Embedded Tests:** If your change touches core DSP code, have you run `just test-embedded` to verify it compiles and passes under float precision with 4-voice limit?

@@ -17,9 +17,10 @@ using sample_t = double;
 static_assert(std::is_same_v<sample_t, sea::Real>,
               "sample_t and sea::Real must be the same type");
 
-// Constants
-constexpr double kPi = 3.14159265358979323846;
-constexpr double kTwoPi = 2.0 * kPi;
+// Constants — use sample_t to avoid double-precision on embedded (Cortex-M33 has
+// single-precision FPU only; double ops fall to software emulation ~10x slower).
+constexpr sample_t kPi = static_cast<sample_t>(3.14159265358979323846);
+constexpr sample_t kTwoPi = sample_t(2) * kPi;
 constexpr int kMaxBlockSize = 4096;
 
 // Compile-time voice count — override with -DPOLYSYNTH_MAX_VOICES=N

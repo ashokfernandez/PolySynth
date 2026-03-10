@@ -22,32 +22,32 @@ public:
   void Init(sample_t sampleRate, uint8_t voiceID = 0) {
     mOscA.Init(sampleRate);
     mOscB.Init(sampleRate);
-    mOscA.SetFrequency(440.0);
-    mDetuneFactor = std::pow(2.0, mDetuneB / 1200.0);
-    mOscB.SetFrequency(440.0 * mDetuneFactor);
-    mTargetFreq = 440.0;
-    mGlideTime = 0.0;
-    mGlideAlpha = 1.0;
+    mOscA.SetFrequency(sample_t(440));
+    mDetuneFactor = std::pow(sample_t(2), mDetuneB / sample_t(1200));
+    mOscB.SetFrequency(sample_t(440) * mDetuneFactor);
+    mTargetFreq = sample_t(440);
+    mGlideTime = sample_t(0);
+    mGlideAlpha = sample_t(1);
 
-    mBasePulseWidthA = 0.5;
-    mBasePulseWidthB = 0.5;
+    mBasePulseWidthA = sample_t(0.5);
+    mBasePulseWidthB = sample_t(0.5);
     mOscA.SetPulseWidth(mBasePulseWidthA);
     mOscB.SetPulseWidth(mBasePulseWidthB);
 
     mFilter.Init(sampleRate);
-    mFilter.SetParams(sea::FilterType::LowPass, 2000.0, 0.707);
+    mFilter.SetParams(sea::FilterType::LowPass, sample_t(2000), sample_t(0.707));
     mLadderFilter.Init(sampleRate);
     mCascadeFilter.Init(sampleRate);
 
     mAmpEnv.Init(sampleRate);
-    mAmpEnv.SetParams(0.01, 0.1, 1.0, 0.2);
+    mAmpEnv.SetParams(sample_t(0.01), sample_t(0.1), sample_t(1), sample_t(0.2));
 
     mFilterEnv.Init(sampleRate);
-    mFilterEnv.SetParams(0.01, 0.1, 0.5, 0.2);
+    mFilterEnv.SetParams(sample_t(0.01), sample_t(0.1), sample_t(0.5), sample_t(0.2));
 
     mLfo.Init(sampleRate);
-    mLfo.SetRate(5.0);
-    mLfo.SetDepth(0.0);
+    mLfo.SetRate(sample_t(5));
+    mLfo.SetDepth(sample_t(0));
     mLfo.SetWaveform(0);
 
     mActive = false;
@@ -60,24 +60,24 @@ public:
     mCurrentPitch = 0.0f;
     mPanPosition = 0.0f;
     mStolenFadeGain = 0.0f;
-    mStolenFadeDelta = 0.0;
+    mStolenFadeDelta = sample_t(0);
     mLastAmpEnvVal = 0.0f;
-    mBaseCutoff = 2000.0;
-    mBaseRes = 0.707;
-    mPolyModOscBToFreqA = 0.0;
-    mPolyModOscBToPWM = 0.0;
-    mPolyModOscBToFilter = 0.0;
-    mPolyModFilterEnvToFreqA = 0.0;
-    mPolyModFilterEnvToPWM = 0.0;
-    mPolyModFilterEnvToFilter = 0.0;
+    mBaseCutoff = sample_t(2000);
+    mBaseRes = sample_t(0.707);
+    mPolyModOscBToFreqA = sample_t(0);
+    mPolyModOscBToPWM = sample_t(0);
+    mPolyModOscBToFilter = sample_t(0);
+    mPolyModFilterEnvToFreqA = sample_t(0);
+    mPolyModFilterEnvToPWM = sample_t(0);
+    mPolyModFilterEnvToFilter = sample_t(0);
     mFilterModel = FilterModel::Ladder;
   }
 
   void NoteOn(int note, int velocity, uint32_t timestamp = 0) {
-    sample_t newFreq = 440.0 * std::pow(2.0, (note - 69.0) / 12.0);
+    sample_t newFreq = sample_t(440) * std::pow(sample_t(2), (note - sample_t(69)) / sample_t(12));
     mTargetFreq = newFreq;
 
-    if (mGlideTime > 0.0 && mActive) {
+    if (mGlideTime > sample_t(0) && mActive) {
       // Legato glide: keep current frequency, glide to target
       // Don't reset oscillators — smooth transition
     } else {
@@ -89,7 +89,7 @@ public:
       mOscB.Reset();
     }
 
-    mVelocity = velocity / 127.0;
+    mVelocity = velocity / sample_t(127);
 
     mAmpEnv.NoteOn();
     mFilterEnv.NoteOn();
@@ -108,7 +108,7 @@ public:
   }
 
   void ApplyDetuneCents(sample_t cents) {
-    sample_t factor = std::pow(2.0, cents / 1200.0);
+    sample_t factor = std::pow(sample_t(2), cents / sample_t(1200));
     mFreq *= factor;
     mCurrentPitch = static_cast<float>(mFreq);
     mOscA.SetFrequency(mFreq);
@@ -131,7 +131,7 @@ public:
 
     // ── Step 1: Early exit ──
     if (!mActive)
-      return 0.0;
+      return sample_t(0);
 
     if (mVoiceState == VoiceState::Stolen && mStolenFadeGain <= 0.0f) {
       mActive = false;
@@ -139,15 +139,19 @@ public:
       mVoiceState = VoiceState::Idle;
       mAge = 0;
       mLastAmpEnvVal = 0.0f;
-      return 0.0;
+      return sample_t(0);
     }
 
     // ── Step 2: LFO & Filter Envelope ──
-    sample_t lfoVal = mLfo.Process();
+    sample_t lfoVal = sample_t(0);
+    if (mLfoPitchDepth != sample_t(0) || mLfoFilterDepth != sample_t(0) ||
+        mLfoAmpDepth != sample_t(0) || mLfoPanDepth != sample_t(0)) {
+      lfoVal = mLfo.Process();
+    }
     sample_t filterEnvVal = mFilterEnv.Process();
 
     // ── Step 3: Portamento ──
-    if (mGlideTime > 0.0 && std::abs(mFreq - mTargetFreq) > kGlideSnapThresholdHz) {
+    if (mGlideTime > sample_t(0) && std::abs(mFreq - mTargetFreq) > kGlideSnapThresholdHz) {
       mFreq += (mTargetFreq - mFreq) * mGlideAlpha;
       // Snap to target when close enough
       if (std::abs(mFreq - mTargetFreq) < kGlideSnapThresholdHz) {
@@ -163,8 +167,8 @@ public:
     sample_t modFreqA = mFreq;
     sample_t modFreqB = mFreq * mDetuneFactor;
 
-    if (mLfoPitchDepth > 0.0) {
-      sample_t modMult = (1.0 + lfoVal * mLfoPitchDepth * kLfoPitchScale);
+    if (mLfoPitchDepth > sample_t(0)) {
+      sample_t modMult = (sample_t(1) + lfoVal * mLfoPitchDepth * kLfoPitchScale);
       modFreqA *= modMult;
       modFreqB *= modMult;
     }
@@ -172,16 +176,16 @@ public:
     mOscB.SetFrequency(modFreqB);
     sample_t oscB = mOscB.Process();
 
-    if (mPolyModOscBToFreqA != 0.0 || mPolyModFilterEnvToFreqA != 0.0) {
+    if (mPolyModOscBToFreqA != sample_t(0) || mPolyModFilterEnvToFreqA != sample_t(0)) {
       sample_t freqMod = (oscB * mPolyModOscBToFreqA) +
                          (filterEnvVal * mPolyModFilterEnvToFreqA);
-      modFreqA *= (1.0 + freqMod);
-      modFreqA = std::max(static_cast<sample_t>(1.0), modFreqA);
+      modFreqA *= (sample_t(1) + freqMod);
+      modFreqA = std::max(sample_t(1), modFreqA);
     }
 
     mOscA.SetFrequency(modFreqA);
 
-    if (mPolyModOscBToPWM != 0.0 || mPolyModFilterEnvToPWM != 0.0) {
+    if (mPolyModOscBToPWM != sample_t(0) || mPolyModFilterEnvToPWM != sample_t(0)) {
       sample_t pwmMod =
           (oscB * mPolyModOscBToPWM) + (filterEnvVal * mPolyModFilterEnvToPWM);
       sample_t pwmA = mBasePulseWidthA + (pwmMod * kPwmModScale);
@@ -198,37 +202,41 @@ public:
     sample_t cutoff = mBaseCutoff;
     cutoff +=
         filterEnvVal * (mFilterEnvAmount + mPolyModFilterEnvToFilter) * kFilterEnvMaxHz;
-    if (mPolyModOscBToFilter != 0.0) {
+    if (mPolyModOscBToFilter != sample_t(0)) {
       cutoff += oscB * mPolyModOscBToFilter * mBaseCutoff;
     }
-    cutoff *= (1.0 + lfoVal * mLfoFilterDepth);
+    cutoff *= (sample_t(1) + lfoVal * mLfoFilterDepth);
     cutoff = std::clamp(cutoff, sample_t(20.0), sample_t(20000.0));
 
-    sample_t flt = 0.0;
-    // Filter model dispatch: each model uses a different topology.
-    // Classic (Biquad): 2nd-order IIR, RBJ coefficients, gentle resonance
-    // Ladder: 4-pole transistor ladder, TPT integrators, self-oscillates at high resonance
-    // Cascade12: 2-pole cascaded biquad, 12dB/octave slope
-    // Cascade24: 4-pole cascaded biquad, 24dB/octave slope (steepest rolloff)
+    sample_t flt = sample_t(0);
+    bool filterDirty = (cutoff != mLastFilterCutoff || mBaseRes != mLastFilterRes);
+    if (filterDirty) {
+      mLastFilterCutoff = cutoff;
+      mLastFilterRes = mBaseRes;
+    }
     switch (mFilterModel) {
     case FilterModel::Ladder:
-      mLadderFilter.SetParams(sea::LadderFilter<sample_t>::Model::Transistor,
-                              cutoff, mBaseRes);
+      if (filterDirty)
+        mLadderFilter.SetParams(sea::LadderFilter<sample_t>::Model::Transistor,
+                                cutoff, mBaseRes);
       flt = mLadderFilter.Process(mixed);
       break;
     case FilterModel::Cascade12:
-      mCascadeFilter.SetParams(cutoff, mBaseRes,
-                               sea::CascadeFilter<sample_t>::Slope::dB12);
+      if (filterDirty)
+        mCascadeFilter.SetParams(cutoff, mBaseRes,
+                                 sea::CascadeFilter<sample_t>::Slope::dB12);
       flt = mCascadeFilter.Process(mixed);
       break;
     case FilterModel::Cascade24:
-      mCascadeFilter.SetParams(cutoff, mBaseRes,
-                               sea::CascadeFilter<sample_t>::Slope::dB24);
+      if (filterDirty)
+        mCascadeFilter.SetParams(cutoff, mBaseRes,
+                                 sea::CascadeFilter<sample_t>::Slope::dB24);
       flt = mCascadeFilter.Process(mixed);
       break;
     case FilterModel::Classic:
     default:
-      mFilter.SetParams(sea::FilterType::LowPass, cutoff, mBaseRes);
+      if (filterDirty)
+        mFilter.SetParams(sea::FilterType::LowPass, cutoff, mBaseRes);
       flt = mFilter.Process(mixed);
       break;
     }
@@ -236,9 +244,9 @@ public:
     // ── Step 9: Amplitude Envelope & Tremolo ──
     sample_t ampEnvVal = mAmpEnv.Process();
     mLastAmpEnvVal = static_cast<float>(ampEnvVal);
-    sample_t ampMod = 1.0;
-    if (mLfoAmpDepth > 0.0) {
-      ampMod = 1.0 + lfoVal * mLfoAmpDepth;
+    sample_t ampMod = sample_t(1);
+    if (mLfoAmpDepth > sample_t(0)) {
+      ampMod = sample_t(1) + lfoVal * mLfoAmpDepth;
       ampMod = std::clamp(ampMod, sample_t(0.0), sample_t(2.0));
     }
 
@@ -303,7 +311,7 @@ public:
     rs.voiceID = mVoiceID;
     rs.state = mVoiceState;
     rs.note = mNote;
-    rs.velocity = static_cast<int>(mVelocity * 127.0);
+    rs.velocity = static_cast<int>(mVelocity * sample_t(127));
     rs.currentPitch = mCurrentPitch;
     rs.panPosition = mPanPosition;
     rs.amplitude = mLastAmpEnvVal;
@@ -312,10 +320,10 @@ public:
 
   void SetGlideTime(sample_t seconds) {
     mGlideTime = std::max(sample_t(0.0), seconds);
-    if (mGlideTime > 0.0) {
-      mGlideAlpha = 1.0 - std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate));
+    if (mGlideTime > sample_t(0)) {
+      mGlideAlpha = sample_t(1) - std::exp(-kGlideTimeConstant / (mGlideTime * mSampleRate));
     } else {
-      mGlideAlpha = 1.0; // Instant snap
+      mGlideAlpha = sample_t(1); // Instant snap
     }
   }
 
@@ -358,7 +366,7 @@ public:
     mMixA = std::clamp(mixA, sample_t(0.0), sample_t(1.0));
     mMixB = std::clamp(mixB, sample_t(0.0), sample_t(1.0));
     mDetuneB = detuneB;
-    mDetuneFactor = std::pow(2.0, mDetuneB / 1200.0);
+    mDetuneFactor = std::pow(sample_t(2), mDetuneB / sample_t(1200));
   }
 
   void SetLFO(int type, sample_t rate, sample_t depth) {
@@ -368,7 +376,7 @@ public:
   }
 
   void SetLFORouting(sample_t pitch, sample_t filter, sample_t amp,
-                     sample_t pan = 0.0) {
+                     sample_t pan = sample_t(0)) {
     mLfoPitchDepth = pitch;
     mLfoFilterDepth = filter;
     mLfoAmpDepth = amp;
@@ -445,6 +453,8 @@ private:
   // --- Cached values (recomputed in setters, not per-sample) ---
   sample_t mDetuneFactor = 1.0;  // = pow(2.0, mDetuneB / 1200.0)
   sample_t mGlideAlpha = 1.0;   // = 1.0 - exp(-kGlideTimeConstant / (mGlideTime * mSampleRate))
+  sample_t mLastFilterCutoff = sample_t(-1);  // impossible value forces first SetParams
+  sample_t mLastFilterRes = sample_t(-1);
 
   sample_t mSampleRate = 48000.0;
 };

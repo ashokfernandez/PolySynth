@@ -31,10 +31,10 @@ TEST_CASE("Engine Modulation: LFO sweeps Pan Position",
     double sumL = 0.0;
     double sumR = 0.0;
     for (int i = 0; i < samples; ++i) {
-      double l, r;
+      PolySynthCore::sample_t l = 0, r = 0;
       engine.Process(l, r);
-      sumL += l * l;
-      sumR += r * r;
+      sumL += static_cast<double>(l) * l;
+      sumR += static_cast<double>(r) * r;
     }
     rmsL = std::sqrt(sumL / samples);
     rmsR = std::sqrt(sumR / samples);
@@ -51,7 +51,7 @@ TEST_CASE("Engine Modulation: LFO sweeps Pan Position",
   // Fast forward to LFO maximum (+1.0 at 12000 samples). We already processed
   // 1000. We process 10500 samples silently, then measure RMS for 1000 samples
   // (spanning 11500 to 12500)
-  double discardL, discardR;
+  PolySynthCore::sample_t discardL = 0, discardR = 0;
   for (int i = 0; i < 10500; i++)
     engine.Process(discardL, discardR);
 

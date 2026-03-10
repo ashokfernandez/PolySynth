@@ -86,7 +86,9 @@ set(UNIT_TEST_SOURCES
     unit/Test_Voice.cpp
     unit/Test_LFO_Routing.cpp
     unit/Test_PicoAudio.cpp
+    unit/Test_CommandParser.cpp
     ../src/core/PresetManager.cpp
+    ../src/platform/pico/command_parser.cpp
 )
 
 add_executable(run_tests ${UNIT_TEST_SOURCES})
@@ -108,6 +110,36 @@ endif()
 
 # Sanitizer env vars are set directly in the CI yaml (and dev.sh) on the
 # run_tests invocation line, so no ctest property needed here.
+
+# ---------------------------------------------------------------------------
+# Embedded-configuration test target
+# Compiles the same DSP code with Pico-equivalent flags on the host machine.
+# Layer 1 of the Pico CI pipeline — catches float precision and
+# voice-count regressions without needing ARM cross-compilation.
+# ---------------------------------------------------------------------------
+add_executable(run_tests_embedded
+    ${UNIT_TEST_SOURCES}
+    unit/Test_EmbeddedConfig.cpp
+)
+
+target_compile_definitions(run_tests_embedded PRIVATE
+    POLYSYNTH_USE_FLOAT
+    SEA_PLATFORM_EMBEDDED
+    POLYSYNTH_MAX_VOICES=4
+    POLYSYNTH_DEPLOY_CHORUS=0
+    POLYSYNTH_DEPLOY_DELAY=0
+    POLYSYNTH_DEPLOY_LIMITER=0
+)
+
+target_link_libraries(run_tests_embedded PRIVATE SEA_DSP SEA_Util)
+
+target_compile_options(run_tests_embedded PRIVATE
+    -Wall -Wextra
+    -Wdouble-promotion
+)
+
+polysynth_enable_compiler_warnings(run_tests_embedded)
+polysynth_apply_sanitizers(run_tests_embedded)
 
 # ---------------------------------------------------------------------------
 # Demo executables

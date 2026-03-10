@@ -16,6 +16,7 @@ static uint32_t s_buffer[kNumBuffers][kBufferWords];  // ~4 KB total
 static AudioCallback s_callback = nullptr;
 static volatile uint32_t s_underrun_count = 0;
 static volatile uint32_t s_last_fill_time_us = 0;
+static int s_dma_irq = 0;  // which DMA IRQ (0 or 1) — set at Init time
 
 static PIO s_pio = pio0;
 static uint s_sm = 0;           // PIO state machine index
@@ -35,21 +36,34 @@ static void dma_irq_handler()
 
     // Determine which channel completed and acknowledge
     uint32_t fill_idx;
-    if (dma_channel_get_irq0_status(s_dma_channel_a)) {
-        dma_channel_acknowledge_irq0(s_dma_channel_a);
-        fill_idx = 0;
-        // Reset channel A for next cycle — DMA does NOT auto-reset
-        // read_addr or trans_count on chain trigger
-        dma_channel_set_read_addr(s_dma_channel_a, s_buffer[0], false);
-        dma_channel_set_trans_count(s_dma_channel_a, kBufferWords, false);
-    } else if (dma_channel_get_irq0_status(s_dma_channel_b)) {
-        dma_channel_acknowledge_irq0(s_dma_channel_b);
-        fill_idx = 1;
-        // Reset channel B for next cycle
-        dma_channel_set_read_addr(s_dma_channel_b, s_buffer[1], false);
-        dma_channel_set_trans_count(s_dma_channel_b, kBufferWords, false);
+    if (s_dma_irq == 1) {
+        if (dma_channel_get_irq1_status(s_dma_channel_a)) {
+            dma_channel_acknowledge_irq1(s_dma_channel_a);
+            fill_idx = 0;
+            dma_channel_set_read_addr(s_dma_channel_a, s_buffer[0], false);
+            dma_channel_set_trans_count(s_dma_channel_a, kBufferWords, false);
+        } else if (dma_channel_get_irq1_status(s_dma_channel_b)) {
+            dma_channel_acknowledge_irq1(s_dma_channel_b);
+            fill_idx = 1;
+            dma_channel_set_read_addr(s_dma_channel_b, s_buffer[1], false);
+            dma_channel_set_trans_count(s_dma_channel_b, kBufferWords, false);
+        } else {
+            return;  // Spurious interrupt
+        }
     } else {
-        return;  // Spurious interrupt
+        if (dma_channel_get_irq0_status(s_dma_channel_a)) {
+            dma_channel_acknowledge_irq0(s_dma_channel_a);
+            fill_idx = 0;
+            dma_channel_set_read_addr(s_dma_channel_a, s_buffer[0], false);
+            dma_channel_set_trans_count(s_dma_channel_a, kBufferWords, false);
+        } else if (dma_channel_get_irq0_status(s_dma_channel_b)) {
+            dma_channel_acknowledge_irq0(s_dma_channel_b);
+            fill_idx = 1;
+            dma_channel_set_read_addr(s_dma_channel_b, s_buffer[1], false);
+            dma_channel_set_trans_count(s_dma_channel_b, kBufferWords, false);
+        } else {
+            return;  // Spurious interrupt
+        }
     }
 
     // Underrun detection: if the other channel is already done (not busy),
@@ -68,10 +82,11 @@ static void dma_irq_handler()
 }
 
 // ── Public API ──────────────────────────────────────────────────────────
-bool Init(AudioCallback callback)
+bool Init(AudioCallback callback, int dma_irq)
 {
     if (!callback) return false;
     s_callback = callback;
+    s_dma_irq = dma_irq;
 
     // ── PIO setup ────────────────────────────────────────────────────
     uint offset = pio_add_program(s_pio, &i2s_out_program);
@@ -142,10 +157,17 @@ bool Init(AudioCallback callback)
     );
 
     // Enable DMA interrupt on both channels (for refill notification)
-    dma_channel_set_irq0_enabled(s_dma_channel_a, true);
-    dma_channel_set_irq0_enabled(s_dma_channel_b, true);
-    irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_handler);
-    irq_set_enabled(DMA_IRQ_0, true);
+    if (s_dma_irq == 1) {
+        dma_channel_set_irq1_enabled(s_dma_channel_a, true);
+        dma_channel_set_irq1_enabled(s_dma_channel_b, true);
+        irq_set_exclusive_handler(DMA_IRQ_1, dma_irq_handler);
+        irq_set_enabled(DMA_IRQ_1, true);
+    } else {
+        dma_channel_set_irq0_enabled(s_dma_channel_a, true);
+        dma_channel_set_irq0_enabled(s_dma_channel_b, true);
+        irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_handler);
+        irq_set_enabled(DMA_IRQ_0, true);
+    }
 
     // Pre-fill both buffers with silence
     for (uint32_t i = 0; i < kBufferWords; i++) {

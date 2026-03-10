@@ -44,6 +44,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/SEA_Util"
 add_executable(polysynth_pico
     main.cpp
     audio_i2s_driver.cpp
+    command_parser.cpp
 )
 
 target_compile_definitions(polysynth_pico PRIVATE
@@ -51,7 +52,10 @@ target_compile_definitions(polysynth_pico PRIVATE
     POLYSYNTH_MAX_VOICES=4
     PICO_AUDIO_SAMPLE_RATE=48000
     PICO_AUDIO_BUFFER_FRAMES=256
-    PICO_LINK_SMOKE_TEST  # Proves Engine object graph links for ARM; remove in Sprint Pico-4
+    POLYSYNTH_DEPLOY_CHORUS=0
+    POLYSYNTH_DEPLOY_DELAY=0
+    POLYSYNTH_DEPLOY_LIMITER=0
+    SEA_FAST_MATH
 )
 
 # Catch float-to-double promotions in hot paths (these cost ~10x on Cortex-M33)
@@ -69,6 +73,7 @@ target_include_directories(polysynth_pico PRIVATE
 target_link_libraries(polysynth_pico PRIVATE
     pico_stdlib
     pico_cyw43_arch_none    # CYW43 for onboard LED (no WiFi stack)
+    pico_multicore          # Dual-core: audio DSP on core 1
     hardware_pio
     hardware_dma
     hardware_clocks

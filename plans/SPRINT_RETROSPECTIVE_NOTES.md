@@ -644,6 +644,68 @@ The following should be added to the "Cross-Sprint Guardrails" section of `00_ov
 
 ---
 
+## Pico Port Initiative
+
+### Pico Sprint 2 (CI/CD Pipeline & Emulated Testing) — Retro
+
+_Commits `1c49920`, `384006d`, `41f141b`, `80a6d9b`, PR #64_
+
+#### Issues & Resolutions
+
+1. **Layer 1 CI job failed on first push — missing dependency download step**
+   - **Problem:** The `pico-native-embedded-tests` job compiled `run_tests_embedded` which includes `PresetManager.cpp`, but `PresetManager.cpp` includes `json.hpp` from `external/iPlug2/`. The job didn't call `scripts/download_dependencies.sh`, so iPlug2 wasn't available.
+   - **Action:** Added the dependency download step to the Layer 1 job (`384006d`).
+   - **Lesson:** Every CI job that builds test targets needs the dependency download step, not just the "main" test jobs. When adding a new CI job, copy the full dependency chain from an existing job of the same type (e.g., `lint-static-analysis` for ubuntu test jobs) rather than writing a minimal setup from scratch.
+
+2. **`-Wdouble-promotion` warnings in `Voice.h` (not blocking, but noisy)**
+   - **Problem:** Voice.h has ~20 instances of `double` literals (`0.0`, `1.0`, `127.0`) compared with `float`/`sample_t` values. The embedded test target adds `-Wdouble-promotion` to catch these, but they aren't promoted to errors (no `-Werror` for this flag). The warnings are noisy in the build log.
+   - **Action:** Not fixed in this sprint — tracked for a follow-up cleanup pass to use `0.0f` literals throughout Voice.h.
+   - **Lesson:** When adding a new warning flag to catch a class of bugs, also schedule a cleanup pass for existing violations. Otherwise the warning output drowns out new violations.
+
+3. **Duplicate VRT workflow discovered during CI review**
+   - **Problem:** `visual-tests.yml` ran a full VRT job on every PR, but `ci.yml` already ran identical VRT via `native-ui-tests`. Both used expensive macOS runners, doubling VRT cost per PR (~10 min wasted).
+   - **Action:** Deleted `visual-tests.yml` (`41f141b`). VRT continues to run via `native-ui-tests` in `ci.yml`.
+   - **Lesson:** When adding test jobs to `ci.yml`, check for standalone workflow files that may already cover the same scope. The NSM Sprint 3 migration added VRT to `ci.yml` but didn't remove the standalone workflow.
+
+4. **Dependencies re-downloaded in every CI job (no caching)**
+   - **Problem:** `download_dependencies.sh` (cloning iPlug2 + DaisySP + VST3 SDK) was called independently in 6+ jobs with no caching. Each clone took ~30-60s.
+   - **Action:** Added `actions/cache` for `external/` directory across all jobs, keyed on `hashFiles('scripts/download_dependencies.sh')`. Also cached Pico SDK similarly (`41f141b`).
+   - **Lesson:** Idempotent download scripts are a perfect fit for `actions/cache` — the script already checks "if not exists, download". Adding a cache step before the download call is zero-risk and saves minutes per run.
+
+5. **Critical path unnecessarily long due to serial job dependencies**
+   - **Problem:** `native-ui-tests` and `build-wam-demo` both depended on `native-dsp-tests`, which depended on the safety gates. This created a ~20 min serial chain when the UI and WAM jobs don't actually need DSP test results.
+   - **Action:** Changed both jobs to depend directly on the safety gates (`41f141b`), allowing them to run in parallel with `native-dsp-tests`. Cuts ~4 min from critical path.
+   - **Lesson:** Job dependencies should model actual data/correctness dependencies, not just "run after". If a job doesn't consume artifacts or results from another job, it shouldn't wait for it.
+
+6. **Documentation was stale — CI pipeline table, testing strategy, and agent commands didn't reflect current state**
+   - **Problem:** `TESTING_GUIDE.md` listed a `build-storybook-site` job that no longer exists and was missing lint, sanitizers, and all Pico jobs. `04_testing_strategy.md` referenced `build_and_test.yml` which doesn't exist. `AGENTS.md` had no Pico commands.
+   - **Action:** Updated all three files (`80a6d9b`): rewrote the CI pipeline table with all 10 jobs, added the embedded testing layers table, updated the test pyramid, rewrote the testing strategy from scratch, and added Pico commands to AGENTS.md.
+   - **Lesson:** CI pipeline changes must include documentation updates in the same PR. The NSM Sprint 4 retro already noted this ("documentation updates are part of the migration deliverable, not a follow-up") — this sprint repeated the same gap for Pico jobs. Consider adding a DoD item: "CI job additions/removals reflected in TESTING_GUIDE.md".
+
+#### What worked well
+
+- **Three-layer Pico testing architecture is sound.** Layer 1 (native embedded config) catches float/voice-count issues in milliseconds. Layer 2a (ARM cross-compile) proves the firmware links. Layer 2b (Wokwi emulation) validates runtime behavior. Each layer has a clear purpose and failure mode.
+- **Self-test harness with structured markers (`[TEST:PASS/FAIL]`)** makes CI parsing trivial and is extensible for future test cases.
+- **Existing test suite adapted well to embedded config.** Only 4 test files needed `sample_t` / `kMaxVoices` fixes to pass under float precision and 4-voice limit — the core DSP code was already well-typed.
+- **Sprint plan (825 lines) was thorough.** Task breakdown, YAML snippets, troubleshooting guide, and DoD were all accurate. The only gap was the missing dependency step in the CI job definition.
+
+#### Process observations
+
+- **CI pipeline improvements (caching, deduplication, graph flattening) were discovered during PR review, not planned.** The sprint plan focused on adding Pico jobs but didn't audit the existing pipeline. A brief "CI health check" step in the sprint plan would have surfaced these opportunities earlier.
+- **Pico Sprint 1 had no retro entry.** This sprint is the first Pico retro. Future sprints should write retros immediately per the DoD template.
+
+#### Quality Scorecard
+
+| Metric | Count | Notes |
+|---|---|---|
+| Build breaks during sprint | 1 | Missing deps in Layer 1 CI job |
+| Plan corrections needed | 1 | CI job definition missing dependency download step |
+| Retro items (problems found) | 6 | 1 build break, 1 noisy warnings, 4 CI health issues |
+| Learnings added | 1 | `learnings/embedded_pico.md` (from Sprint Pico-1, retroactively) |
+| Test gaps discovered | 0 | Existing tests adapted cleanly to embedded config |
+
+---
+
 ## Resolved notes
 
 - **VM Sprint 1 scaffolding** — all issues resolved and merged in PR #36 (squash commit to main).

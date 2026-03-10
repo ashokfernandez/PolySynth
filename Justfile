@@ -229,6 +229,43 @@ pico-flash: pico-build
 pico-clean:
     rm -rf build/pico build/pico-emu
 
+# Run unit tests with embedded (Pico-equivalent) compile flags.
+# Layer 1 of the Pico CI pipeline — catches float and voice-count regressions.
+test-embedded *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cmake -S tests -B tests/build_embedded \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE=Debug
+    cmake --build tests/build_embedded --target run_tests_embedded --parallel
+    tests/build_embedded/run_tests_embedded {{args}}
+
+# Build Pico firmware for Wokwi emulation (RP2040 proxy).
+# Used by CI Layer 2b. Not for flashing to real hardware.
+pico-build-emu:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bash ./scripts/download_pico_sdk.sh
+    export PICO_SDK_PATH="$(pwd)/external/pico-sdk"
+    ARM_BIN=$(bash ./scripts/find_arm_toolchain.sh)
+    export PATH="$ARM_BIN:$PATH"
+    cmake -S src/platform/pico -B build/pico-emu \
+        -G Ninja \
+        -DPICO_SDK_PATH="$PICO_SDK_PATH" \
+        -DPICO_BOARD=pico_w
+    cmake --build build/pico-emu --parallel
+
+# Run Wokwi emulation locally (requires wokwi-cli and WOKWI_CLI_TOKEN).
+pico-emu-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just pico-build-emu
+    cd src/platform/pico/wokwi
+    wokwi-cli --timeout 30000 \
+        --expect-text "[TEST:ALL_PASSED]" \
+        --fail-text "[TEST:FAIL]" \
+        --fail-text "Hard fault"
+
 # Docs workflow
 # Validate docs structure (mirrors CI smoke test).
 docs-check:

@@ -26,7 +26,7 @@ TEST_CASE("VoiceManager Polyphony Limiting and Stealing", "[VoiceManager]") {
     vm.SetPolyphonyLimit(1);
 
     // Should have 1 active (kept) and 3 stolen
-    double l, r;
+    PolySynthCore::sample_t l = 0, r = 0;
     vm.ProcessStereo(l, r);
 
     auto states = vm.GetVoiceStates();

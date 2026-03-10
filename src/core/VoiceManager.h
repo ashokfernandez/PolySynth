@@ -15,7 +15,7 @@ public:
 
   // Pre-computed headroom scaling: 1/sqrt(kNumVoices)
   static inline const sample_t kHeadroomScale =
-      1.0 / std::sqrt(static_cast<sample_t>(kNumVoices));
+      sample_t(1) / std::sqrt(static_cast<sample_t>(kNumVoices));
 
   VoiceManager() = default;
 
@@ -115,7 +115,7 @@ public:
   void SetStereoSpread(sample_t spread) { mAllocator.SetStereoSpread(spread); }
 
   inline sample_t Process() {
-    sample_t sum = 0.0;
+    sample_t sum = sample_t(0);
     for (auto &voice : mVoices) {
       sum += voice.Process();
     }
@@ -123,19 +123,19 @@ public:
   }
 
   inline void ProcessStereo(sample_t &outLeft, sample_t &outRight) {
-    outLeft = 0.0;
-    outRight = 0.0;
+    outLeft = sample_t(0);
+    outRight = sample_t(0);
 
     for (auto &voice : mVoices) {
       sample_t mono = voice.Process();
-      if (mono == 0.0)
+      if (mono == sample_t(0))
         continue;
 
       float pan = std::clamp(voice.GetPanPosition(), -1.0f, 1.0f);
       // Constant-power panning: theta maps [-1,+1] to [0, pi/2]
-      sample_t theta = (static_cast<sample_t>(pan) + 1.0) * (kPi / 4.0);
-      outLeft += mono * std::cos(theta);
-      outRight += mono * std::sin(theta);
+      sample_t theta = (static_cast<sample_t>(pan) + sample_t(1)) * (kPi / sample_t(4));
+      outLeft += mono * sea::Math::Cos(theta);
+      outRight += mono * sea::Math::Sin(theta);
     }
     // Headroom scaling
     outLeft *= kHeadroomScale;
@@ -223,7 +223,7 @@ public:
   }
 
   void SetLFORouting(sample_t pitch, sample_t filter, sample_t amp,
-                     sample_t pan = 0.0) {
+                     sample_t pan = sample_t(0)) {
     for (auto &voice : mVoices) {
       voice.SetLFORouting(pitch, filter, amp, pan);
     }

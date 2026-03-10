@@ -7,9 +7,27 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+// Deploy guards: default ON so desktop/WASM builds are unaffected.
+// Pico CMakeLists sets these to 0 to save SRAM.
+#ifndef POLYSYNTH_DEPLOY_CHORUS
+#define POLYSYNTH_DEPLOY_CHORUS 1
+#endif
+#ifndef POLYSYNTH_DEPLOY_DELAY
+#define POLYSYNTH_DEPLOY_DELAY 1
+#endif
+#ifndef POLYSYNTH_DEPLOY_LIMITER
+#define POLYSYNTH_DEPLOY_LIMITER 1
+#endif
+
+#if POLYSYNTH_DEPLOY_CHORUS
 #include <sea_dsp/effects/sea_vintage_chorus.h>
+#endif
+#if POLYSYNTH_DEPLOY_DELAY
 #include <sea_dsp/effects/sea_vintage_delay.h>
+#endif
+#if POLYSYNTH_DEPLOY_LIMITER
 #include <sea_dsp/sea_limiter.h>
+#endif
 #include <string.h>
 
 namespace PolySynthCore {
@@ -23,16 +41,26 @@ public:
   void Init(double sampleRate) {
     mSampleRate = sampleRate;
     mVoiceManager.Init(sampleRate);
+#if POLYSYNTH_DEPLOY_CHORUS
     mChorus.Init(sampleRate);
+#endif
+#if POLYSYNTH_DEPLOY_DELAY
     mDelay.Init(sampleRate, kMaxDelayMs);
+#endif
+#if POLYSYNTH_DEPLOY_LIMITER
     mLimiter.Init(sampleRate);
+#endif
     Reset();
   }
 
   void Reset() {
     mVoiceManager.Reset();
+#if POLYSYNTH_DEPLOY_DELAY
     mDelay.Clear();
+#endif
+#if POLYSYNTH_DEPLOY_LIMITER
     mLimiter.Reset();
+#endif
   }
 
   // --- Events ---
@@ -84,9 +112,15 @@ public:
     mVoiceManager.SetUnisonSpread(state.unisonSpread);
     mVoiceManager.SetStereoSpread(state.stereoSpread);
 
+#if POLYSYNTH_DEPLOY_CHORUS
     SetChorus(state.fxChorusRate, state.fxChorusDepth, state.fxChorusMix);
+#endif
+#if POLYSYNTH_DEPLOY_DELAY
     SetDelay(state.fxDelayTime, state.fxDelayFeedback, state.fxDelayMix);
+#endif
+#if POLYSYNTH_DEPLOY_LIMITER
     SetLimiter(state.fxLimiterThreshold, kLimiterLookaheadMs, kLimiterReleaseMs);
+#endif
   }
 
   // --- High Level Setters ---
@@ -156,11 +190,14 @@ public:
   void SetFilterModel(int model) { mVoiceManager.SetFilterModel(model); }
 
   // --- FX Setters ---
+#if POLYSYNTH_DEPLOY_CHORUS
   void SetChorus(sample_t rateHz, sample_t depth, sample_t mix) {
     mChorus.SetRate(rateHz);
     mChorus.SetDepth(depth * kChorusDepthMs);
     mChorus.SetMix(mix);
   }
+#endif
+#if POLYSYNTH_DEPLOY_DELAY
   void SetDelay(sample_t timeSec, sample_t feedback, sample_t mix) {
     mDelay.SetTime(timeSec * kDelayTimeToMs);
     mDelay.SetFeedback(feedback * kDelayFeedbackScale);
@@ -171,11 +208,12 @@ public:
     sample_t beatSec = 60.0 / bpm;
     SetDelay(beatSec * division, kTempoDelayFeedbackPct, 0.0);
   }
+#endif
+#if POLYSYNTH_DEPLOY_LIMITER
   void SetLimiter(sample_t threshold, sample_t lookaheadMs, sample_t releaseMs) {
-    // Threshold should be mapped inverted if coming from UI,
-    // but here we just pass it through as the engine setter.
     mLimiter.SetParams(threshold, lookaheadMs, releaseMs);
   }
+#endif
 
   // --- Visualization Accessors ---
   int GetActiveVoiceCount() const {
@@ -224,16 +262,23 @@ public:
     l *= mGain;
     r *= mGain;
 
-    left = l;
-    right = r;
-
-    sample_t fxL, fxR;
-    mChorus.Process(left, right, &fxL, &fxR);
+#if POLYSYNTH_DEPLOY_CHORUS || POLYSYNTH_DEPLOY_DELAY || POLYSYNTH_DEPLOY_LIMITER
+    sample_t fxL = l, fxR = r;
+#if POLYSYNTH_DEPLOY_CHORUS
+    mChorus.Process(fxL, fxR, &fxL, &fxR);
+#endif
+#if POLYSYNTH_DEPLOY_DELAY
     mDelay.Process(fxL, fxR, &fxL, &fxR);
+#endif
+#if POLYSYNTH_DEPLOY_LIMITER
     mLimiter.Process(fxL, fxR);
-
+#endif
     left = fxL;
     right = fxR;
+#else
+    left = l;
+    right = r;
+#endif
   }
 
   void Process(sample_t ** /*inputs*/, sample_t **outputs, int nFrames,
@@ -245,18 +290,27 @@ public:
       l *= mGain;
       r *= mGain;
 
-      sample_t left = l;
-      sample_t right = r;
-
-      sample_t fxL, fxR;
-      mChorus.Process(left, right, &fxL, &fxR);
+#if POLYSYNTH_DEPLOY_CHORUS || POLYSYNTH_DEPLOY_DELAY || POLYSYNTH_DEPLOY_LIMITER
+      sample_t fxL = l, fxR = r;
+#if POLYSYNTH_DEPLOY_CHORUS
+      mChorus.Process(fxL, fxR, &fxL, &fxR);
+#endif
+#if POLYSYNTH_DEPLOY_DELAY
       mDelay.Process(fxL, fxR, &fxL, &fxR);
+#endif
+#if POLYSYNTH_DEPLOY_LIMITER
       mLimiter.Process(fxL, fxR);
-
+#endif
       if (nChans > 0)
         outputs[0][i] = fxL;
       if (nChans > 1)
         outputs[1][i] = fxR;
+#else
+      if (nChans > 0)
+        outputs[0][i] = l;
+      if (nChans > 1)
+        outputs[1][i] = r;
+#endif
     }
 
     UpdateVisualization();
@@ -266,9 +320,15 @@ private:
   double mSampleRate;
   sample_t mGain = 1.0;
   VoiceManager mVoiceManager;
+#if POLYSYNTH_DEPLOY_CHORUS
   sea::VintageChorus<sample_t> mChorus;
+#endif
+#if POLYSYNTH_DEPLOY_DELAY
   sea::VintageDelay<sample_t> mDelay;
+#endif
+#if POLYSYNTH_DEPLOY_LIMITER
   sea::LookaheadLimiter<sample_t> mLimiter;
+#endif
 
   // Visualization state (written by Audio thread, read by UI thread)
   std::atomic<int> mVisualActiveVoiceCount{0};
