@@ -42,6 +42,8 @@ static std::atomic<int> s_cmdTail{0};  // ISR reads
 static PolySynthCore::SynthState s_pendingState;
 static PolySynthCore::SynthState s_stagedState;
 static std::atomic<bool> s_stateConsumed{true};
+static std::atomic<int> s_activeVoices{0};  // updated by audio ISR for diagnostics
+static float s_peakLevel = 0.0f;  // peak output level (pre-tanh), reset on read
 
 static void enqueue_cmd(AudioCommand::Type type, uint8_t a1 = 0, uint8_t a2 = 0) {
     int head = s_cmdHead.load(std::memory_order_relaxed);
@@ -109,6 +111,12 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
         left *= kOutputGain;
         right *= kOutputGain;
 
+        // Track peak level for diagnostics
+        float absL = left > 0 ? left : -left;
+        float absR = right > 0 ? right : -right;
+        float peak = absL > absR ? absL : absR;
+        if (peak > s_peakLevel) s_peakLevel = peak;
+
         // Soft clip (Padé approximant — tanhf() is too expensive on Cortex-M33)
         // SSAT handles overflow: fast_tanh can exceed ±1.0 for |x|>3, so the
         // int32 multiply may exceed int16 range — SSAT saturates in one cycle.
@@ -117,6 +125,9 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
         buffer[i * 2]     = pico_audio::PackI2S(l16);
         buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
     }
+    // Update voice count for status reporting (cheap — reads mVisualActiveVoiceCount)
+    s_engine.UpdateVisualization();
+    s_activeVoices.store(s_engine.GetActiveVoiceCount(), std::memory_order_relaxed);
 }
 
 // ── Helper: push state update to engine ──────────────────────────────────
@@ -375,7 +386,7 @@ static void dispatch_command(const pico_serial::Command& cmd) {
                                    static_cast<float>(pico_audio::kSampleRate);
             float cpu_percent = (fill_time_us / buffer_time_us) * 100.0f;
             printf("STATUS: voices=%d cpu=%.1f%% engine=%uB underruns=%lu\n",
-                   s_engine.GetActiveVoiceCount(),
+                   s_activeVoices.load(std::memory_order_relaxed),
                    static_cast<double>(cpu_percent),
                    static_cast<unsigned>(sizeof(PolySynthCore::Engine)),
                    static_cast<unsigned long>(pico_audio::GetUnderrunCount()));
@@ -597,11 +608,16 @@ int main()
                                    static_cast<float>(pico_audio::kSampleRate);
             float cpu_percent = (fill_time_us / buffer_time_us) * 100.0f;
 
-            printf("[%lus] CPU: %.1f%% | Fill: %lu us | Underruns: %lu | Demo: %s\n",
+            float peak = s_peakLevel;
+            s_peakLevel = 0.0f;  // reset for next interval
+
+            printf("[%lus] CPU: %.1f%% | Fill: %lu us | Underruns: %lu | Voices: %d | Peak: %.3f | Demo: %s\n",
                    static_cast<unsigned long>(report_counter * 5),
                    static_cast<double>(cpu_percent),
                    static_cast<unsigned long>(pico_audio::GetLastFillTimeUs()),
                    static_cast<unsigned long>(pico_audio::GetUnderrunCount()),
+                   s_activeVoices.load(std::memory_order_relaxed),
+                   static_cast<double>(peak),
                    s_demo.running ? "ON" : "OFF");
 
             // Blink LED
