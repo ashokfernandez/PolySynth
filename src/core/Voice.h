@@ -209,9 +209,7 @@ public:
     cutoff = std::clamp(cutoff, sample_t(20.0), sample_t(20000.0));
 
     sample_t flt = sample_t(0);
-    // Quantize to ~1 Hz precision to avoid per-sample SetParams during filter sweep
-    bool filterDirty = (std::abs(cutoff - mLastFilterCutoff) > sample_t(1.0) ||
-                        mBaseRes != mLastFilterRes);
+    bool filterDirty = (cutoff != mLastFilterCutoff || mBaseRes != mLastFilterRes);
     if (filterDirty) {
       mLastFilterCutoff = cutoff;
       mLastFilterRes = mBaseRes;

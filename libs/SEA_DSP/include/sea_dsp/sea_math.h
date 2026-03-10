@@ -8,14 +8,12 @@ namespace sea {
 struct Math {
   static SEA_INLINE Real Sin(Real x) {
 #ifdef SEA_FAST_MATH
-    // 5th-order polynomial: accurate to ~0.001% for |x| < pi
-    // Normalize x to [-pi, pi] using conditional subtraction
-    // (replaces std::fmod — ~50 cycles on Cortex-M33)
+    // 7th-order Taylor polynomial with range reduction to [-π/2, π/2].
+    // Accurate to ~0.016% across the full circle — sufficient for audio.
     const Real pi = Real(3.14159265358979323846);
+    const Real half_pi = Real(1.57079632679489661923);
     const Real two_pi = Real(6.28318530717958647692);
-    // Bounded range reduction: 2 if-subtractions handle all realistic audio inputs
-    // (oscillator phase [0,2π), Cos offset [0,3π), filter angles [0,π/2))
-    // Falls back to fmod only for extreme values (should never happen in practice)
+    // Reduce to [-π, π] via bounded subtraction (covers oscillator/filter inputs)
     x += pi;
     if (x >= two_pi) {
         x -= two_pi;
@@ -25,8 +23,14 @@ struct Math {
         if (x < Real(0)) x = std::fmod(x, two_pi) + two_pi;  // fallback
     }
     x -= pi;
+    // Fold [-π, π] into [-π/2, π/2] where Taylor converges well
+    if (x > half_pi)
+      x = pi - x;
+    else if (x < -half_pi)
+      x = -pi - x;
     Real x2 = x * x;
-    return x * (Real(1) - x2 / Real(6) * (Real(1) - x2 / Real(20)));
+    return x * (Real(1) - x2 / Real(6) * (Real(1) - x2 / Real(20) *
+               (Real(1) - x2 / Real(42))));
 #else
     return std::sin(x);
 #endif
