@@ -28,6 +28,21 @@ include_directories(mocks)
 include_directories(../src/platform/pico)
 
 # ---------------------------------------------------------------------------
+# Fetch nlohmann/json (single-header) — needed by PresetManager.cpp
+# Mirrors the Catch2 download pattern above. Falls back to the iPlug2 copy
+# if present, but this ensures tests build without cloning all of iPlug2.
+# ---------------------------------------------------------------------------
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../external/nlohmann)
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../external/nlohmann/json.hpp)
+    message(STATUS "Downloading nlohmann/json...")
+    file(DOWNLOAD
+        https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../external/nlohmann/json.hpp
+    )
+endif()
+include_directories(../external/nlohmann)
+
+# ---------------------------------------------------------------------------
 # Fetch Catch2 (single-header, v2)
 # ---------------------------------------------------------------------------
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../external/catch2)
