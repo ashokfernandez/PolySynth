@@ -55,6 +55,10 @@ add_executable(polysynth_pico
     main.cpp
     audio_i2s_driver.cpp
     command_parser.cpp
+    pico_synth_app.cpp
+    pico_command_dispatch.cpp
+    pico_demo.cpp
+    pico_self_test.cpp
 )
 
 target_compile_definitions(polysynth_pico PRIVATE
