@@ -55,6 +55,10 @@ add_executable(polysynth_pico
     main.cpp
     audio_i2s_driver.cpp
     command_parser.cpp
+    pico_synth_app.cpp
+    pico_command_dispatch.cpp
+    pico_demo.cpp
+    pico_self_test.cpp
 )
 
 target_compile_definitions(polysynth_pico PRIVATE
@@ -74,6 +78,8 @@ target_compile_options(polysynth_pico PRIVATE
     -Wdouble-promotion
     -fno-exceptions
     -fno-rtti
+    -ffast-math       # Reciprocal-math, FMA, reordering — safe: no NaN/Inf deps, Pico-only
+    -funroll-loops    # Helps ladder filter 4-stage loop and per-sample processing
 )
 
 target_include_directories(polysynth_pico PRIVATE

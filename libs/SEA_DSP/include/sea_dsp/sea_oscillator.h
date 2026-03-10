@@ -31,6 +31,7 @@ public:
     mOsc.SetPw(static_cast<float>(mPulseWidth));
     mOsc.Reset(0.0f);
 #else
+    mInvSampleRate = static_cast<Real>(1.0) / sampleRate;
     mPhase = static_cast<Real>(0.0);
     mPhaseIncrement = static_cast<Real>(0.0);
 #endif
@@ -54,9 +55,7 @@ public:
 #ifdef SEA_DSP_OSC_BACKEND_DAISYSP
     mOsc.SetFreq(static_cast<float>(freq));
 #else
-    if (mSampleRate > static_cast<Real>(0.0)) {
-      mPhaseIncrement = freq / mSampleRate;
-    }
+    mPhaseIncrement = freq * mInvSampleRate;
 #endif
   }
 
@@ -146,6 +145,7 @@ private:
 
   Real mSampleRate = static_cast<Real>(44100.0);
 #ifndef SEA_DSP_OSC_BACKEND_DAISYSP
+  Real mInvSampleRate = static_cast<Real>(1.0) / static_cast<Real>(44100.0);
   Real mPhase = static_cast<Real>(0.0);
   Real mPhaseIncrement = static_cast<Real>(0.0);
 #endif
