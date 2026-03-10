@@ -33,7 +33,7 @@ These are the non-negotiable rules of the project. Every change — feature, ref
 
 ```cpp
 struct SynthState {
-    double masterGain = 0.75;   // ← This IS the default. Period.
+    float masterGain = 0.75f;   // ← This IS the default. Period.
     // ...
     void Reset() { *this = SynthState{}; }  // ← Reuses the above.
 };

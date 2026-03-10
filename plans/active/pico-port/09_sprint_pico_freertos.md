@@ -66,7 +66,14 @@ Create `src/platform/pico/FreeRTOSConfig.h`:
 #define configTICK_RATE_HZ                  1000
 #define configMAX_PRIORITIES                6
 #define configMINIMAL_STACK_SIZE            256    // WARNING: in words, not bytes (= 1024 bytes)
-#define configTOTAL_HEAP_SIZE               (48 * 1024)  // 48KB — room for task stacks + queues
+#define configTOTAL_HEAP_SIZE               (48 * 1024)
+// 48KB heap budget breakdown:
+//   Serial task stack:     4 KB (1024 words)
+//   USB MIDI task (future):4 KB
+//   WiFi task (future):    8 KB
+//   Queue/semaphore alloc: 2 KB
+//   Headroom:             30 KB
+// Total SRAM: 520KB — this 48KB is <10% of available
 #define configUSE_PREEMPTION                1
 #define configUSE_TIME_SLICING              1      // Allow same-priority tasks to share CPU
 
@@ -200,6 +207,16 @@ extern "C" void vApplicationIdleHook() {
 `cyw43_arch_init()` must be called before `vTaskStartScheduler()`. This is already
 done in the current `main()` — just verify it stays in the correct order after
 FreeRTOS migration.
+
+**Guard:** If WiFi init is deferred to a later sprint, guard the LED call:
+```cpp
+#if defined(CYW43_WL_GPIO_LED_PIN)
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, !led_state);
+#else
+    gpio_put(PICO_DEFAULT_LED_PIN, !led_state);  // Fallback for non-W boards
+#endif
+```
+This also makes the idle hook work on Pico 2 (non-W) boards that have a standard GPIO LED.
 
 ### Validation
 
