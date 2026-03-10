@@ -44,6 +44,7 @@ static PolySynthCore::SynthState s_stagedState;
 static std::atomic<bool> s_stateConsumed{true};
 static std::atomic<int> s_activeVoices{0};  // updated by audio ISR for diagnostics
 static float s_peakLevel = 0.0f;  // peak output level (pre-tanh), reset on read
+static int s_prevVoiceCount = 0;  // for detecting voice changes in ISR
 
 static void enqueue_cmd(AudioCommand::Type type, uint8_t a1 = 0, uint8_t a2 = 0) {
     int head = s_cmdHead.load(std::memory_order_relaxed);
@@ -125,9 +126,15 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
         buffer[i * 2]     = pico_audio::PackI2S(l16);
         buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
     }
-    // Update voice count for status reporting (cheap — reads mVisualActiveVoiceCount)
+    // Update voice count for status reporting
     s_engine.UpdateVisualization();
-    s_activeVoices.store(s_engine.GetActiveVoiceCount(), std::memory_order_relaxed);
+    int vc = s_engine.GetActiveVoiceCount();
+    s_activeVoices.store(vc, std::memory_order_relaxed);
+    // Log voice count changes (printf from ISR is unsafe but ok for debugging)
+    if (vc != s_prevVoiceCount) {
+        printf("[VOICE] %d -> %d\n", s_prevVoiceCount, vc);
+        s_prevVoiceCount = vc;
+    }
 }
 
 // ── Helper: push state update to engine ──────────────────────────────────
@@ -169,6 +176,20 @@ enum class DemoPhase : uint8_t {
     CHORD_OFF,      // 11-13s: silence
     DONE            // loop back to SAW_NOTE
 };
+
+static const char* demo_phase_name(DemoPhase p) {
+    switch (p) {
+        case DemoPhase::SAW_NOTE:     return "SAW";
+        case DemoPhase::SAW_OFF:      return "SAW_OFF";
+        case DemoPhase::SQUARE_NOTE:  return "SQUARE";
+        case DemoPhase::SQUARE_OFF:   return "SQ_OFF";
+        case DemoPhase::CHORD:        return "CHORD";
+        case DemoPhase::FILTER_SWEEP: return "SWEEP";
+        case DemoPhase::CHORD_OFF:    return "CHD_OFF";
+        case DemoPhase::DONE:         return "DONE";
+    }
+    return "?";
+}
 
 struct DemoState {
     bool running = true;
@@ -611,14 +632,12 @@ int main()
             float peak = s_peakLevel;
             s_peakLevel = 0.0f;  // reset for next interval
 
-            printf("[%lus] CPU: %.1f%% | Fill: %lu us | Underruns: %lu | Voices: %d | Peak: %.3f | Demo: %s\n",
+            printf("[%lus] CPU: %.1f%% | Voices: %d | Peak: %.3f | Phase: %s\n",
                    static_cast<unsigned long>(report_counter * 5),
                    static_cast<double>(cpu_percent),
-                   static_cast<unsigned long>(pico_audio::GetLastFillTimeUs()),
-                   static_cast<unsigned long>(pico_audio::GetUnderrunCount()),
                    s_activeVoices.load(std::memory_order_relaxed),
                    static_cast<double>(peak),
-                   s_demo.running ? "ON" : "OFF");
+                   s_demo.running ? demo_phase_name(s_demo.phase) : "OFF");
 
             // Blink LED
             cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, report_counter % 2);
