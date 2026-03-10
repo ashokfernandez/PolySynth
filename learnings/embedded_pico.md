@@ -6,20 +6,23 @@ Hard-won lessons from working with the RP2350 Pico platform in this codebase.
 
 ## Type Discipline on Cortex-M33
 
-**Problem:** Plans and pseudocode used `double` for function signatures in Pico
-platform code (`PicoSynthApp::Init(double)`, `SetParam(double)`), violating the
-AGENTS.md rule to use `sample_t` for signals and `float` for control parameters.
+**Problem:** `SynthState` fields were `double` and Pico platform code used `double`
+for function signatures, causing implicit double→float narrowing throughout the
+embedded pipeline.
 
-**Action:** Changed all Pico platform API signatures to use `sample_t` (resolves to
-`float` via `POLYSYNTH_USE_FLOAT`). Added embedded-specific type rules to AGENTS.md
-section 5 and pre-flight checklist items 9-10.
+**Action:** Changed all `SynthState` fields from `double` to `float`. Updated
+`ParamMeta.h` (desktop `reinterpret_cast`), `PolySynth.cpp` (iPlug2 boundary casts),
+and Pico `main.cpp` (`set_param`/`get_param` signatures). All tests pass — the
+float→JSON double→float round-trip is lossless because every float is exactly
+representable as a double.
 
 **Lesson:** On Cortex-M33, `double` operations are software-emulated (~10x slower
-than `float`). Use `sample_t` for per-sample signal types, `float` for control
-params in platform glue, and `uint32_t` for timestamps. `SynthState` fields
-intentionally stay `double` — shared struct with desktop, aggregate-reset pattern,
-and the narrowing cost is once per parameter update (not per sample). Enable
-`-Wdouble-promotion` to catch accidental double promotion in hot paths.
+than `float`). Use `float` for all control parameters (including `SynthState`),
+`sample_t` for per-sample DSP signals, and `uint32_t` for timestamps. iPlug2's
+`GetParam()->Value()` returns `double` — narrow at the boundary with
+`static_cast<float>()`. 7 significant digits (float) is more than enough for
+synth parameters like `filterCutoff = 20000.0`. Enable `-Wdouble-promotion` to
+catch accidental double promotion in hot paths.
 
 ---
 

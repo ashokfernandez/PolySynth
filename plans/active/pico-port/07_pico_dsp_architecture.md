@@ -654,74 +654,72 @@ namespace PolySynthCore {
 struct SynthStateField {
     const char* name;       // "filterCutoff", "ampAttack", etc.
     size_t offset;          // offsetof() into SynthState
-    bool isInt;             // true for int fields, false for double
+    bool isInt;             // true for int fields, false for float
 };
 
-#define SSF_DOUBLE(field) { #field, offsetof(SynthState, field), false }
-#define SSF_INT(field)    { #field, offsetof(SynthState, field), true }
+#define SSF_FLOAT(field) { #field, offsetof(SynthState, field), false }
+#define SSF_INT(field)   { #field, offsetof(SynthState, field), true }
 
 static constexpr SynthStateField kSynthStateFields[] = {
     // Global
-    SSF_DOUBLE(masterGain), SSF_INT(polyphony), SSF_DOUBLE(glideTime),
+    SSF_FLOAT(masterGain), SSF_INT(polyphony), SSF_FLOAT(glideTime),
     SSF_INT(allocationMode), SSF_INT(stealPriority),
-    SSF_INT(unisonCount), SSF_DOUBLE(unisonSpread), SSF_DOUBLE(stereoSpread),
+    SSF_INT(unisonCount), SSF_FLOAT(unisonSpread), SSF_FLOAT(stereoSpread),
     // Oscillators
-    SSF_INT(oscAWaveform), SSF_DOUBLE(oscAPulseWidth),
-    SSF_INT(oscBWaveform), SSF_DOUBLE(oscBFineTune), SSF_DOUBLE(oscBPulseWidth),
+    SSF_INT(oscAWaveform), SSF_FLOAT(oscAPulseWidth),
+    SSF_INT(oscBWaveform), SSF_FLOAT(oscBFineTune), SSF_FLOAT(oscBPulseWidth),
     // Mixer
-    SSF_DOUBLE(mixOscA), SSF_DOUBLE(mixOscB),
+    SSF_FLOAT(mixOscA), SSF_FLOAT(mixOscB),
     // Filter
-    SSF_DOUBLE(filterCutoff), SSF_DOUBLE(filterResonance),
-    SSF_DOUBLE(filterEnvAmount), SSF_INT(filterModel),
+    SSF_FLOAT(filterCutoff), SSF_FLOAT(filterResonance),
+    SSF_FLOAT(filterEnvAmount), SSF_INT(filterModel),
     // Envelopes
-    SSF_DOUBLE(filterAttack), SSF_DOUBLE(filterDecay),
-    SSF_DOUBLE(filterSustain), SSF_DOUBLE(filterRelease),
-    SSF_DOUBLE(ampAttack), SSF_DOUBLE(ampDecay),
-    SSF_DOUBLE(ampSustain), SSF_DOUBLE(ampRelease),
+    SSF_FLOAT(filterAttack), SSF_FLOAT(filterDecay),
+    SSF_FLOAT(filterSustain), SSF_FLOAT(filterRelease),
+    SSF_FLOAT(ampAttack), SSF_FLOAT(ampDecay),
+    SSF_FLOAT(ampSustain), SSF_FLOAT(ampRelease),
     // LFO
-    SSF_INT(lfoShape), SSF_DOUBLE(lfoRate), SSF_DOUBLE(lfoDepth),
+    SSF_INT(lfoShape), SSF_FLOAT(lfoRate), SSF_FLOAT(lfoDepth),
     // Poly-Mod
-    SSF_DOUBLE(polyModOscBToFreqA), SSF_DOUBLE(polyModOscBToPWM),
-    SSF_DOUBLE(polyModOscBToFilter), SSF_DOUBLE(polyModFilterEnvToFreqA),
-    SSF_DOUBLE(polyModFilterEnvToPWM), SSF_DOUBLE(polyModFilterEnvToFilter),
+    SSF_FLOAT(polyModOscBToFreqA), SSF_FLOAT(polyModOscBToPWM),
+    SSF_FLOAT(polyModOscBToFilter), SSF_FLOAT(polyModFilterEnvToFreqA),
+    SSF_FLOAT(polyModFilterEnvToPWM), SSF_FLOAT(polyModFilterEnvToFilter),
     // FX
-    SSF_DOUBLE(fxChorusRate), SSF_DOUBLE(fxChorusDepth), SSF_DOUBLE(fxChorusMix),
-    SSF_DOUBLE(fxDelayTime), SSF_DOUBLE(fxDelayFeedback), SSF_DOUBLE(fxDelayMix),
-    SSF_DOUBLE(fxLimiterThreshold),
+    SSF_FLOAT(fxChorusRate), SSF_FLOAT(fxChorusDepth), SSF_FLOAT(fxChorusMix),
+    SSF_FLOAT(fxDelayTime), SSF_FLOAT(fxDelayFeedback), SSF_FLOAT(fxDelayMix),
+    SSF_FLOAT(fxLimiterThreshold),
 };
 
 static constexpr int kSynthStateFieldCount =
     sizeof(kSynthStateFields) / sizeof(kSynthStateFields[0]);
 
-#undef SSF_DOUBLE
+#undef SSF_FLOAT
 #undef SSF_INT
 
 // Generic set/get using the field table (replaces 20+ strcmp chains).
-// NOTE: Uses `double` because SynthState fields ARE double (shared struct with desktop).
-// This is NOT in the audio hot path — it runs only when serial commands arrive.
-// On embedded, the double→float conversion happens inside Engine::UpdateState().
-inline bool SetField(SynthState& state, const char* name, double value) {
+// SynthState fields are float — no double anywhere in the pipeline.
+inline bool SetField(SynthState& state, const char* name, float value) {
     char* base = reinterpret_cast<char*>(&state);
     for (int i = 0; i < kSynthStateFieldCount; ++i) {
         if (std::strcmp(kSynthStateFields[i].name, name) == 0) {
             if (kSynthStateFields[i].isInt)
                 *reinterpret_cast<int*>(base + kSynthStateFields[i].offset) = static_cast<int>(value);
             else
-                *reinterpret_cast<double*>(base + kSynthStateFields[i].offset) = value;
+                *reinterpret_cast<float*>(base + kSynthStateFields[i].offset) = value;
             return true;
         }
     }
     return false;
 }
 
-inline bool GetField(const SynthState& state, const char* name, double& out) {
+inline bool GetField(const SynthState& state, const char* name, float& out) {
     const char* base = reinterpret_cast<const char*>(&state);
     for (int i = 0; i < kSynthStateFieldCount; ++i) {
         if (std::strcmp(kSynthStateFields[i].name, name) == 0) {
             if (kSynthStateFields[i].isInt)
-                out = static_cast<double>(*reinterpret_cast<const int*>(base + kSynthStateFields[i].offset));
+                out = static_cast<float>(*reinterpret_cast<const int*>(base + kSynthStateFields[i].offset));
             else
-                out = *reinterpret_cast<const double*>(base + kSynthStateFields[i].offset);
+                out = *reinterpret_cast<const float*>(base + kSynthStateFields[i].offset);
             return true;
         }
     }
