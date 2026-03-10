@@ -44,7 +44,14 @@ static PolySynthCore::SynthState s_stagedState;
 static std::atomic<bool> s_stateConsumed{true};
 static std::atomic<int> s_activeVoices{0};  // updated by audio ISR for diagnostics
 static float s_peakLevel = 0.0f;  // peak output level (pre-tanh), reset on read
-static int s_prevVoiceCount = 0;  // for detecting voice changes in ISR
+
+// Voice-change event ring buffer (ISR writes, main loop reads)
+struct VoiceEvent { int8_t from; int8_t to; };
+static constexpr int kVoiceEventBufSize = 32;
+static VoiceEvent s_voiceEvents[kVoiceEventBufSize];
+static std::atomic<int> s_voiceEventHead{0};  // ISR writes
+static int s_voiceEventTail = 0;               // main loop reads
+static int s_prevVoiceCount = 0;
 
 static void enqueue_cmd(AudioCommand::Type type, uint8_t a1 = 0, uint8_t a2 = 0) {
     int head = s_cmdHead.load(std::memory_order_relaxed);
@@ -130,9 +137,13 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
     s_engine.UpdateVisualization();
     int vc = s_engine.GetActiveVoiceCount();
     s_activeVoices.store(vc, std::memory_order_relaxed);
-    // Log voice count changes (printf from ISR is unsafe but ok for debugging)
+    // Buffer voice-change events (NO printf from ISR — not thread-safe)
     if (vc != s_prevVoiceCount) {
-        printf("[VOICE] %d -> %d\n", s_prevVoiceCount, vc);
+        int head = s_voiceEventHead.load(std::memory_order_relaxed);
+        int next = (head + 1) % kVoiceEventBufSize;
+        s_voiceEvents[head] = {static_cast<int8_t>(s_prevVoiceCount),
+                               static_cast<int8_t>(vc)};
+        s_voiceEventHead.store(next, std::memory_order_release);
         s_prevVoiceCount = vc;
     }
 }
@@ -617,6 +628,16 @@ int main()
 
         // Demo tick
         demo_tick(time_us_64());
+
+        // Drain voice-change events (safe — main loop only)
+        {
+            int head = s_voiceEventHead.load(std::memory_order_acquire);
+            while (s_voiceEventTail != head) {
+                auto& ev = s_voiceEvents[s_voiceEventTail];
+                printf("[VOICE] %d -> %d\n", ev.from, ev.to);
+                s_voiceEventTail = (s_voiceEventTail + 1) % kVoiceEventBufSize;
+            }
+        }
 
         // Periodic status report (every 5 seconds)
         uint64_t now = time_us_64();
