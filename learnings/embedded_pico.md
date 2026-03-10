@@ -15,10 +15,11 @@ AGENTS.md rule to use `sample_t` for signals and `float` for control parameters.
 section 5 and pre-flight checklist items 9-10.
 
 **Lesson:** On Cortex-M33, `double` operations are software-emulated (~10x slower
-than `float`). Use `sample_t` for signal types, `float` for control params, and
-`uint32_t` for timestamps. The only acceptable `double` is in `SynthState` (shared
-struct, not in the hot path). Enable `-Wdouble-promotion` to catch violations at
-compile time.
+than `float`). Use `sample_t` for per-sample signal types, `float` for control
+params in platform glue, and `uint32_t` for timestamps. `SynthState` fields
+intentionally stay `double` — shared struct with desktop, aggregate-reset pattern,
+and the narrowing cost is once per parameter update (not per sample). Enable
+`-Wdouble-promotion` to catch accidental double promotion in hot paths.
 
 ---
 
