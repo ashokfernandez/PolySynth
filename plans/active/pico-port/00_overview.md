@@ -45,8 +45,10 @@ overall design direction.
 | **Pico-4** | [Core DSP Integration](04_sprint_pico_dsp_integration.md) | **DONE** | Full Engine wired to I2S. 4-voice polyphony with all oscillators, ADSR envelopes, filters (Ladder/Cascade/Biquad), LFO. Hard-float ABI, SSAT saturation, SEA_FAST_MATH. Per-buffer CPU profiling. CPU < 30% with 4 voices. |
 | **Pico-5** | [Effects Architecture](05_sprint_pico_effects_architecture.md) | **DONE** | Deploy flags (`POLYSYNTH_DEPLOY_CHORUS/DELAY/LIMITER=0`). Soft clipper via `fast_tanh()` Pade approximant + SSAT in output stage. Effects stripped from binary, all compile for ARM. |
 | **Pico-6** | [Serial Control Interface](06_sprint_pico_serial_control.md) | **DONE** | Zero-allocation command parser (NOTE_ON/OFF, SET/GET 20+ params, STATUS, PANIC, RESET, DEMO, STOP). 15+ Catch2 parser tests. Demo sequence state machine. Voice-change event ring buffer (ISR-safe, no printf from ISR). |
+| **Pico-7** | [Performance Foundations](07a_sprint_pico_performance.md) | **DONE** | `__time_critical_func` on audio callback (SRAM placement). FPSCR FZ/DN denormal flush on Core 1. Removed `std::atomic<uint64_t>` (not lock-free on 32-bit ARM). Cached oscillator `mInvSampleRate` (eliminates per-sample division). Hard-float ABI. Output gain boost. PR #66-67 merged. |
+| **Pico-8** | [Architecture Decomposition](08_sprint_pico_decomposition.md) | **DONE** | `main.cpp` reduced from ~530 to ~164 lines. Extracted `PicoSynthApp` (DSP engine + command queue + state handoff), `PicoDemo` (demo sequencer), `pico_commands` (serial dispatch), `pico_self_test` (boot self-tests). `SPSCQueue<T,N>` lock-free template. `CommandParser` with 15 Catch2 tests. PR #68 merged. |
 
-**What shipped in Sprints 1-6:**
+**What shipped in Sprints 1-8:**
 - Real polyphonic synthesizer running on RP2350 (Pico 2 W)
 - 4-voice polyphony, all oscillators/filters/envelopes/LFO active
 - 48kHz stereo audio via custom PIO I2S to PCM5101A DAC
@@ -54,56 +56,37 @@ overall design direction.
 - Automated demo sequence (saw, square, chord, filter sweep)
 - Three-layer CI pipeline (desktop tests, ARM compile, Wokwi emulation)
 - Desktop-identical DSP (same `src/core/` code, zero forks)
+- Clean modular architecture (PicoSynthApp + modules)
+- All known performance issues resolved (SRAM placement, denormals, ISR cleanup)
 
 **What was NOT shipped from the original plans:**
 - `tools/pico_control.py` Python interactive controller (Sprint 6) — not started
 - `SynthStateFields.h` generic field table (mentioned in Sprint 6) — not started
 - `pico_config.h` centralized config header — not created (defines are in CMakeLists.txt)
-- `pico_effects.h` PicoSoftClipper class — soft clipping done inline in main.cpp instead
+- `pico_effects.h` PicoSoftClipper class — soft clipping done inline in pico_synth_app.cpp instead
 
 ### PR #65 Review Notes (Merged — Prototype State)
 
 PR #65 (`feat(pico): DSP Port MVP`) shipped Sprints 1-6 as a working prototype.
-The reviewer flagged these items for follow-up in Sprints 7-10:
+The reviewer flagged these items for follow-up:
 
-1. **`s_peakLevel` data race** — Both the ISR and main loop read/write `s_peakLevel`
-   without atomics. On Cortex-M33 single-word float stores are atomic *in practice*,
-   but it's technically UB. → **Fix in Sprint 7** (`std::atomic<float>` or exchange).
-2. **`s_prevVoiceCount` ISR-only access** — Fine, but needs a comment noting it's
-   ISR-private so future readers don't mistake it for a shared variable. → **Sprint 7**.
-3. **`demo_phase_name` missing default** — Switch covers all enum values, trailing
-   `return "?"` handles it, but some compilers warn. → **Sprint 8** (demo extraction).
-4. **`kOutputGain = 4.0f` magic number** — Good enough for now, but will need to
-   become tunable as more waveforms/effects come online. → **Sprint 11+** (effects).
-5. **`Sin()` accuracy comment** — Comment says "~0.016%" but 7th-order Taylor on
-   [-π/2, π/2] has max error closer to ~0.00016. Verify with sweep test. → **Sprint 10**.
+1. ~~**`s_peakLevel` data race**~~ → **RESOLVED in Sprint 7** (uses `std::atomic<float>` in PicoSynthApp).
+2. ~~**`s_prevVoiceCount` ISR-only access**~~ → **RESOLVED in Sprint 8** (voice event ring buffer in PicoSynthApp).
+3. ~~**`demo_phase_name` missing default**~~ → **RESOLVED in Sprint 8** (PicoDemo extracted with proper switch + default).
+4. **`kOutputGain = 4.0f` magic number** — Named constant in `pico_synth_app.cpp`. Will need tuning when effects deploy. → **Sprint 13** (effects).
+5. **`Sin()` accuracy comment** — Verify with sweep test. → **Sprint 10**.
 
 ### Known Issues (Discovered During Architecture Research)
 
 These were identified through deep research into RP2350 specifics and embedded DSP
-optimization. They affect the current shipped code:
+optimization. Status after Sprint 8:
 
-1. **Audio code runs from flash (XIP cache)** — No `__time_critical_func` annotations.
-   XIP (Execute-In-Place) cache misses during DMA ISR cause variable-latency stalls.
-   Likely #1 cause of reported choppy audio.
-
-2. **`UpdateVisualization()` in DMA ISR** — Uses `std::atomic<uint64_t>` which is
-   NOT lock-free on 32-bit ARM. Disables interrupts or uses hardware spinlock from
-   within the DMA ISR.
-
-3. **Oscillator division every sample** — `SetFrequency()` does `freq / mSampleRate`
-   per sample per oscillator. 8 VDIV.F32 per sample with 4 voices.
-
-4. **Voice struct carries all 3 filter types** — BiquadFilter + LadderFilter +
-   CascadeFilter instantiated per voice, but only one used at runtime. ~400 bytes
-   of wasted cache per voice.
-
-5. **No denormal flush** — FPSCR FZ/DN bits not set on Core 1. IIR filter tails
-   may hit performance cliffs. (A denormal is an extremely small floating-point
-   number near zero that some processors handle much more slowly than normal numbers.)
-
-6. **Monolithic main.cpp (670 lines)** — Mixes audio callback, command dispatch,
-   demo sequencing, state handoff, self-tests, and main loop. No separation of concerns.
+1. ~~**Audio code runs from flash (XIP cache)**~~ → **RESOLVED in Sprint 7**. `__time_critical_func` on audio callback places DSP code in SRAM.
+2. ~~**`UpdateVisualization()` in DMA ISR**~~ → **RESOLVED in Sprint 8**. Replaced with lock-free `VoiceEvent` ring buffer using `std::atomic<int>`.
+3. ~~**Oscillator division every sample**~~ → **RESOLVED in Sprint 7**. `mInvSampleRate` cached; `SetFrequency()` uses multiply.
+4. **Voice struct carries all 3 filter types** — BiquadFilter + LadderFilter + CascadeFilter per voice, ~400 bytes wasted cache. → **Sprint 10** (compile-time filter selection).
+5. ~~**No denormal flush**~~ → **RESOLVED in Sprint 7**. FPSCR FZ/DN bits set on Core 1 at boot.
+6. ~~**Monolithic main.cpp (670 lines)**~~ → **RESOLVED in Sprint 8**. Decomposed into PicoSynthApp + 4 modules. main.cpp is now ~164 lines.
 
 ---
 
@@ -111,27 +94,31 @@ optimization. They affect the current shipped code:
 
 | Sprint | Title | Focus | Depends On |
 |--------|-------|-------|------------|
-| **Pico-7** | [Performance Foundations](07a_sprint_pico_performance.md) | Fix choppy audio: SRAM placement, denormals, ISR cleanup, oscillator cache | Pico-6 |
-| **Pico-8** | [Architecture Decomposition](08_sprint_pico_decomposition.md) | Break main.cpp monolith into PicoSynthApp + modules | Pico-7 |
-| **Pico-9** | [FreeRTOS Migration](09_sprint_pico_freertos.md) | Replace busy-loop with FreeRTOS tasks on Core 0 | Pico-8 |
-| **Pico-10** | [DSP Optimizations](10_sprint_pico_dsp_optimizations.md) | LUTs (tanh, sine, MIDI-to-freq), compile-time filter, CPU budget expansion | Pico-9 |
+| **Pico-9** | [FreeRTOS Migration](09_sprint_pico_freertos.md) | Replace polling loop with FreeRTOS tasks on Core 0 | Pico-8 |
+| **Pico-10** | [DSP Optimizations](10_sprint_pico_dsp_optimizations.md) | LUTs (tanh, sine, MIDI-to-freq), compile-time filter, CPU budget | Pico-9 |
+| **Pico-11** | [USB MIDI Input](11_sprint_pico_usb_midi.md) | TinyUSB MIDI device class, note/CC input, playable instrument | Pico-9 |
+| **Pico-12** | [Preset System](12_sprint_pico_presets.md) | Binary presets in flash, save/load/factory, boot restore | Pico-11 |
+| **Pico-13** | [Effects Deployment](13_sprint_pico_effects.md) | Chorus + delay with static buffers, constrained parameters | Pico-10, Pico-12 |
+| **Pico-14** | [WiFi / OSC](14_sprint_pico_wifi_osc.md) | CYW43 WiFi, UDP OSC listener, wireless parameter control | Pico-9, Pico-12 |
+| **Pico-15** | [Physical Controls](15_sprint_pico_physical_controls.md) | External ADC, knobs, buttons, encoder, LED feedback | Pico-9, Pico-12 |
 
 ```
-Pico-7 (Performance)           ← Fix immediate audio quality issues
-  └── Pico-8 (Decomposition)   ← Clean architecture for maintainability
-        └── Pico-9 (FreeRTOS)  ← Enable WiFi, USB MIDI, display, ADC
-              └── Pico-10 (DSP Optimizations)  ← More voices, effects headroom
+Pico-9  (FreeRTOS)        ← Foundation for all task-based features
+  ├── Pico-10 (DSP Opt)   ← CPU headroom for effects
+  ├── Pico-11 (USB MIDI)  ← Playable instrument via MIDI keyboard
+  │     └── Pico-12 (Presets) ← Save/recall patches to flash
+  │           ├── Pico-13 (Effects)  ← Chorus + delay (needs CPU headroom from 10)
+  │           ├── Pico-14 (WiFi/OSC) ← Wireless control from laptop/phone
+  │           └── Pico-15 (Physical Controls) ← Standalone instrument (needs hardware)
+  └───────────────────────────────────────────┘
 ```
 
-### Future Roadmap (Post Sprint 10)
-
-| Sprint | Focus | Goal |
-|--------|-------|------|
-| 11 | Effects deployment | Chorus with static buffers, Delay at 100ms max |
-| 12 | Physical controls | ADC knobs, buttons, encoder, LED feedback |
-| 13 | USB MIDI | TinyUSB MIDI device class, note/CC input |
-| 14 | WiFi / OSC | CYW43 WiFi, lwIP, OSC parameter control |
-| 15 | Preset system | Save/load patches to flash, serial preset transfer |
+**Key architectural note:** Sprint 14 (WiFi/OSC) introduces a third command producer
+(serial + MIDI + OSC all sending to the audio engine). The current `SPSCQueue` is
+single-producer. This must be addressed by Sprint 14 — either via a FreeRTOS mutex
+around the producer side or a FreeRTOS command queue between input tasks and the
+SPSC audio queue. Consider designing this proactively in Sprint 11 (first multi-producer
+scenario: serial + MIDI).
 
 ---
 
