@@ -21,8 +21,10 @@ static constexpr uint32_t kNumBuffers     = 2;      // Double-buffering (ping-po
 
 // Initialize PIO I2S and DMA. Must be called once at startup.
 // callback: function called from DMA ISR to fill the next buffer.
+// dma_irq: which DMA IRQ to use (0 or 1). Use 1 when running on core 1
+//          so the IRQ fires on that core.
 // Returns true on success.
-bool Init(AudioCallback callback);
+bool Init(AudioCallback callback, int dma_irq = 0);
 
 // Start audio playback. Call after Init().
 void Start();

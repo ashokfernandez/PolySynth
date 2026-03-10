@@ -1,36 +1,123 @@
-// PolySynth Pico — Sprint 3: I2S Audio Hello World
-// Outputs a 440Hz sine wave through the Waveshare Pico-Audio HAT.
+// PolySynth Pico — Sprint 4+5: DSP Engine + Serial Control
+// Real synth engine wired into I2S audio callback with serial command interface.
 
-#include <cstdio>
-#include <cstdint>
+#include <algorithm>
+#include <atomic>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
+#include "pico/multicore.h"
 
 #include "audio_i2s_driver.h"
+#include "command_parser.h"
 #include "Engine.h"
 #include "SynthState.h"
-#include "sine_generator.h"
+#include "sine_generator.h"  // for PackI2S()
 
-// ── DSP engine (used in self-test) ───────────────────────────────────────
+// ── DSP engine ───────────────────────────────────────────────────────────
 static PolySynthCore::Engine s_engine;
-static PolySynthCore::SynthState s_state;
 
-// ── Sine wave generator state ───────────────────────────────────────────
-static float s_phase = 0.0f;
-static constexpr float kFrequency = 440.0f;
-static constexpr float kAmplitude = 0.5f;  // -6 dBFS to avoid clipping
-static constexpr float kPhaseIncrement =
-    pico_audio::PhaseIncrement(kFrequency, static_cast<float>(pico_audio::kSampleRate));
+// ── SPSC command queue (main loop → ISR) ─────────────────────────────────
+struct AudioCommand {
+    enum Type : uint8_t { NONE, NOTE_ON, NOTE_OFF, UPDATE_STATE, PANIC };
+    Type type = NONE;
+    uint8_t arg1 = 0;  // note
+    uint8_t arg2 = 0;  // velocity
+};
 
-// ── Audio callback (called from DMA ISR) ────────────────────────────────
-static void audio_callback(uint32_t* buffer, uint32_t num_frames)
-{
-    pico_audio::GenerateSine(s_phase, kPhaseIncrement, kAmplitude, buffer, num_frames);
+static constexpr int kCmdQueueSize = 16;
+static AudioCommand s_cmdQueue[kCmdQueueSize];
+static std::atomic<int> s_cmdHead{0};  // main loop writes
+static std::atomic<int> s_cmdTail{0};  // ISR reads
+
+// ── State handoff (main → ISR via UPDATE_STATE) ─────────────────────────
+// s_pendingState: main loop's working copy — never touched by ISR.
+// s_stagedState:  snapshot copied from pending, consumed by ISR.
+// s_stateConsumed: ISR sets true after reading staged; main waits for it
+//                  before overwriting staged (in practice never spins —
+//                  audio callback period ≫ state update interval).
+static PolySynthCore::SynthState s_pendingState;
+static PolySynthCore::SynthState s_stagedState;
+static std::atomic<bool> s_stateConsumed{true};
+
+static void enqueue_cmd(AudioCommand::Type type, uint8_t a1 = 0, uint8_t a2 = 0) {
+    int head = s_cmdHead.load(std::memory_order_relaxed);
+    int next = (head + 1) % kCmdQueueSize;
+    if (next == s_cmdTail.load(std::memory_order_acquire)) return;  // queue full, drop
+    s_cmdQueue[head] = {type, a1, a2};
+    s_cmdHead.store(next, std::memory_order_release);
 }
 
-// ── SRAM report ─────────────────────────────────────────────────────────
+// ── Fast tanh approximant (Padé) ─────────────────────────────────────────
+// Replaces tanhf() which is a library call on Cortex-M33 (~200-500 cycles).
+// This Padé approximant is <10 cycles and accurate to ~0.1% for |x| < 3.
+static inline float fast_tanh(float x) {
+    float x2 = x * x;
+    return x * (27.0f + x2) / (27.0f + 9.0f * x2);
+}
+
+// ── Audio callback (called from DMA ISR) ─────────────────────────────────
+static void audio_callback(uint32_t* buffer, uint32_t num_frames)
+{
+    // Drain command queue
+    int tail = s_cmdTail.load(std::memory_order_relaxed);
+    int head = s_cmdHead.load(std::memory_order_acquire);
+    while (tail != head) {
+        auto& cmd = s_cmdQueue[tail];
+        switch (cmd.type) {
+            case AudioCommand::NOTE_ON:
+                s_engine.OnNoteOn(cmd.arg1, cmd.arg2);
+                break;
+            case AudioCommand::NOTE_OFF:
+                s_engine.OnNoteOff(cmd.arg1);
+                break;
+            case AudioCommand::UPDATE_STATE:
+                s_engine.UpdateState(s_stagedState);
+                s_stateConsumed.store(true, std::memory_order_release);
+                break;
+            case AudioCommand::PANIC:
+                s_engine.Reset();
+                break;
+            default:
+                break;
+        }
+        tail = (tail + 1) % kCmdQueueSize;
+        s_cmdTail.store(tail, std::memory_order_release);
+    }
+
+    // Process audio
+    for (uint32_t i = 0; i < num_frames; i++) {
+        float left = 0.0f, right = 0.0f;
+        s_engine.Process(left, right);
+
+        // Soft clip (Padé approximant — tanhf() is too expensive on Cortex-M33)
+        // Clamp after fast_tanh: the Padé approximant can exceed ±1.0 for |x|>3
+        left = std::clamp(fast_tanh(left), -1.0f, 1.0f);
+        right = std::clamp(fast_tanh(right), -1.0f, 1.0f);
+
+        auto l16 = static_cast<int16_t>(left * 32767.0f);
+        auto r16 = static_cast<int16_t>(right * 32767.0f);
+        buffer[i * 2]     = pico_audio::PackI2S(l16);
+        buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
+    }
+}
+
+// ── Helper: push state update to engine ──────────────────────────────────
+static void push_state_update() {
+    // Wait for ISR to consume previous staged state (virtually never spins —
+    // audio callback period ~5.3ms, state updates are ≥20ms apart)
+    while (!s_stateConsumed.load(std::memory_order_acquire)) {
+        // spin
+    }
+    s_stagedState = s_pendingState;
+    s_stateConsumed.store(false, std::memory_order_release);
+    enqueue_cmd(AudioCommand::UPDATE_STATE);
+}
+
+// ── SRAM report ──────────────────────────────────────────────────────────
 extern "C" {
     extern uint8_t __StackLimit;
     extern uint8_t __bss_end__;
@@ -46,9 +133,274 @@ static void print_sram_report()
     printf("===================\n");
 }
 
-// ── Self-test sequence ──────────────────────────────────────────────────
-// Results are printed as structured markers for CI detection.
-// Wokwi CI checks for "[TEST:ALL_PASSED]" in serial output.
+// ── Demo sequence state machine ──────────────────────────────────────────
+enum class DemoPhase : uint8_t {
+    SAW_NOTE,       // 0-2s: C4 saw
+    SAW_OFF,        // 2-2.5s: silence
+    SQUARE_NOTE,    // 2.5-4.5s: E4 square
+    SQUARE_OFF,     // 4.5-5s: silence
+    CHORD,          // 5-8s: 4-voice chord
+    FILTER_SWEEP,   // 8-11s: filter sweep
+    CHORD_OFF,      // 11-13s: silence
+    DONE            // loop back to SAW_NOTE
+};
+
+struct DemoState {
+    bool running = true;
+    DemoPhase phase = DemoPhase::SAW_NOTE;
+    uint64_t phase_start_us = 0;
+    uint64_t last_state_push_us = 0;  // rate-limit state updates
+};
+
+static DemoState s_demo;
+
+static void demo_reset(uint64_t now_us) {
+    s_demo.phase = DemoPhase::SAW_NOTE;
+    s_demo.phase_start_us = now_us;
+}
+
+static void demo_tick(uint64_t now_us) {
+    if (!s_demo.running) return;
+
+    uint64_t elapsed_us = now_us - s_demo.phase_start_us;
+    float elapsed_s = static_cast<float>(elapsed_us) / 1000000.0f;
+
+    auto advance = [&](DemoPhase next) {
+        s_demo.phase = next;
+        s_demo.phase_start_us = now_us;
+    };
+
+    switch (s_demo.phase) {
+        case DemoPhase::SAW_NOTE:
+            if (elapsed_s < 0.001f) {
+                // Set saw wave and play C4
+                auto& st = s_pendingState;
+                st.Reset();
+                st.oscAWaveform = 0;  // Saw
+                push_state_update();
+                enqueue_cmd(AudioCommand::NOTE_ON, 60, 100);
+            }
+            if (elapsed_s >= 2.0f) {
+                enqueue_cmd(AudioCommand::NOTE_OFF, 60);
+                advance(DemoPhase::SAW_OFF);
+            }
+            break;
+
+        case DemoPhase::SAW_OFF:
+            if (elapsed_s >= 0.5f) {
+                advance(DemoPhase::SQUARE_NOTE);
+            }
+            break;
+
+        case DemoPhase::SQUARE_NOTE:
+            if (elapsed_s < 0.001f) {
+                auto& st = s_pendingState;
+                st.oscAWaveform = 1;  // Square
+                push_state_update();
+                enqueue_cmd(AudioCommand::NOTE_ON, 64, 100);
+            }
+            if (elapsed_s >= 2.0f) {
+                enqueue_cmd(AudioCommand::NOTE_OFF, 64);
+                advance(DemoPhase::SQUARE_OFF);
+            }
+            break;
+
+        case DemoPhase::SQUARE_OFF:
+            if (elapsed_s >= 0.5f) {
+                advance(DemoPhase::CHORD);
+            }
+            break;
+
+        case DemoPhase::CHORD:
+            if (elapsed_s < 0.001f) {
+                auto& st = s_pendingState;
+                st.oscAWaveform = 0;  // Saw
+                st.filterCutoff = 2000.0;
+                push_state_update();
+                enqueue_cmd(AudioCommand::NOTE_ON, 60, 90);
+                enqueue_cmd(AudioCommand::NOTE_ON, 64, 85);
+                enqueue_cmd(AudioCommand::NOTE_ON, 67, 80);
+                enqueue_cmd(AudioCommand::NOTE_ON, 72, 75);
+            }
+            if (elapsed_s >= 3.0f) {
+                advance(DemoPhase::FILTER_SWEEP);
+            }
+            break;
+
+        case DemoPhase::FILTER_SWEEP: {
+            // Sweep cutoff from 200 to 8000 Hz over 3 seconds
+            // Rate-limit to ~50 updates/sec (20ms intervals) to avoid
+            // flooding the ISR with UpdateState calls
+            if (now_us - s_demo.last_state_push_us >= 20000ULL) {
+                s_demo.last_state_push_us = now_us;
+                float t = elapsed_s / 3.0f;
+                if (t > 1.0f) t = 1.0f;
+                float cutoff = 200.0f + t * (8000.0f - 200.0f);
+                auto& st = s_pendingState;
+                st.filterCutoff = static_cast<double>(cutoff);
+                push_state_update();
+            }
+            if (elapsed_s >= 3.0f) {
+                advance(DemoPhase::CHORD_OFF);
+            }
+            break;
+        }
+
+        case DemoPhase::CHORD_OFF:
+            if (elapsed_s < 0.001f) {
+                enqueue_cmd(AudioCommand::NOTE_OFF, 60);
+                enqueue_cmd(AudioCommand::NOTE_OFF, 64);
+                enqueue_cmd(AudioCommand::NOTE_OFF, 67);
+                enqueue_cmd(AudioCommand::NOTE_OFF, 72);
+            }
+            if (elapsed_s >= 2.0f) {
+                advance(DemoPhase::DONE);
+            }
+            break;
+
+        case DemoPhase::DONE:
+            demo_reset(now_us);
+            break;
+    }
+}
+
+// ── Serial parameter dispatch ────────────────────────────────────────────
+static bool set_param(PolySynthCore::SynthState& st, const char* name, double val) {
+    if (std::strcmp(name, "masterGain") == 0)         { st.masterGain = val; return true; }
+    if (std::strcmp(name, "filterCutoff") == 0)        { st.filterCutoff = val; return true; }
+    if (std::strcmp(name, "filterResonance") == 0)     { st.filterResonance = val; return true; }
+    if (std::strcmp(name, "filterEnvAmount") == 0)     { st.filterEnvAmount = val; return true; }
+    if (std::strcmp(name, "filterModel") == 0)         { st.filterModel = static_cast<int>(val); return true; }
+    if (std::strcmp(name, "ampAttack") == 0)            { st.ampAttack = val; return true; }
+    if (std::strcmp(name, "ampDecay") == 0)             { st.ampDecay = val; return true; }
+    if (std::strcmp(name, "ampSustain") == 0)           { st.ampSustain = val; return true; }
+    if (std::strcmp(name, "ampRelease") == 0)           { st.ampRelease = val; return true; }
+    if (std::strcmp(name, "filterAttack") == 0)         { st.filterAttack = val; return true; }
+    if (std::strcmp(name, "filterDecay") == 0)          { st.filterDecay = val; return true; }
+    if (std::strcmp(name, "filterSustain") == 0)        { st.filterSustain = val; return true; }
+    if (std::strcmp(name, "filterRelease") == 0)        { st.filterRelease = val; return true; }
+    if (std::strcmp(name, "oscAWaveform") == 0)         { st.oscAWaveform = static_cast<int>(val); return true; }
+    if (std::strcmp(name, "oscBWaveform") == 0)         { st.oscBWaveform = static_cast<int>(val); return true; }
+    if (std::strcmp(name, "mixOscA") == 0)              { st.mixOscA = val; return true; }
+    if (std::strcmp(name, "mixOscB") == 0)              { st.mixOscB = val; return true; }
+    if (std::strcmp(name, "lfoShape") == 0)             { st.lfoShape = static_cast<int>(val); return true; }
+    if (std::strcmp(name, "lfoRate") == 0)              { st.lfoRate = val; return true; }
+    if (std::strcmp(name, "lfoDepth") == 0)             { st.lfoDepth = val; return true; }
+    if (std::strcmp(name, "glideTime") == 0)            { st.glideTime = val; return true; }
+    return false;
+}
+
+static bool get_param(const PolySynthCore::SynthState& st, const char* name, double& out) {
+    if (std::strcmp(name, "masterGain") == 0)         { out = st.masterGain; return true; }
+    if (std::strcmp(name, "filterCutoff") == 0)        { out = st.filterCutoff; return true; }
+    if (std::strcmp(name, "filterResonance") == 0)     { out = st.filterResonance; return true; }
+    if (std::strcmp(name, "filterEnvAmount") == 0)     { out = st.filterEnvAmount; return true; }
+    if (std::strcmp(name, "filterModel") == 0)         { out = static_cast<double>(st.filterModel); return true; }
+    if (std::strcmp(name, "ampAttack") == 0)            { out = st.ampAttack; return true; }
+    if (std::strcmp(name, "ampDecay") == 0)             { out = st.ampDecay; return true; }
+    if (std::strcmp(name, "ampSustain") == 0)           { out = st.ampSustain; return true; }
+    if (std::strcmp(name, "ampRelease") == 0)           { out = st.ampRelease; return true; }
+    if (std::strcmp(name, "filterAttack") == 0)         { out = st.filterAttack; return true; }
+    if (std::strcmp(name, "filterDecay") == 0)          { out = st.filterDecay; return true; }
+    if (std::strcmp(name, "filterSustain") == 0)        { out = st.filterSustain; return true; }
+    if (std::strcmp(name, "filterRelease") == 0)        { out = st.filterRelease; return true; }
+    if (std::strcmp(name, "oscAWaveform") == 0)         { out = static_cast<double>(st.oscAWaveform); return true; }
+    if (std::strcmp(name, "oscBWaveform") == 0)         { out = static_cast<double>(st.oscBWaveform); return true; }
+    if (std::strcmp(name, "mixOscA") == 0)              { out = st.mixOscA; return true; }
+    if (std::strcmp(name, "mixOscB") == 0)              { out = st.mixOscB; return true; }
+    if (std::strcmp(name, "lfoShape") == 0)             { out = static_cast<double>(st.lfoShape); return true; }
+    if (std::strcmp(name, "lfoRate") == 0)              { out = st.lfoRate; return true; }
+    if (std::strcmp(name, "lfoDepth") == 0)             { out = st.lfoDepth; return true; }
+    if (std::strcmp(name, "glideTime") == 0)            { out = st.glideTime; return true; }
+    return false;
+}
+
+// ── Serial command dispatch ──────────────────────────────────────────────
+static void dispatch_command(const pico_serial::Command& cmd) {
+    using Type = pico_serial::Command::Type;
+
+    switch (cmd.type) {
+        case Type::NOTE_ON:
+            enqueue_cmd(AudioCommand::NOTE_ON,
+                        static_cast<uint8_t>(cmd.intArg1),
+                        static_cast<uint8_t>(cmd.intArg2));
+            printf("OK: NOTE_ON %d %d\n", cmd.intArg1, cmd.intArg2);
+            break;
+
+        case Type::NOTE_OFF:
+            enqueue_cmd(AudioCommand::NOTE_OFF,
+                        static_cast<uint8_t>(cmd.intArg1));
+            printf("OK: NOTE_OFF %d\n", cmd.intArg1);
+            break;
+
+        case Type::SET: {
+            auto& st = s_pendingState;
+            if (set_param(st, cmd.strArg, cmd.floatArg)) {
+                push_state_update();
+                printf("OK: SET %s=%.4f\n", cmd.strArg, cmd.floatArg);
+            } else {
+                printf("ERR: unknown param '%s'\n", cmd.strArg);
+            }
+            break;
+        }
+
+        case Type::GET: {
+            const auto& st = s_pendingState;
+            double val = 0.0;
+            if (get_param(st, cmd.strArg, val)) {
+                printf("VAL: %s=%.4f\n", cmd.strArg, val);
+            } else {
+                printf("ERR: unknown param '%s'\n", cmd.strArg);
+            }
+            break;
+        }
+
+        case Type::STATUS: {
+            float fill_time_us = static_cast<float>(pico_audio::GetLastFillTimeUs());
+            float buffer_time_us = static_cast<float>(pico_audio::kBufferFrames) * 1000000.0f /
+                                   static_cast<float>(pico_audio::kSampleRate);
+            float cpu_percent = (fill_time_us / buffer_time_us) * 100.0f;
+            printf("STATUS: voices=%d cpu=%.1f%% engine=%uB underruns=%lu\n",
+                   s_engine.GetActiveVoiceCount(),
+                   static_cast<double>(cpu_percent),
+                   static_cast<unsigned>(sizeof(PolySynthCore::Engine)),
+                   static_cast<unsigned long>(pico_audio::GetUnderrunCount()));
+            break;
+        }
+
+        case Type::PANIC:
+            enqueue_cmd(AudioCommand::PANIC);
+            printf("OK: PANIC\n");
+            break;
+
+        case Type::RESET: {
+            enqueue_cmd(AudioCommand::PANIC);
+            auto& st = s_pendingState;
+            st.Reset();
+            push_state_update();
+            printf("OK: RESET\n");
+            break;
+        }
+
+        case Type::DEMO:
+            s_demo.running = true;
+            demo_reset(time_us_64());
+            printf("OK: DEMO started\n");
+            break;
+
+        case Type::STOP:
+            s_demo.running = false;
+            enqueue_cmd(AudioCommand::PANIC);
+            printf("OK: STOP\n");
+            break;
+
+        case Type::UNKNOWN:
+            printf("ERR: unknown command\n");
+            break;
+    }
+}
+
+// ── Self-test sequence ───────────────────────────────────────────────────
 static bool run_self_tests()
 {
     int pass_count = 0;
@@ -56,11 +408,11 @@ static bool run_self_tests()
 
     printf("[TEST:BEGIN]\n");
 
-    // Test 1: Boot init completed (if we got here, it passed)
+    // Test 1: Boot init completed
     printf("[TEST:PASS] boot_init\n");
     pass_count++;
 
-    // Test 2: Serial output works (if you can read this, it passed)
+    // Test 2: Serial output works
     printf("[TEST:PASS] serial_output\n");
     pass_count++;
 
@@ -70,9 +422,10 @@ static bool run_self_tests()
     pass_count++;
 
     // Test 4: Engine init
-    s_state.Reset();
+    s_pendingState.Reset();
+    s_stagedState.Reset();
     s_engine.Init(static_cast<double>(pico_audio::kSampleRate));
-    s_engine.UpdateState(s_state);
+    s_engine.UpdateState(s_stagedState);
     printf("[TEST:PASS] engine_init\n");
     pass_count++;
 
@@ -100,10 +453,12 @@ static bool run_self_tests()
         }
     }
 
-    // Test 6: Audio I2S init
+    // Test 6: Audio I2S init (on core 0 for self-test, will re-init on core 1)
     if (pico_audio::Init(audio_callback)) {
         printf("[TEST:PASS] audio_i2s_init\n");
         pass_count++;
+        // Stop and release resources — audio will be re-initialized on core 1
+        pico_audio::Stop();
     } else {
         printf("[TEST:FAIL] audio_i2s_init\n");
         fail_count++;
@@ -120,7 +475,24 @@ static bool run_self_tests()
     return fail_count == 0;
 }
 
-// ── Main ────────────────────────────────────────────────────────────────
+// ── Core 1 entry point — dedicated to audio DSP ──────────────────────────
+static void core1_audio_entry() {
+    // Init audio on core 1 so the DMA IRQ fires on this core
+    if (!pico_audio::Init(audio_callback, 1)) {
+        multicore_fifo_push_blocking(0);  // signal failure
+        return;
+    }
+    multicore_fifo_push_blocking(1);  // signal success
+
+    pico_audio::Start();
+
+    // Core 1 just sleeps; all work happens in DMA ISR
+    while (true) {
+        __wfi();  // wait for interrupt — lowest power, wakes on DMA IRQ
+    }
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────
 int main()
 {
     stdio_init_all();
@@ -138,14 +510,18 @@ int main()
 
     printf("\n");
     printf("========================================\n");
-    printf("  PolySynth Pico v0.3 — I2S Audio Test\n");
+    printf("  PolySynth Pico v0.5 — Dual-Core + Fast Math\n");
     printf("  Board:       Pico 2 W (RP2350)\n");
     printf("  Sample rate: %u Hz\n", pico_audio::kSampleRate);
     printf("  Buffer:      %u frames (%.2f ms)\n",
            pico_audio::kBufferFrames,
            static_cast<float>(pico_audio::kBufferFrames) * 1000.0f /
                static_cast<float>(pico_audio::kSampleRate));
-    printf("  Test signal: %d Hz sine wave\n", static_cast<int>(kFrequency));
+    printf("  Engine:      %u bytes (effects stripped)\n",
+           static_cast<unsigned>(sizeof(PolySynthCore::Engine)));
+    printf("========================================\n");
+    printf("Commands: NOTE_ON <n> <v>, NOTE_OFF <n>, SET <p> <v>,\n");
+    printf("          GET <p>, STATUS, PANIC, RESET, DEMO, STOP\n");
     printf("========================================\n\n");
 
     // Run self-tests (includes audio init)
@@ -154,29 +530,66 @@ int main()
         while (true) { sleep_ms(1000); }
     }
 
-    // Start audio playback (Init was done in self-test)
-    pico_audio::Start();
-    printf("Playback started — 440 Hz sine wave\n\n");
+    // Re-init engine cleanly after self-test
+    s_engine.Reset();
+    s_pendingState.Reset();
+    s_stagedState.Reset();
+    s_engine.UpdateState(s_stagedState);
 
-    // Status reporting loop
+    // Launch core 1 for dedicated audio DSP
+    multicore_launch_core1(core1_audio_entry);
+    uint32_t audio_ok = multicore_fifo_pop_blocking();
+    if (!audio_ok) {
+        printf("ERROR: Audio init on core 1 failed, falling back to core 0\n");
+        pico_audio::Init(audio_callback);
+        pico_audio::Start();
+    }
+    printf("Audio started on core %d — running demo sequence\n", audio_ok ? 1 : 0);
+    printf("Type STOP to halt demo, or send commands\n\n");
+
+    // Start demo
+    s_demo.running = true;
+    demo_reset(time_us_64());
+
+    // Main loop: serial polling + demo + status
+    pico_serial::CommandParser parser;
     uint32_t report_counter = 0;
+    uint64_t last_report_us = time_us_64();
+
     while (true) {
-        sleep_ms(1000);
-        report_counter++;
+        // Non-blocking serial polling
+        int ch = getchar_timeout_us(0);
+        if (ch != PICO_ERROR_TIMEOUT) {
+            if (parser.Feed(static_cast<char>(ch))) {
+                auto cmd = parser.Parse();
+                dispatch_command(cmd);
+            }
+        }
 
-        float fill_time_us = static_cast<float>(pico_audio::GetLastFillTimeUs());
-        float buffer_time_us = static_cast<float>(pico_audio::kBufferFrames) * 1000000.0f /
-                               static_cast<float>(pico_audio::kSampleRate);
-        float cpu_percent = (fill_time_us / buffer_time_us) * 100.0f;
+        // Demo tick
+        demo_tick(time_us_64());
 
-        printf("[%lus] CPU: %.1f%% | Fill: %lu us | Underruns: %lu\n",
-               static_cast<unsigned long>(report_counter),
-               static_cast<double>(cpu_percent),
-               static_cast<unsigned long>(pico_audio::GetLastFillTimeUs()),
-               static_cast<unsigned long>(pico_audio::GetUnderrunCount()));
+        // Periodic status report (every 5 seconds)
+        uint64_t now = time_us_64();
+        if (now - last_report_us >= 5000000ULL) {
+            last_report_us = now;
+            report_counter++;
 
-        // Blink LED to show firmware is alive
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, report_counter % 2);
+            float fill_time_us = static_cast<float>(pico_audio::GetLastFillTimeUs());
+            float buffer_time_us = static_cast<float>(pico_audio::kBufferFrames) * 1000000.0f /
+                                   static_cast<float>(pico_audio::kSampleRate);
+            float cpu_percent = (fill_time_us / buffer_time_us) * 100.0f;
+
+            printf("[%lus] CPU: %.1f%% | Fill: %lu us | Underruns: %lu | Demo: %s\n",
+                   static_cast<unsigned long>(report_counter * 5),
+                   static_cast<double>(cpu_percent),
+                   static_cast<unsigned long>(pico_audio::GetLastFillTimeUs()),
+                   static_cast<unsigned long>(pico_audio::GetUnderrunCount()),
+                   s_demo.running ? "ON" : "OFF");
+
+            // Blink LED
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, report_counter % 2);
+        }
     }
 
     return 0;

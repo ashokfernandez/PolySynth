@@ -86,7 +86,9 @@ set(UNIT_TEST_SOURCES
     unit/Test_Voice.cpp
     unit/Test_LFO_Routing.cpp
     unit/Test_PicoAudio.cpp
+    unit/Test_CommandParser.cpp
     ../src/core/PresetManager.cpp
+    ../src/platform/pico/command_parser.cpp
 )
 
 add_executable(run_tests ${UNIT_TEST_SOURCES})
@@ -124,6 +126,9 @@ target_compile_definitions(run_tests_embedded PRIVATE
     POLYSYNTH_USE_FLOAT
     SEA_PLATFORM_EMBEDDED
     POLYSYNTH_MAX_VOICES=4
+    POLYSYNTH_DEPLOY_CHORUS=0
+    POLYSYNTH_DEPLOY_DELAY=0
+    POLYSYNTH_DEPLOY_LIMITER=0
 )
 
 target_link_libraries(run_tests_embedded PRIVATE SEA_DSP SEA_Util)

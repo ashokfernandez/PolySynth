@@ -235,6 +235,7 @@ test-embedded *args:
     #!/usr/bin/env bash
     set -euo pipefail
     cmake -S tests -B tests/build_embedded \
+        -G Ninja \
         -DCMAKE_BUILD_TYPE=Debug
     cmake --build tests/build_embedded --target run_tests_embedded --parallel
     tests/build_embedded/run_tests_embedded {{args}}
@@ -260,9 +261,9 @@ pico-emu-test:
     set -euo pipefail
     just pico-build-emu
     cd src/platform/pico/wokwi
-    wokwi-cli --timeout 15000 \
-        --expect-text "PolySynth Pico" \
-        --fail-text "ERROR:" \
+    wokwi-cli --timeout 30000 \
+        --expect-text "[TEST:ALL_PASSED]" \
+        --fail-text "[TEST:FAIL]" \
         --fail-text "Hard fault"
 
 # Docs workflow

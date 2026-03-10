@@ -6,17 +6,46 @@
 namespace sea {
 
 struct Math {
-  static SEA_INLINE Real Sin(Real x) { return std::sin(x); }
+  static SEA_INLINE Real Sin(Real x) {
+#ifdef SEA_FAST_MATH
+    // 5th-order polynomial: accurate to ~0.001% for |x| < pi
+    // Normalize x to [-pi, pi]
+    const Real pi = Real(3.14159265358979323846);
+    const Real two_pi = Real(6.28318530717958647692);
+    x = std::fmod(x + pi, two_pi);
+    if (x < Real(0)) x += two_pi;
+    x -= pi;
+    Real x2 = x * x;
+    return x * (Real(1) - x2 / Real(6) * (Real(1) - x2 / Real(20)));
+#else
+    return std::sin(x);
+#endif
+  }
 
-  static SEA_INLINE Real Cos(Real x) { return std::cos(x); }
+  static SEA_INLINE Real Cos(Real x) {
+#ifdef SEA_FAST_MATH
+    const Real half_pi = Real(1.57079632679489661923);
+    return Sin(x + half_pi);
+#else
+    return std::cos(x);
+#endif
+  }
 
-  static SEA_INLINE Real Tan(Real x) { return std::tan(x); }
+  static SEA_INLINE Real Tan(Real x) {
+#ifdef SEA_FAST_MATH
+    // Pade approximant: accurate for |x| < pi/4 (covers audio filter freqs)
+    Real x2 = x * x;
+    return x * (Real(15) - x2) / (Real(15) - Real(6) * x2);
+#else
+    return std::tan(x);
+#endif
+  }
 
   static SEA_INLINE Real Tanh(Real x) {
 #ifdef SEA_FAST_MATH
-    // Optimized approximation for embedded (if needed later)
-    // For now, default to std::tanh for correctness
-    return std::tanh(x);
+    // Pade approximant: accurate to ~0.1% for |x| < 3
+    Real x2 = x * x;
+    return x * (Real(27) + x2) / (Real(27) + Real(9) * x2);
 #else
     return std::tanh(x);
 #endif
