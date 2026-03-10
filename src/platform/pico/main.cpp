@@ -59,6 +59,15 @@ static inline float fast_tanh(float x) {
     return x * (27.0f + x2) / (27.0f + 9.0f * x2);
 }
 
+// ── Saturating int16 conversion (SSAT instruction) ───────────────────────
+// Single-cycle saturating clamp to [-32768, 32767] via ARM DSP extension.
+// Replaces std::clamp + cast for float→int16 output conversion.
+static inline int16_t saturate_to_i16(int32_t val) {
+    int32_t result;
+    __asm__ volatile("ssat %0, #16, %1" : "=r"(result) : "r"(val));
+    return static_cast<int16_t>(result);
+}
+
 // ── Audio callback (called from DMA ISR) ─────────────────────────────────
 static void audio_callback(uint32_t* buffer, uint32_t num_frames)
 {
@@ -94,12 +103,10 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
         s_engine.Process(left, right);
 
         // Soft clip (Padé approximant — tanhf() is too expensive on Cortex-M33)
-        // Clamp after fast_tanh: the Padé approximant can exceed ±1.0 for |x|>3
-        left = std::clamp(fast_tanh(left), -1.0f, 1.0f);
-        right = std::clamp(fast_tanh(right), -1.0f, 1.0f);
-
-        auto l16 = static_cast<int16_t>(left * 32767.0f);
-        auto r16 = static_cast<int16_t>(right * 32767.0f);
+        // SSAT handles overflow: fast_tanh can exceed ±1.0 for |x|>3, so the
+        // int32 multiply may exceed int16 range — SSAT saturates in one cycle.
+        auto l16 = saturate_to_i16(static_cast<int32_t>(fast_tanh(left) * 32767.0f));
+        auto r16 = saturate_to_i16(static_cast<int32_t>(fast_tanh(right) * 32767.0f));
         buffer[i * 2]     = pico_audio::PackI2S(l16);
         buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
     }
@@ -565,6 +572,9 @@ int main()
                 dispatch_command(cmd);
             }
         }
+
+        // Service CYW43 driver (required for pico_cyw43_arch_none)
+        cyw43_arch_poll();
 
         // Demo tick
         demo_tick(time_us_64());

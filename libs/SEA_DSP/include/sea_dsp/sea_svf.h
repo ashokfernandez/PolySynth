@@ -37,6 +37,7 @@ public:
     }
 
     mQ = (Q < static_cast<T>(0.05)) ? static_cast<T>(0.05) : Q;
+    mR = static_cast<T>(1.0) / (static_cast<T>(2.0) * mQ);
 
     CalculateCoefficients();
   }
@@ -45,17 +46,12 @@ public:
     // This relies on Prepare happening in SetParams
     // Original implementation accessed g from integrator1
     T g = integrator1.GetG();
-    // R = 1 / (2Q)
-    T R = static_cast<T>(1.0) / (static_cast<T>(2.0) * mQ);
     T s1 = integrator1.GetS();
     T s2 = integrator2.GetS();
 
-    T denominator = static_cast<T>(1.0) + static_cast<T>(2.0) * R * g + g * g;
+    T denominator = static_cast<T>(1.0) + static_cast<T>(2.0) * mR * g + g * g;
 
-    // (in - (2R + g)*s1 - s2) / den
-    // Original had: (in - (2.0 * R + g) * s1 - s2)
-    // Let's match exact order of operations if possible for bit-exactness
-    T hp = (in - (static_cast<T>(2.0) * R + g) * s1 - s2) / denominator;
+    T hp = (in - (static_cast<T>(2.0) * mR + g) * s1 - s2) / denominator;
 
     T bp = integrator1.Process(hp);
     T lp = integrator2.Process(bp);
@@ -77,6 +73,7 @@ private:
   T mSampleRate = static_cast<T>(44100.0);
   T mCutoff = static_cast<T>(1000.0);
   T mQ = static_cast<T>(0.707);
+  T mR = static_cast<T>(1.0) / (static_cast<T>(2.0) * static_cast<T>(0.707));
 
   TPTIntegrator<T> integrator1;
   TPTIntegrator<T> integrator2;

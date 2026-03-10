@@ -24,6 +24,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Initialize the Pico SDK (must come after project())
 pico_sdk_init()
 
+# ── Hard-float ABI ────────────────────────────────────────────────────────
+# The Pico SDK defaults to -mfloat-abi=softfp, which passes float args via
+# integer registers (requiring register-file transfers on every call).
+# Hard-float passes floats directly in FPU registers, saving ~5-10% in
+# function-heavy DSP code. Safe because SDK sources are compiled in-tree
+# with the same flags.
+string(REPLACE "-mfloat-abi=softfp" "-mfloat-abi=hard" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+string(REPLACE "-mfloat-abi=softfp" "-mfloat-abi=hard" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+string(REPLACE "-mfloat-abi=softfp" "-mfloat-abi=hard" CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
+
 # ── Embedded compile definitions ─────────────────────────────────────────
 # These propagate to ALL targets in this build tree via SEA_DSP INTERFACE.
 # POLYSYNTH_USE_FLOAT:       sample_t = float (not double)

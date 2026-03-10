@@ -9,11 +9,21 @@ struct Math {
   static SEA_INLINE Real Sin(Real x) {
 #ifdef SEA_FAST_MATH
     // 5th-order polynomial: accurate to ~0.001% for |x| < pi
-    // Normalize x to [-pi, pi]
+    // Normalize x to [-pi, pi] using conditional subtraction
+    // (replaces std::fmod — ~50 cycles on Cortex-M33)
     const Real pi = Real(3.14159265358979323846);
     const Real two_pi = Real(6.28318530717958647692);
-    x = std::fmod(x + pi, two_pi);
-    if (x < Real(0)) x += two_pi;
+    // Bounded range reduction: 2 if-subtractions handle all realistic audio inputs
+    // (oscillator phase [0,2π), Cos offset [0,3π), filter angles [0,π/2))
+    // Falls back to fmod only for extreme values (should never happen in practice)
+    x += pi;
+    if (x >= two_pi) {
+        x -= two_pi;
+        if (x >= two_pi) x = std::fmod(x, two_pi);  // fallback
+    } else if (x < Real(0)) {
+        x += two_pi;
+        if (x < Real(0)) x = std::fmod(x, two_pi) + two_pi;  // fallback
+    }
     x -= pi;
     Real x2 = x * x;
     return x * (Real(1) - x2 / Real(6) * (Real(1) - x2 / Real(20)));

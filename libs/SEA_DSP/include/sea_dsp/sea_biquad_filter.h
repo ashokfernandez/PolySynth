@@ -13,6 +13,9 @@ public:
 
   void Init(T sampleRate) {
     mSampleRate = sampleRate;
+    if (sampleRate > static_cast<T>(0.0)) {
+      mInvSampleRate = static_cast<T>(1.0) / sampleRate;
+    }
     Reset();
     CalculateCoefficients();
   }
@@ -50,7 +53,7 @@ private:
     if (mSampleRate == static_cast<T>(0.0))
       return;
 
-    T omega = static_cast<T>(kTwoPi) * mCutoff / mSampleRate;
+    T omega = static_cast<T>(kTwoPi) * mCutoff * mInvSampleRate;
     T sn = Math::Sin(omega);
     T cs = Math::Cos(omega);
     T alpha = sn / (static_cast<T>(2.0) * mQ);
@@ -118,6 +121,7 @@ private:
   }
 
   T mSampleRate = static_cast<T>(44100.0);
+  T mInvSampleRate = static_cast<T>(1.0) / static_cast<T>(44100.0);
   FilterType mType = FilterType::LowPass;
   T mCutoff = static_cast<T>(1000.0);
   T mQ = static_cast<T>(0.707);

@@ -209,7 +209,9 @@ public:
     cutoff = std::clamp(cutoff, sample_t(20.0), sample_t(20000.0));
 
     sample_t flt = sample_t(0);
-    bool filterDirty = (cutoff != mLastFilterCutoff || mBaseRes != mLastFilterRes);
+    // Quantize to ~1 Hz precision to avoid per-sample SetParams during filter sweep
+    bool filterDirty = (std::abs(cutoff - mLastFilterCutoff) > sample_t(1.0) ||
+                        mBaseRes != mLastFilterRes);
     if (filterDirty) {
       mLastFilterCutoff = cutoff;
       mLastFilterRes = mBaseRes;
@@ -250,8 +252,13 @@ public:
       ampMod = std::clamp(ampMod, sample_t(0.0), sample_t(2.0));
     }
 
-    // Cache the LFO value for pan modulation access later
+    // Update pan cache with LFO modulation (only recomputes sin/cos if pan changed)
     mLastLfoVal = static_cast<float>(lfoVal);
+    if (mLfoPanDepth != sample_t(0)) {
+      float modulatedPan = mPanPosition + (mLastLfoVal * mLfoPanDepth);
+      modulatedPan = std::clamp(modulatedPan, -1.0f, 1.0f);
+      UpdatePanCache(modulatedPan);
+    }
 
     mAge++;
 
@@ -302,8 +309,14 @@ public:
     return std::clamp(modulatedPan, -1.0f, 1.0f);
   }
 
+  void GetPanCoefficients(sample_t &left, sample_t &right) const {
+    left = mPanLeft;
+    right = mPanRight;
+  }
+
   void SetPanPosition(float pan) {
     mPanPosition = std::clamp(pan, -1.0f, 1.0f);
+    UpdatePanCache(mPanPosition);
   }
 
   VoiceRenderState GetRenderState() const {
@@ -399,6 +412,16 @@ public:
   }
 
 private:
+  void UpdatePanCache(float pan) {
+    if (pan != mCachedPan) {
+      mCachedPan = pan;
+      sample_t theta =
+          (static_cast<sample_t>(pan) + sample_t(1)) * (kPi / sample_t(4));
+      mPanLeft = sea::Math::Cos(theta);
+      mPanRight = sea::Math::Sin(theta);
+    }
+  }
+
   sea::Oscillator mOscA;
   sea::Oscillator mOscB;
   sea::BiquadFilter<sample_t> mFilter;
@@ -457,6 +480,11 @@ private:
   sample_t mLastFilterRes = sample_t(-1);
 
   sample_t mSampleRate = 48000.0;
+
+  // --- Cached pan coefficients (recomputed only when pan changes) ---
+  float mCachedPan = 0.0f;
+  sample_t mPanLeft = sample_t(0.70710678118654752);   // cos(pi/4) — center pan
+  sample_t mPanRight = sample_t(0.70710678118654752);  // sin(pi/4) — center pan
 };
 
 } // namespace PolySynthCore
