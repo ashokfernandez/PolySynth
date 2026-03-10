@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include "pico/platform.h"  // __time_critical_func
+#include "pico.h"  // __time_critical_func
 #include "sine_generator.h" // PackI2S()
 
 // ── Fast tanh approximant (Padé) ─────────────────────────────────────────
