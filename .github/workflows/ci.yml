@@ -19,11 +19,12 @@ env:
 # Job dependency graph:
 #
 #   lint-static-analysis ──┐
-#                          ├──> native-dsp-tests ──> native-ui-tests ──> build-macos ──┐
-#   build-asan-tests ──────┤                     |                   ├──> build-windows ├──> publish-release
-#   build-tsan-tests ──────┘                     └──> build-wam-demo
-#                                                          └──> package-demo-site
-#                                                                    └──> publish-pages
+#                          ├──> native-dsp-tests ──────────────────────> build-macos ──┐
+#   build-asan-tests ──────┤                                           build-windows ──├──> publish-release
+#   build-tsan-tests ──────┤
+#                          ├──> native-ui-tests (parallel with dsp) ──┘
+#                          ├──> build-wam-demo ──> package-demo-site ──> publish-pages
+#                          └──> (pico jobs run independently)
 # =============================================================================
 
 jobs:
@@ -51,6 +52,12 @@ jobs:
           key: ${{ runner.os }}-ccache-lint-${{ hashFiles('tests/CMakeLists.txt', 'libs/SEA_DSP/CMakeLists.txt') }}
           restore-keys: |
             ${{ runner.os }}-ccache-lint-
+
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: external
+          key: deps-${{ runner.os }}-${{ hashFiles('scripts/download_dependencies.sh') }}
 
       - name: Download project external dependencies
         run: |
@@ -123,6 +130,12 @@ jobs:
           key: ${{ runner.os }}-ccache-asan-${{ hashFiles('tests/CMakeLists.txt', 'libs/SEA_DSP/CMakeLists.txt') }}
           restore-keys: |
             ${{ runner.os }}-ccache-asan-
+
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: external
+          key: deps-${{ runner.os }}-${{ hashFiles('scripts/download_dependencies.sh') }}
 
       - name: Download project external dependencies
         run: |
@@ -205,6 +218,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-ccache-tsan-
 
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: external
+          key: deps-${{ runner.os }}-${{ hashFiles('scripts/download_dependencies.sh') }}
+
       - name: Download project external dependencies
         run: |
           chmod +x scripts/download_dependencies.sh
@@ -281,6 +300,12 @@ jobs:
 
       - name: Reset ccache stats
         run: ccache -z
+
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: external
+          key: deps-${{ runner.os }}-${{ hashFiles('scripts/download_dependencies.sh') }}
 
       - name: Download project external dependencies
         run: |
@@ -475,6 +500,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build
 
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: external
+          key: deps-${{ runner.os }}-${{ hashFiles('scripts/download_dependencies.sh') }}
+
       - name: Download project external dependencies
         run: |
           chmod +x scripts/download_dependencies.sh
@@ -505,6 +536,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Cache Pico SDK
+        uses: actions/cache@v4
+        with:
+          path: external/pico-sdk
+          key: pico-sdk-${{ hashFiles('scripts/download_pico_sdk.sh') }}
 
       - name: Download Pico SDK
         run: |
@@ -546,6 +583,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi
 
+      - name: Cache Pico SDK
+        uses: actions/cache@v4
+        with:
+          path: external/pico-sdk
+          key: pico-sdk-${{ hashFiles('scripts/download_pico_sdk.sh') }}
+
       - name: Download Pico SDK
         run: |
           chmod +x scripts/download_pico_sdk.sh
@@ -586,12 +629,12 @@ jobs:
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
-  # Job 8: Build PolySynth WAM Demo (unchanged – now depends on safety gate)
+  # Job 8: Build PolySynth WAM Demo (depends on safety gates, not DSP tests)
   # ---------------------------------------------------------------------------
   build-wam-demo:
     name: Build PolySynth WAM Demo
     runs-on: ubuntu-latest
-    needs: native-dsp-tests
+    needs: [lint-static-analysis, build-asan-tests, build-tsan-tests]
 
     steps:
       - uses: actions/checkout@v4
@@ -605,6 +648,12 @@ jobs:
         uses: mymindstorm/setup-emsdk@v14
         with:
           version: latest
+
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: external
+          key: deps-${{ runner.os }}-${{ hashFiles('scripts/download_dependencies.sh') }}
 
       - name: Download project external dependencies
         run: |
@@ -640,7 +689,7 @@ jobs:
   native-ui-tests:
     name: Native UI Tests
     runs-on: macos-14
-    needs: native-dsp-tests
+    needs: [lint-static-analysis, build-asan-tests, build-tsan-tests]
 
     steps:
       - uses: actions/checkout@v4
@@ -657,6 +706,12 @@ jobs:
           key: ${{ runner.os }}-ccache-sandbox-${{ hashFiles('ComponentGallery/CMakeLists.txt') }}
           restore-keys: |
             ${{ runner.os }}-ccache-sandbox-
+
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: external
+          key: deps-${{ runner.os }}-${{ hashFiles('scripts/download_dependencies.sh') }}
 
       - name: Download project external dependencies
         run: |
