@@ -218,6 +218,7 @@ FreeRTOS migration.
 ```
 This also makes the idle hook work on Pico 2 (non-W) boards that have a standard GPIO LED.
 
+
 ### Validation
 
 - LED blinks at 1Hz during normal operation
