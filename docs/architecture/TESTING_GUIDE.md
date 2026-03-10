@@ -3,19 +3,25 @@
 ## Test Pyramid
 
 ```
-                    ┌──────────┐
-                    │ Visual   │  Playwright screenshots
-                    │Regression│  (component gallery)
-                   ┌┴──────────┴┐
-                   │ CI Build   │  WAM Emscripten build
-                   │Integration │  (catches #if guard issues)
-                  ┌┴────────────┴┐
-                  │ Golden Master │  19 WAV files, RMS comparison
-                  │ Audio Tests   │  (catches signal path regressions)
-                 ┌┴──────────────┴┐
-                 │   Unit Tests    │  55+ Catch2 test cases
-                 │ (src/core only) │  (catches logic errors)
-                 └────────────────┘
+                  ┌────────────┐
+                  │  Visual    │  Skia pixel-diff screenshots
+                  │ Regression │  (ComponentGallery, macOS)
+                 ┌┴────────────┴┐
+                 │  Integration  │  WAM Emscripten build, ARM cross-compile,
+                 │    Builds     │  Wokwi emulation, desktop smoke test
+                ┌┴──────────────┴┐
+                │  Golden Master  │  19 WAV files, RMS + FFT comparison
+                │  Audio Tests    │  (catches signal path regressions)
+               ┌┴────────────────┴┐
+               │  Sanitizer Tests  │  ASan + UBSan (memory), TSan (races)
+               │  (same unit tests)│  (catches undefined behaviour)
+              ┌┴──────────────────┴┐
+              │   Embedded Config   │  float precision, 4-voice limit,
+              │   Tests (Pico)      │  -Wdouble-promotion (Layer 1)
+             ┌┴────────────────────┴┐
+             │     Unit Tests        │  55+ Catch2 test cases
+             │   (src/core only)     │  (catches logic errors)
+             └──────────────────────┘
 ```
 
 Each layer catches different classes of bugs. All layers run in CI on every PR.
@@ -351,14 +357,56 @@ demo_waveforms.wav
 
 ## CI Pipeline
 
-The CI pipeline (`.github/workflows/ci.yml`) runs these jobs:
+The CI pipeline (`.github/workflows/ci.yml`) uses a safety-gate pattern: fast analysis jobs run first in parallel, and downstream jobs only start after all gates pass.
+
+### Job Dependency Graph
+
+```
+Parallel start (safety gates):
+  lint-static-analysis
+  build-asan-tests
+  build-tsan-tests
+  pico-native-embedded-tests     (independent)
+  pico-arm-compile-check         (independent)
+
+After safety gates pass (parallel):
+  native-dsp-tests               (golden masters, frequency analysis)
+  native-ui-tests                (VRT + desktop smoke, macOS)
+  build-wam-demo                 (Emscripten WAM build)
+
+Tag-only (release):
+  build-macos / build-windows    (needs: dsp-tests + ui-tests)
+  publish-release                (needs: both platform builds)
+
+Main-only (deploy):
+  package-demo-site -> publish-pages
+```
+
+### Job Reference
 
 | Job | What it does | Catches |
 |---|---|---|
-| `native-dsp-tests` | Builds + runs unit tests, golden masters, SEA_DSP tests | Logic bugs, audio regressions |
-| `build-wam-demo` | Emscripten WAM build (processor + controller) | Conditional compilation errors |
-| `build-storybook-site` | Component gallery + Storybook static site | UI build errors |
-| `package-demo-site` | Assembles GitHub Pages deployment | Artifact packaging errors |
-| Visual Regression | Playwright screenshot comparisons | UI rendering regressions |
+| `lint-static-analysis` | Cppcheck, Clang-Tidy, platform API guard checks | Logic errors, style violations, unguarded `BundleResourcePath` calls |
+| `build-asan-tests` | Unit tests with AddressSanitizer + UBSan (Clang) | Memory corruption, buffer overflows, undefined behaviour |
+| `build-tsan-tests` | Unit tests with ThreadSanitizer (Clang) | Data races in concurrent audio processing |
+| `native-dsp-tests` | Clean release build + unit tests + golden masters + frequency analysis | Audio regressions, signal path changes |
+| `native-ui-tests` | VRT (Skia pixel-diff) + desktop app smoke test (macOS) | Visual regressions, startup crashes |
+| `build-wam-demo` | Emscripten WAM build (processor + controller) | Conditional compilation errors, `#if IPLUG_EDITOR` guard issues |
+| `pico-native-embedded-tests` | Unit tests with `POLYSYNTH_USE_FLOAT`, `MAX_VOICES=4`, `-Wdouble-promotion` | Float precision regressions, voice-count assumptions |
+| `pico-arm-compile-check` | ARM cross-compile for RP2350 + binary size report | Linker errors, missing symbols on embedded target |
+| `pico-emulation-test` | Wokwi RP2040 emulator runs firmware, checks `[TEST:ALL_PASSED]` serial output | Runtime failures on actual (emulated) hardware. Optional — requires `WOKWI_CLI_TOKEN` |
+| `package-demo-site` | Assembles GitHub Pages deployment + validates HTML references | Artifact packaging errors |
 
-All jobs must pass before merging. The WAM build is particularly valuable as an integration test — it compiles the plugin with `IPLUG_EDITOR` only (no `IPLUG_DSP`), catching any code that accidentally references DSP-only members in shared code paths.
+All safety-gate jobs must pass before downstream jobs run. The WAM build is particularly valuable as an integration test — it compiles the plugin with `IPLUG_EDITOR` only (no `IPLUG_DSP`), catching any code that accidentally references DSP-only members in shared code paths.
+
+### Embedded Testing Layers (Pico)
+
+The Pico CI uses a three-layer testing approach:
+
+| Layer | Environment | What it proves |
+|---|---|---|
+| **Layer 1** | Native host (x86) with embedded compile flags | DSP logic correct under `float` precision and 4-voice limit |
+| **Layer 2a** | ARM cross-compilation (RP2350) | Full firmware links for target hardware |
+| **Layer 2b** | Wokwi emulator (RP2040 proxy) | Firmware boots and passes self-tests at runtime |
+
+Layer 2b uses RP2040 as a proxy because Wokwi does not yet support RP2350 natively. The code is identical — only the board target differs.
