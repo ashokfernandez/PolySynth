@@ -42,6 +42,16 @@ static std::atomic<int> s_cmdTail{0};  // ISR reads
 static PolySynthCore::SynthState s_pendingState;
 static PolySynthCore::SynthState s_stagedState;
 static std::atomic<bool> s_stateConsumed{true};
+static std::atomic<int> s_activeVoices{0};  // updated by audio ISR for diagnostics
+static float s_peakLevel = 0.0f;  // peak output level (pre-tanh), reset on read
+
+// Voice-change event ring buffer (ISR writes, main loop reads)
+struct VoiceEvent { int8_t from; int8_t to; };
+static constexpr int kVoiceEventBufSize = 32;
+static VoiceEvent s_voiceEvents[kVoiceEventBufSize];
+static std::atomic<int> s_voiceEventHead{0};  // ISR writes
+static int s_voiceEventTail = 0;               // main loop reads
+static int s_prevVoiceCount = 0;
 
 static void enqueue_cmd(AudioCommand::Type type, uint8_t a1 = 0, uint8_t a2 = 0) {
     int head = s_cmdHead.load(std::memory_order_relaxed);
@@ -57,6 +67,15 @@ static void enqueue_cmd(AudioCommand::Type type, uint8_t a1 = 0, uint8_t a2 = 0)
 static inline float fast_tanh(float x) {
     float x2 = x * x;
     return x * (27.0f + x2) / (27.0f + 9.0f * x2);
+}
+
+// ── Saturating int16 conversion (SSAT instruction) ───────────────────────
+// Single-cycle saturating clamp to [-32768, 32767] via ARM DSP extension.
+// Replaces std::clamp + cast for float→int16 output conversion.
+static inline int16_t saturate_to_i16(int32_t val) {
+    int32_t result;
+    __asm__ volatile("ssat %0, #16, %1" : "=r"(result) : "r"(val));
+    return static_cast<int16_t>(result);
 }
 
 // ── Audio callback (called from DMA ISR) ─────────────────────────────────
@@ -93,15 +112,39 @@ static void audio_callback(uint32_t* buffer, uint32_t num_frames)
         float left = 0.0f, right = 0.0f;
         s_engine.Process(left, right);
 
-        // Soft clip (Padé approximant — tanhf() is too expensive on Cortex-M33)
-        // Clamp after fast_tanh: the Padé approximant can exceed ±1.0 for |x|>3
-        left = std::clamp(fast_tanh(left), -1.0f, 1.0f);
-        right = std::clamp(fast_tanh(right), -1.0f, 1.0f);
+        // Output gain: compensate for conservative gain staging
+        // (velocity × filter × pan × headroom ≈ 0.12 for a single note).
+        // Boost before soft clip so tanh gracefully limits dense chords.
+        constexpr float kOutputGain = 4.0f;
+        left *= kOutputGain;
+        right *= kOutputGain;
 
-        auto l16 = static_cast<int16_t>(left * 32767.0f);
-        auto r16 = static_cast<int16_t>(right * 32767.0f);
+        // Track peak level for diagnostics
+        float absL = left > 0 ? left : -left;
+        float absR = right > 0 ? right : -right;
+        float peak = absL > absR ? absL : absR;
+        if (peak > s_peakLevel) s_peakLevel = peak;
+
+        // Soft clip (Padé approximant — tanhf() is too expensive on Cortex-M33)
+        // SSAT handles overflow: fast_tanh can exceed ±1.0 for |x|>3, so the
+        // int32 multiply may exceed int16 range — SSAT saturates in one cycle.
+        auto l16 = saturate_to_i16(static_cast<int32_t>(fast_tanh(left) * 32767.0f));
+        auto r16 = saturate_to_i16(static_cast<int32_t>(fast_tanh(right) * 32767.0f));
         buffer[i * 2]     = pico_audio::PackI2S(l16);
         buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
+    }
+    // Update voice count for status reporting
+    s_engine.UpdateVisualization();
+    int vc = s_engine.GetActiveVoiceCount();
+    s_activeVoices.store(vc, std::memory_order_relaxed);
+    // Buffer voice-change events (NO printf from ISR — not thread-safe)
+    if (vc != s_prevVoiceCount) {
+        int head = s_voiceEventHead.load(std::memory_order_relaxed);
+        int next = (head + 1) % kVoiceEventBufSize;
+        s_voiceEvents[head] = {static_cast<int8_t>(s_prevVoiceCount),
+                               static_cast<int8_t>(vc)};
+        s_voiceEventHead.store(next, std::memory_order_release);
+        s_prevVoiceCount = vc;
     }
 }
 
@@ -144,6 +187,20 @@ enum class DemoPhase : uint8_t {
     CHORD_OFF,      // 11-13s: silence
     DONE            // loop back to SAW_NOTE
 };
+
+static const char* demo_phase_name(DemoPhase p) {
+    switch (p) {
+        case DemoPhase::SAW_NOTE:     return "SAW";
+        case DemoPhase::SAW_OFF:      return "SAW_OFF";
+        case DemoPhase::SQUARE_NOTE:  return "SQUARE";
+        case DemoPhase::SQUARE_OFF:   return "SQ_OFF";
+        case DemoPhase::CHORD:        return "CHORD";
+        case DemoPhase::FILTER_SWEEP: return "SWEEP";
+        case DemoPhase::CHORD_OFF:    return "CHD_OFF";
+        case DemoPhase::DONE:         return "DONE";
+    }
+    return "?";
+}
 
 struct DemoState {
     bool running = true;
@@ -361,7 +418,7 @@ static void dispatch_command(const pico_serial::Command& cmd) {
                                    static_cast<float>(pico_audio::kSampleRate);
             float cpu_percent = (fill_time_us / buffer_time_us) * 100.0f;
             printf("STATUS: voices=%d cpu=%.1f%% engine=%uB underruns=%lu\n",
-                   s_engine.GetActiveVoiceCount(),
+                   s_activeVoices.load(std::memory_order_relaxed),
                    static_cast<double>(cpu_percent),
                    static_cast<unsigned>(sizeof(PolySynthCore::Engine)),
                    static_cast<unsigned long>(pico_audio::GetUnderrunCount()));
@@ -566,8 +623,21 @@ int main()
             }
         }
 
+        // Service CYW43 driver (required for pico_cyw43_arch_none)
+        cyw43_arch_poll();
+
         // Demo tick
         demo_tick(time_us_64());
+
+        // Drain voice-change events (safe — main loop only)
+        {
+            int head = s_voiceEventHead.load(std::memory_order_acquire);
+            while (s_voiceEventTail != head) {
+                auto& ev = s_voiceEvents[s_voiceEventTail];
+                printf("[VOICE] %d -> %d\n", ev.from, ev.to);
+                s_voiceEventTail = (s_voiceEventTail + 1) % kVoiceEventBufSize;
+            }
+        }
 
         // Periodic status report (every 5 seconds)
         uint64_t now = time_us_64();
@@ -580,12 +650,15 @@ int main()
                                    static_cast<float>(pico_audio::kSampleRate);
             float cpu_percent = (fill_time_us / buffer_time_us) * 100.0f;
 
-            printf("[%lus] CPU: %.1f%% | Fill: %lu us | Underruns: %lu | Demo: %s\n",
+            float peak = s_peakLevel;
+            s_peakLevel = 0.0f;  // reset for next interval
+
+            printf("[%lus] CPU: %.1f%% | Voices: %d | Peak: %.3f | Phase: %s\n",
                    static_cast<unsigned long>(report_counter * 5),
                    static_cast<double>(cpu_percent),
-                   static_cast<unsigned long>(pico_audio::GetLastFillTimeUs()),
-                   static_cast<unsigned long>(pico_audio::GetUnderrunCount()),
-                   s_demo.running ? "ON" : "OFF");
+                   s_activeVoices.load(std::memory_order_relaxed),
+                   static_cast<double>(peak),
+                   s_demo.running ? demo_phase_name(s_demo.phase) : "OFF");
 
             // Blink LED
             cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, report_counter % 2);

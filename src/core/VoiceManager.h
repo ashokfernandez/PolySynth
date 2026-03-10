@@ -131,11 +131,11 @@ public:
       if (mono == sample_t(0))
         continue;
 
-      float pan = std::clamp(voice.GetPanPosition(), -1.0f, 1.0f);
-      // Constant-power panning: theta maps [-1,+1] to [0, pi/2]
-      sample_t theta = (static_cast<sample_t>(pan) + sample_t(1)) * (kPi / sample_t(4));
-      outLeft += mono * sea::Math::Cos(theta);
-      outRight += mono * sea::Math::Sin(theta);
+      // Use cached pan coefficients (sin/cos computed only when pan changes)
+      sample_t panL, panR;
+      voice.GetPanCoefficients(panL, panR);
+      outLeft += mono * panL;
+      outRight += mono * panR;
     }
     // Headroom scaling
     outLeft *= kHeadroomScale;

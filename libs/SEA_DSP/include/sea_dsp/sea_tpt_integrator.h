@@ -10,6 +10,10 @@ public:
 
   void Init(T sampleRate) {
     mSampleRate = sampleRate;
+    if (sampleRate > static_cast<T>(0.0)) {
+      mInvSampleRate = static_cast<T>(1.0) / sampleRate;
+      mTwoTimesSampleRate = static_cast<T>(2.0) * sampleRate;
+    }
     Reset();
   }
 
@@ -33,11 +37,13 @@ public:
       cutoff = maxCutoff;
 
     T wd = static_cast<T>(kTwoPi) * cutoff;
-    T T_period = static_cast<T>(1.0) / mSampleRate;
-    T wa = (static_cast<T>(2.0) / T_period) *
-           Math::Tan(wd * T_period / static_cast<T>(2.0));
-    g = wa * T_period / static_cast<T>(2.0);
+    T wa = mTwoTimesSampleRate *
+           Math::Tan(wd * mInvSampleRate * static_cast<T>(0.5));
+    g = wa * mInvSampleRate * static_cast<T>(0.5);
   }
+
+  // Set g directly (avoids redundant Tan when caller has already computed it)
+  SEA_INLINE void SetG(T newG) { g = newG; }
 
   // Process the input sample and return the output
   // in: Input sample
@@ -63,6 +69,8 @@ public:
 
 private:
   T mSampleRate = static_cast<T>(44100.0);
+  T mInvSampleRate = static_cast<T>(1.0) / static_cast<T>(44100.0);
+  T mTwoTimesSampleRate = static_cast<T>(2.0) * static_cast<T>(44100.0);
   T s = static_cast<T>(0.0); // State
   T g = static_cast<T>(0.0); // Instantaneous gain
 };

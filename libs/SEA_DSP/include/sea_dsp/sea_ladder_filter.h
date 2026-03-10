@@ -12,6 +12,10 @@ public:
 
   void Init(T sampleRate) {
     mSampleRate = sampleRate;
+    if (sampleRate > static_cast<T>(0.0)) {
+      mInvSampleRate = static_cast<T>(1.0) / sampleRate;
+      mTwoTimesSampleRate = static_cast<T>(2.0) * sampleRate;
+    }
     for (int i = 0; i < 4; ++i)
       integrators[i].Init(sampleRate);
     Reset();
@@ -37,20 +41,30 @@ public:
     mResonance =
         Math::Clamp(resonance, static_cast<T>(0.0), static_cast<T>(1.2));
 
-    // Prepare G
+    // Prepare G — compute Tan once, share with all integrators via SetG
     if (mSampleRate <= static_cast<T>(0.0)) {
       g = static_cast<T>(0.0);
+      mInv1PlusG = static_cast<T>(1.0);
+      mInvFeedbackDenom = static_cast<T>(1.0);
       return;
     }
     T wd = static_cast<T>(kTwoPi) * mCutoff;
-    T T_period = static_cast<T>(1.0) / mSampleRate;
-    T wa = (static_cast<T>(2.0) / T_period) *
-           Math::Tan(wd * T_period / static_cast<T>(2.0));
+    T wa = mTwoTimesSampleRate *
+           Math::Tan(wd * mInvSampleRate * static_cast<T>(0.5));
+    g = wa * mInvSampleRate * static_cast<T>(0.5);
 
-    g = wa * T_period / static_cast<T>(2.0);
+    // Cache reciprocal: eliminates 9 divisions per ProcessTransistor call
+    mInv1PlusG = static_cast<T>(1.0) / (static_cast<T>(1.0) + g);
 
+    // Cache feedback denominator reciprocal: 1/(1 + k * BETA)
+    T G_lpf = g * mInv1PlusG;
+    T BETA = G_lpf * G_lpf * G_lpf * G_lpf;
+    T k = mResonance * static_cast<T>(4.0);
+    mInvFeedbackDenom = static_cast<T>(1.0) / (static_cast<T>(1.0) + k * BETA);
+
+    // Share g with integrators directly (avoids 4 redundant Tan computations)
     for (int i = 0; i < 4; ++i) {
-      integrators[i].Prepare(mCutoff);
+      integrators[i].SetG(g);
     }
   }
 
@@ -71,25 +85,26 @@ public:
 private:
   SEA_INLINE T ProcessTransistor(T in) {
     // 4 cascaded 1-pole LPFs with global feedback.
-    T G_lpf = g / (static_cast<T>(1.0) + g);
-    T BETA = G_lpf * G_lpf * G_lpf * G_lpf;
+    // Uses cached mInv1PlusG and mInvFeedbackDenom (set in SetParams)
+    // to replace 9 divisions with multiplications.
+    T G_lpf = g * mInv1PlusG;
 
     // Accumulate S terms
     T S[4];
     for (int i = 0; i < 4; ++i)
-      S[i] = integrators[i].GetS() / (static_cast<T>(1.0) + g);
+      S[i] = integrators[i].GetS() * mInv1PlusG;
 
     T S_total = G_lpf * G_lpf * G_lpf * S[0] + G_lpf * G_lpf * S[1] +
                 G_lpf * S[2] + S[3];
 
     T k = mResonance * static_cast<T>(4.0);
 
-    T u = (Math::Tanh(in) - k * S_total) / (static_cast<T>(1.0) + k * BETA);
+    T u = (Math::Tanh(in) - k * S_total) * mInvFeedbackDenom;
 
     // Compute stages
     T v = Math::Tanh(u);
     for (int i = 0; i < 4; ++i) {
-      T v_out = (g * v + integrators[i].GetS()) / (static_cast<T>(1.0) + g);
+      T v_out = (g * v + integrators[i].GetS()) * mInv1PlusG;
       v_out = Math::Tanh(v_out);
       integrators[i].SetS(static_cast<T>(2.0) * v_out - integrators[i].GetS());
       v = v_out;
@@ -104,10 +119,14 @@ private:
   }
 
   T mSampleRate = static_cast<T>(44100.0);
+  T mInvSampleRate = static_cast<T>(1.0) / static_cast<T>(44100.0);
+  T mTwoTimesSampleRate = static_cast<T>(2.0) * static_cast<T>(44100.0);
   Model mModel = Model::Transistor;
   T mCutoff = static_cast<T>(1000.0);
   T mResonance = static_cast<T>(0.0);
   T g = static_cast<T>(0.0);
+  T mInv1PlusG = static_cast<T>(1.0);
+  T mInvFeedbackDenom = static_cast<T>(1.0);
 
   TPTIntegrator<T> integrators[4];
 };
