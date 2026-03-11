@@ -246,6 +246,25 @@ foreach(_demo IN LISTS EMBEDDED_DEMO_TARGETS)
 endforeach()
 
 # ---------------------------------------------------------------------------
+# ARM cross-compilation flags (when using arm-linux-gnueabihf toolchain)
+# Matches Pico Cortex-M33 float behavior: VFPv4 FPU, hard-float ABI,
+# fast-math optimizations. Used with QEMU user-mode for ARM golden masters.
+# ---------------------------------------------------------------------------
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm")
+    foreach(_demo IN LISTS EMBEDDED_DEMO_TARGETS)
+        set(_emb "${_demo}_embedded")
+        target_compile_options(${_emb} PRIVATE
+            -march=armv7-a -mfpu=vfpv4 -mfloat-abi=hard
+            -ffast-math -funroll-loops
+        )
+    endforeach()
+    target_compile_options(run_tests_embedded PRIVATE
+        -march=armv7-a -mfpu=vfpv4 -mfloat-abi=hard
+        -ffast-math -funroll-loops
+    )
+endif()
+
+# ---------------------------------------------------------------------------
 # Sanitizer summary (printed at configure time)
 # ---------------------------------------------------------------------------
 polysynth_sanitizer_summary()

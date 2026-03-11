@@ -20,6 +20,10 @@ EMBEDDED_BUILD_DIR = os.path.join(PROJECT_ROOT, "tests", "build")
 EMBEDDED_GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden_embedded")
 EMBEDDED_SUFFIX = "_embedded"
 
+# ARM cross-compiled paths (real ARM float via QEMU user-mode).
+ARM_BUILD_DIR = os.path.join(PROJECT_ROOT, "tests", "build_arm")
+ARM_GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden_arm")
+
 
 def find_demos(build_dir, suffix=""):
     """Find demo executables in build_dir, optionally filtering by suffix."""
@@ -163,6 +167,11 @@ def main():
         help="Use embedded (Pico) configuration demos and golden directory.",
     )
     parser.add_argument(
+        "--arm",
+        action="store_true",
+        help="Use ARM cross-compiled demos and golden directory (QEMU user-mode).",
+    )
+    parser.add_argument(
         "--build-dir",
         type=str,
         default=None,
@@ -181,7 +190,11 @@ def main():
         return 2
 
     # Determine directories and suffix.
-    if args.embedded:
+    if args.arm:
+        build_dir = args.build_dir or ARM_BUILD_DIR
+        golden_dir = args.golden_dir or ARM_GOLDEN_DIR
+        suffix = EMBEDDED_SUFFIX
+    elif args.embedded:
         build_dir = args.build_dir or EMBEDDED_BUILD_DIR
         golden_dir = args.golden_dir or EMBEDDED_GOLDEN_DIR
         suffix = EMBEDDED_SUFFIX

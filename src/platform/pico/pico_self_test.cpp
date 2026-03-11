@@ -2,12 +2,41 @@
 #include "pico_synth_app.h"
 #include "audio_i2s_driver.h"
 #include "Engine.h"
+#include "sine_generator.h"  // pico_audio::PackI2S
+#include "golden_crc.h"
 
 #include <cstdio>
+#include <cstdint>
 
 extern "C" {
     extern uint8_t __StackLimit;
     extern uint8_t __bss_end__;
+}
+
+// ── Minimal CRC32 (no table, no zlib dependency) ────────────────────────
+static uint32_t crc32_update(uint32_t crc, const uint8_t* data, size_t len)
+{
+    crc = ~crc;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++) {
+            crc = (crc >> 1) ^ (0xEDB88320u & (-(crc & 1u)));
+        }
+    }
+    return ~crc;
+}
+
+// ── Fast tanh (same as pico_synth_app.cpp) ──────────────────────────────
+static inline float golden_fast_tanh(float x) {
+    float x2 = x * x;
+    return x * (27.0f + x2) / (27.0f + 9.0f * x2);
+}
+
+// ── Saturating int16 (same as pico_synth_app.cpp) ───────────────────────
+static inline int16_t golden_saturate_to_i16(int32_t val) {
+    int32_t result;
+    __asm__ volatile("ssat %0, #16, %1" : "=r"(result) : "r"(val));
+    return static_cast<int16_t>(result);
 }
 
 static void print_sram_report()
@@ -80,6 +109,60 @@ bool RunAll(PicoSynthApp& app, void (*audioCallback)(uint32_t*, uint32_t))
     } else {
         printf("[TEST:FAIL] audio_i2s_init\n");
         fail_count++;
+    }
+
+    // Test 7: Golden master CRC — full signal chain determinism check.
+    // Renders 256 frames through Engine → gain → fast_tanh → SSAT → I2S pack
+    // and compares CRC32 of the packed buffer against the expected value.
+    {
+        static constexpr uint32_t kGoldenFrames = 256;
+        static constexpr float kOutputGain = 4.0f;
+        uint32_t golden_buf[kGoldenFrames * 2]; // stereo: L,R pairs
+
+        // Fresh engine with default state
+        auto& engine = app.GetEngine();
+        engine.Init(static_cast<double>(pico_audio::kSampleRate));
+        engine.OnNoteOn(69, 100); // A4
+
+        for (uint32_t i = 0; i < kGoldenFrames; i++) {
+            float left = 0.0f, right = 0.0f;
+            engine.Process(left, right);
+
+            left *= kOutputGain;
+            right *= kOutputGain;
+
+            auto l16 = golden_saturate_to_i16(
+                static_cast<int32_t>(golden_fast_tanh(left) * 32767.0f));
+            auto r16 = golden_saturate_to_i16(
+                static_cast<int32_t>(golden_fast_tanh(right) * 32767.0f));
+            golden_buf[i * 2]     = pico_audio::PackI2S(l16);
+            golden_buf[i * 2 + 1] = pico_audio::PackI2S(r16);
+        }
+
+        engine.OnNoteOff(69);
+
+        uint32_t crc = crc32_update(0, reinterpret_cast<const uint8_t*>(golden_buf),
+                                    sizeof(golden_buf));
+
+#if PICO_GOLDEN_CRC32 == 0x00000000
+        // Placeholder value — print CRC for bootstrapping, don't fail.
+        printf("[GOLDEN:CRC32:%08lx] (generated, update golden_crc.h)\n",
+               static_cast<unsigned long>(crc));
+        printf("[TEST:PASS] golden_crc (generated)\n");
+        pass_count++;
+#else
+        if (crc == PICO_GOLDEN_CRC32) {
+            printf("[GOLDEN:CRC32:%08lx]\n", static_cast<unsigned long>(crc));
+            printf("[TEST:PASS] golden_crc\n");
+            pass_count++;
+        } else {
+            printf("[GOLDEN:FAIL] CRC32 mismatch: got 0x%08lx, expected 0x%08lx\n",
+                   static_cast<unsigned long>(crc),
+                   static_cast<unsigned long>(PICO_GOLDEN_CRC32));
+            printf("[TEST:FAIL] golden_crc\n");
+            fail_count++;
+        }
+#endif
     }
 
     // Summary
