@@ -15,23 +15,33 @@ ALIAS_MAP = {
     "demo_render_wav.wav": "demo_engine_saw.wav",
 }
 
+# Embedded-configuration paths (Pico-equivalent: float, 4 voices, no FX).
+EMBEDDED_BUILD_DIR = os.path.join(PROJECT_ROOT, "tests", "build")
+EMBEDDED_GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden_embedded")
+EMBEDDED_SUFFIX = "_embedded"
 
-def find_demos():
+
+def find_demos(build_dir, suffix=""):
+    """Find demo executables in build_dir, optionally filtering by suffix."""
     demos = []
-    if os.path.isdir(TEST_BUILD_DIR):
-        for entry in os.listdir(TEST_BUILD_DIR):
+    if os.path.isdir(build_dir):
+        for entry in os.listdir(build_dir):
             if entry.startswith("demo_"):
-                path = os.path.join(TEST_BUILD_DIR, entry)
+                if suffix and not entry.endswith(suffix):
+                    continue
+                if suffix == "" and EMBEDDED_SUFFIX in entry:
+                    continue  # Skip embedded demos in normal mode
+                path = os.path.join(build_dir, entry)
                 if os.access(path, os.X_OK) and os.path.isfile(path):
                     demos.append(entry)
     return sorted(demos)
 
 
-def run_demos(demos):
+def run_demos(demos, build_dir):
     if not demos:
-        raise RuntimeError(f"No demo executables found in {TEST_BUILD_DIR}")
+        raise RuntimeError(f"No demo executables found in {build_dir}")
     for demo in demos:
-        subprocess.check_call([f"./{demo}"], cwd=TEST_BUILD_DIR)
+        subprocess.check_call([f"./{demo}"], cwd=build_dir)
 
 
 def list_wavs(directory):
@@ -67,38 +77,42 @@ def rms_diff(a, b):
     return math.sqrt(accum / len(a))
 
 
-def generate_golden():
-    os.makedirs(GOLDEN_DIR, exist_ok=True)
-    demos = find_demos()
-    run_demos(demos)
-    wavs = list_wavs(TEST_BUILD_DIR)
+def generate_golden(build_dir=TEST_BUILD_DIR, golden_dir=GOLDEN_DIR, suffix=""):
+    os.makedirs(golden_dir, exist_ok=True)
+    demos = find_demos(build_dir, suffix)
+    run_demos(demos, build_dir)
+    wavs = list_wavs(build_dir)
     if not wavs:
         raise RuntimeError("No WAV files produced by demos.")
     for wav in wavs:
-        shutil.copy2(os.path.join(TEST_BUILD_DIR, wav), os.path.join(GOLDEN_DIR, wav))
+        shutil.copy2(os.path.join(build_dir, wav), os.path.join(golden_dir, wav))
         print(f"Golden master written: {wav}")
-    for alias, target in ALIAS_MAP.items():
-        target_path = os.path.join(TEST_BUILD_DIR, target)
-        if os.path.exists(target_path):
-            shutil.copy2(target_path, os.path.join(GOLDEN_DIR, alias))
-            print(f"Golden master written (alias): {alias} -> {target}")
+    if not suffix:
+        for alias, target in ALIAS_MAP.items():
+            target_path = os.path.join(build_dir, target)
+            if os.path.exists(target_path):
+                shutil.copy2(target_path, os.path.join(golden_dir, alias))
+                print(f"Golden master written (alias): {alias} -> {target}")
 
 
-def verify_golden(tolerance):
-    demos = find_demos()
-    run_demos(demos)
-    if not os.path.isdir(GOLDEN_DIR):
-        raise RuntimeError(f"Golden directory missing: {GOLDEN_DIR}")
+def verify_golden(tolerance, build_dir=TEST_BUILD_DIR, golden_dir=GOLDEN_DIR, suffix=""):
+    demos = find_demos(build_dir, suffix)
+    run_demos(demos, build_dir)
+    if not os.path.isdir(golden_dir):
+        raise RuntimeError(f"Golden directory missing: {golden_dir}")
 
-    golden_wavs = list_wavs(GOLDEN_DIR)
+    golden_wavs = list_wavs(golden_dir)
     if not golden_wavs:
         raise RuntimeError("No golden WAV files found.")
 
     failures = []
     for wav in golden_wavs:
-        golden_path = os.path.join(GOLDEN_DIR, wav)
-        compare_name = ALIAS_MAP.get(wav, wav)
-        test_path = os.path.join(TEST_BUILD_DIR, compare_name)
+        golden_path = os.path.join(golden_dir, wav)
+        if suffix:
+            compare_name = wav  # Embedded WAV names match golden names
+        else:
+            compare_name = ALIAS_MAP.get(wav, wav)
+        test_path = os.path.join(build_dir, compare_name)
         if not os.path.exists(test_path):
             failures.append(f"Missing generated WAV: {compare_name}")
             continue
@@ -123,7 +137,7 @@ def verify_golden(tolerance):
         else:
             print(f"{wav}: RMS diff {diff:.6f} (tolerance {tolerance:.6f})")
 
-    extra_wavs = set(list_wavs(TEST_BUILD_DIR)) - set(golden_wavs)
+    extra_wavs = set(list_wavs(build_dir)) - set(golden_wavs)
     for wav in sorted(extra_wavs):
         print(f"Warning: Extra WAV generated (not in golden set): {wav}")
 
@@ -143,17 +157,44 @@ def main():
         default=0.001,
         help="RMS tolerance threshold (default: 0.001).",
     )
+    parser.add_argument(
+        "--embedded",
+        action="store_true",
+        help="Use embedded (Pico) configuration demos and golden directory.",
+    )
+    parser.add_argument(
+        "--build-dir",
+        type=str,
+        default=None,
+        help="Override build directory path.",
+    )
+    parser.add_argument(
+        "--golden-dir",
+        type=str,
+        default=None,
+        help="Override golden reference directory path.",
+    )
     args = parser.parse_args()
 
     if not args.generate and not args.verify:
         print("ERROR: Specify --generate or --verify.", file=sys.stderr)
         return 2
 
+    # Determine directories and suffix.
+    if args.embedded:
+        build_dir = args.build_dir or EMBEDDED_BUILD_DIR
+        golden_dir = args.golden_dir or EMBEDDED_GOLDEN_DIR
+        suffix = EMBEDDED_SUFFIX
+    else:
+        build_dir = args.build_dir or TEST_BUILD_DIR
+        golden_dir = args.golden_dir or GOLDEN_DIR
+        suffix = ""
+
     try:
         if args.generate:
-            generate_golden()
+            generate_golden(build_dir, golden_dir, suffix)
         if args.verify:
-            verify_golden(args.tolerance)
+            verify_golden(args.tolerance, build_dir, golden_dir, suffix)
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1

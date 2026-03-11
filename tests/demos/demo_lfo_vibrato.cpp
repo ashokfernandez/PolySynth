@@ -34,7 +34,7 @@ int main() {
       if (i == samplesPerNote - static_cast<int>(0.2 * sampleRate)) {
         engine.OnNoteOff(69);
       }
-      double left, right;
+      PolySynthCore::sample_t left, right;
       engine.Process(left, right);
       output.push_back(static_cast<float>(left));
     }

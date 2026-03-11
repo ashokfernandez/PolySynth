@@ -18,7 +18,7 @@ void renderPhrase(PolySynthCore::Engine &engine, std::vector<float> &output,
       if (i == noteSamples - static_cast<int>(0.1 * sampleRate)) {
         engine.OnNoteOff(note);
       }
-      double left, right;
+      PolySynthCore::sample_t left, right;
       engine.Process(left, right);
       output.push_back(static_cast<float>(left));
     }
@@ -26,7 +26,7 @@ void renderPhrase(PolySynthCore::Engine &engine, std::vector<float> &output,
 
   // Gap after phrase
   for (int i = 0; i < static_cast<int>(1.0 * sampleRate); i++) {
-    double left, right;
+    PolySynthCore::sample_t left, right;
     engine.Process(left, right);
     output.push_back(static_cast<float>(left));
   }

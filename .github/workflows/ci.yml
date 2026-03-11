@@ -511,15 +511,20 @@ jobs:
           chmod +x scripts/download_dependencies.sh
           ./scripts/download_dependencies.sh
 
-      - name: Configure and build embedded test target
+      - name: Configure and build embedded targets
         run: |
           cmake -S tests -B tests/build_embedded \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug
-          cmake --build tests/build_embedded --target run_tests_embedded --parallel
+          cmake --build tests/build_embedded --parallel
 
       - name: Run embedded-config unit tests
         run: tests/build_embedded/run_tests_embedded -r compact
+
+      - name: Verify embedded golden-master audio output
+        run: |
+          python3 scripts/golden_master.py --verify --embedded \
+            --build-dir tests/build_embedded
 
   # ---------------------------------------------------------------------------
   # Pico Layer 2a: ARM Cross-Compile Check (RP2350)

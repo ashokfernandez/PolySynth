@@ -39,7 +39,7 @@ int main() {
       engine.OnNoteOff(33);
     }
 
-    double left, right;
+    PolySynthCore::sample_t left, right;
     engine.Process(left, right);
     output.push_back(static_cast<float>(left));
   }
