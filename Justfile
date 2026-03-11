@@ -266,6 +266,53 @@ pico-emu-test:
         --fail-text "[TEST:FAIL]" \
         --fail-text "Hard fault"
 
+# ── Golden master workflows ────────────────────────────────────────────
+
+# Generate desktop golden master reference WAVs (commit tests/golden/).
+golden-generate:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cmake -S tests -B tests/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    cmake --build tests/build --parallel
+    python3 scripts/golden_master.py --generate
+    echo "Desktop golden masters written to tests/golden/"
+    echo "Review and commit: git add tests/golden/*.wav"
+
+# Generate embedded golden master reference WAVs (commit tests/golden_embedded/).
+golden-generate-embedded:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cmake -S tests -B tests/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    cmake --build tests/build --parallel
+    python3 scripts/golden_master.py --generate --embedded
+    echo "Embedded golden masters written to tests/golden_embedded/"
+    echo "Review and commit: git add tests/golden_embedded/*.wav"
+
+# Generate ARM golden master reference WAVs (commit tests/golden_arm/).
+# Requires: apt install qemu-user-static g++-arm-linux-gnueabihf
+golden-generate-arm:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cmake -S tests -B tests/build_arm \
+        -DCMAKE_TOOLCHAIN_FILE=cmake/arm-linux-gnueabihf.cmake \
+        -DCMAKE_BUILD_TYPE=Release -G Ninja
+    cmake --build tests/build_arm --parallel
+    QEMU_LD_PREFIX=/usr/arm-linux-gnueabihf \
+        python3 scripts/golden_master.py --generate --arm
+    echo "ARM golden masters written to tests/golden_arm/"
+    echo "Review and commit: git add tests/golden_arm/*.wav"
+
+# Verify ARM golden masters against committed references.
+golden-verify-arm:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cmake -S tests -B tests/build_arm \
+        -DCMAKE_TOOLCHAIN_FILE=cmake/arm-linux-gnueabihf.cmake \
+        -DCMAKE_BUILD_TYPE=Release -G Ninja
+    cmake --build tests/build_arm --parallel
+    QEMU_LD_PREFIX=/usr/arm-linux-gnueabihf \
+        python3 scripts/golden_master.py --verify --arm
+
 # Docs workflow
 # Validate docs structure (mirrors CI smoke test).
 docs-check:
