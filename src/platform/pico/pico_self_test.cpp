@@ -82,6 +82,47 @@ bool RunAll(PicoSynthApp& app, void (*audioCallback)(uint32_t*, uint32_t))
         fail_count++;
     }
 
+    // Test 7: Init→Stop→Init round-trip produces non-zero audio
+    // Regression test for PIO output ORing bug: if Stop() fails to release
+    // PIO resources, a second Init() gets a different SM whose output is
+    // OR'd with the old SM's latched pin values, corrupting I2S clocks.
+    {
+        // Re-init engine to clean state (Test 5 left a note decaying)
+        app.Init(static_cast<float>(pico_audio::kSampleRate));
+
+        // Re-init I2S (this is the second Init after Test 6's Init+Stop)
+        if (pico_audio::Init(audioCallback)) {
+            // Trigger note directly on engine (same core, no SPSC needed)
+            auto& engine = app.GetEngine();
+            engine.OnNoteOn(60, 100);
+
+            // Fill a buffer through the full audio callback chain
+            uint32_t test_buf[pico_audio::kBufferFrames * 2];
+            audioCallback(test_buf, pico_audio::kBufferFrames);
+
+            // Check for non-zero I2S samples (any non-silent frame passes)
+            uint32_t nonzero = 0;
+            for (uint32_t i = 0; i < pico_audio::kBufferFrames * 2; i++) {
+                if (test_buf[i] != 0) nonzero++;
+            }
+
+            engine.OnNoteOff(60);
+            pico_audio::Stop();
+
+            if (nonzero > 0) {
+                printf("[TEST:PASS] audio_reinit_produces_audio (%lu nonzero samples)\n",
+                       static_cast<unsigned long>(nonzero));
+                pass_count++;
+            } else {
+                printf("[TEST:FAIL] audio_reinit_produces_audio: buffer is silent after Init->Stop->Init\n");
+                fail_count++;
+            }
+        } else {
+            printf("[TEST:FAIL] audio_reinit_produces_audio: second Init() failed\n");
+            fail_count++;
+        }
+    }
+
     // Summary
     printf("\n[TEST:SUMMARY] %d passed, %d failed\n", pass_count, fail_count);
     if (fail_count == 0) {

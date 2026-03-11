@@ -22,6 +22,8 @@ static PIO s_pio = pio0;
 static uint s_sm = 0;           // PIO state machine index
 static int s_dma_channel_a = -1;
 static int s_dma_channel_b = -1;
+static uint s_pio_offset = 0;   // PIO program offset (needed for removal)
+static bool s_initialized = false;
 
 // ── Pin configuration (Waveshare Pico-Audio HAT) ────────────────────────
 static constexpr uint PIN_DIN  = 26;  // I2S data
@@ -86,15 +88,21 @@ static void __time_critical_func(dma_irq_handler)()
 bool Init(AudioCallback callback, int dma_irq)
 {
     if (!callback) return false;
+
+    // Clean up any previous initialization (makes Init safe to call twice)
+    if (s_initialized) {
+        Stop();
+    }
+
     s_callback = callback;
     s_dma_irq = dma_irq;
 
     // ── PIO setup ────────────────────────────────────────────────────
-    uint offset = pio_add_program(s_pio, &i2s_out_program);
+    s_pio_offset = pio_add_program(s_pio, &i2s_out_program);
     s_sm = pio_claim_unused_sm(s_pio, true);
 
     // Configure PIO state machine
-    pio_sm_config cfg = i2s_out_program_get_default_config(offset);
+    pio_sm_config cfg = i2s_out_program_get_default_config(s_pio_offset);
 
     // DIN: output on GPIO26 (1 pin for 'out')
     sm_config_set_out_pins(&cfg, PIN_DIN, 1);
@@ -117,7 +125,7 @@ bool Init(AudioCallback callback, int dma_irq)
     float pio_clk = (float)kSampleRate * 64.0f * 2.0f;  // 2 PIO cycles per bit period
     sm_config_set_clkdiv(&cfg, sys_clk / pio_clk);
 
-    pio_sm_init(s_pio, s_sm, offset + i2s_out_offset_entry_point, &cfg);
+    pio_sm_init(s_pio, s_sm, s_pio_offset + i2s_out_offset_entry_point, &cfg);
 
     // ── DMA setup (ping-pong double buffer) ─────────────────────────
     s_dma_channel_a = dma_claim_unused_channel(true);
@@ -176,6 +184,7 @@ bool Init(AudioCallback callback, int dma_irq)
         s_buffer[1][i] = 0;
     }
 
+    s_initialized = true;
     return true;
 }
 
@@ -195,9 +204,43 @@ void Start()
 
 void Stop()
 {
+    if (!s_initialized) return;
+
+    // ── Disable playback ─────────────────────────────────────────────
     pio_sm_set_enabled(s_pio, s_sm, false);
     dma_channel_abort(s_dma_channel_a);
     dma_channel_abort(s_dma_channel_b);
+
+    // ── Release DMA IRQs and channels ────────────────────────────────
+    if (s_dma_irq == 1) {
+        dma_channel_set_irq1_enabled(s_dma_channel_a, false);
+        dma_channel_set_irq1_enabled(s_dma_channel_b, false);
+        irq_set_enabled(DMA_IRQ_1, false);
+        irq_remove_handler(DMA_IRQ_1, dma_irq_handler);
+    } else {
+        dma_channel_set_irq0_enabled(s_dma_channel_a, false);
+        dma_channel_set_irq0_enabled(s_dma_channel_b, false);
+        irq_set_enabled(DMA_IRQ_0, false);
+        irq_remove_handler(DMA_IRQ_0, dma_irq_handler);
+    }
+    dma_channel_unclaim(s_dma_channel_a);
+    dma_channel_unclaim(s_dma_channel_b);
+
+    // ── Release PIO resources ────────────────────────────────────────
+    // Critical: clear pin directions so this SM's latched output values
+    // don't interfere with future SMs via PIO output ORing.
+    // On RP2350, PIO GPIO output = OR(SM0_out & SM0_pindir, SM1_out & SM1_pindir, ...).
+    // Without this, a stopped SM can hold BCK/LRCK high and corrupt I2S clocks.
+    pio_sm_set_consecutive_pindirs(s_pio, s_sm, PIN_DIN, 1, false);
+    pio_sm_set_consecutive_pindirs(s_pio, s_sm, PIN_BCK, 2, false);
+    pio_sm_unclaim(s_pio, s_sm);
+    pio_remove_program(s_pio, &i2s_out_program, s_pio_offset);
+
+    // ── Reset state ──────────────────────────────────────────────────
+    s_dma_channel_a = -1;
+    s_dma_channel_b = -1;
+    s_callback = nullptr;
+    s_initialized = false;
 }
 
 uint32_t GetUnderrunCount()
