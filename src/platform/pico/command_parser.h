@@ -9,7 +9,7 @@ namespace pico_serial {
 
 struct Command {
     enum Type : uint8_t {
-        NOTE_ON, NOTE_OFF, SET, GET, STATUS, PANIC, RESET, DEMO, STOP, UNKNOWN
+        NOTE_ON, NOTE_OFF, SET, GET, STATUS, PANIC, RESET, DEMO, STOP, SONG, UNKNOWN
     };
     Type type = UNKNOWN;
     int intArg1 = 0;      // note number

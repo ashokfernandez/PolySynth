@@ -1,16 +1,20 @@
 #include "pico_command_dispatch.h"
 #include "pico_synth_app.h"
 #include "pico_demo.h"
+#include "song_player.h"
+#include "songs/song_registry.h"
 #include "audio_i2s_driver.h"
 #include "Engine.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include "pico/time.h"
 
 namespace pico_commands {
 
-void Dispatch(const pico_serial::Command& cmd, PicoSynthApp& app, PicoDemo& demo) {
+void Dispatch(const pico_serial::Command& cmd, PicoSynthApp& app, PicoDemo& demo,
+              SongPlayer& songPlayer) {
     using Type = pico_serial::Command::Type;
 
     switch (cmd.type) {
@@ -67,15 +71,33 @@ void Dispatch(const pico_serial::Command& cmd, PicoSynthApp& app, PicoDemo& demo
             break;
 
         case Type::DEMO:
+            songPlayer.Stop(app);  // Stop song if playing
             demo.Start(time_us_64());
             printf("OK: DEMO started\n");
             break;
 
         case Type::STOP:
             demo.Stop();
+            songPlayer.Stop(app);
             app.Panic();
             printf("OK: STOP\n");
             break;
+
+        case Type::SONG: {
+            if (std::strcmp(cmd.strArg, "STOP") == 0) {
+                songPlayer.Stop(app);
+            } else {
+                int index = cmd.intArg1;
+                if (index < 0 || index >= pico_song::kSongCount) {
+                    printf("ERR: song index %d out of range (0-%d)\n",
+                           index, pico_song::kSongCount - 1);
+                } else {
+                    demo.Stop();  // Stop demo if running
+                    songPlayer.Play(*pico_song::kSongs[index], app);
+                }
+            }
+            break;
+        }
 
         case Type::UNKNOWN:
             printf("ERR: unknown command\n");
