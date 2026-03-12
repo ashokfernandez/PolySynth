@@ -28,4 +28,6 @@ private:
     Phase mPhase = Phase::SAW_NOTE;
     uint64_t mPhaseStartUs = 0;
     uint64_t mLastStatePushUs = 0;
+    bool mPhaseInitDone = false;  // One-shot guard, reset on phase transition
+    int mChordNotesAdded = 0;     // Staggered chord: how many notes sent so far
 };

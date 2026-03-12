@@ -47,6 +47,14 @@ public:
     PolySynthCore::SynthState& GetPendingState() { return mPendingState; }
     const PolySynthCore::SynthState& GetPendingState() const { return mPendingState; }
 
+    // Per-voice audio peak diagnostic
+    float GetVoicePeak(int i) const { return mVoicePeak[i].load(std::memory_order_relaxed); }
+
+    // Per-voice frequency and phase increment diagnostics
+    float GetVoiceFreq(int i) const { return mVoiceFreq[i].load(std::memory_order_relaxed); }
+    float GetVoicePhaseInc(int i) const { return mVoicePhaseInc[i].load(std::memory_order_relaxed); }
+    int GetVoiceNote(int i) const { return mVoiceNote[i].load(std::memory_order_relaxed); }
+
     // Direct engine access for self-test
     PolySynthCore::Engine& GetEngine() { return mEngine; }
 
@@ -64,6 +72,14 @@ private:
     // Diagnostics (ISR → main loop)
     std::atomic<int> mActiveVoices{0};
     std::atomic<float> mPeakLevel{0.0f};
+
+    // Per-voice peak diagnostic (ISR → main loop)
+    std::atomic<float> mVoicePeak[4] = {};
+
+    // Per-voice frequency/phase diagnostic (ISR → main loop)
+    std::atomic<float> mVoiceFreq[4] = {};
+    std::atomic<float> mVoicePhaseInc[4] = {};
+    std::atomic<int> mVoiceNote[4] = {};
 
     // Voice-change event ring buffer (ISR → main loop)
     static constexpr int kVoiceEventBufSize = 32;

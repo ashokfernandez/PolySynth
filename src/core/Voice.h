@@ -13,6 +13,40 @@
 
 namespace PolySynthCore {
 
+// MIDI note → frequency lookup table (A4 = 440 Hz, equal temperament).
+// Avoids std::pow/exp2/exp which are broken in __time_critical_func (SRAM)
+// on RP2350 with GCC 15.2 ARM — flash-resident libm functions return garbage
+// when called from SRAM-placed ISR code on Core 1.
+// clang-format off
+inline constexpr sample_t kMidiFreqTable[128] = {
+    8.176f,    8.662f,    9.177f,    9.723f,   10.301f,   10.913f,   11.562f,   12.250f,   // 0-7
+   12.978f,   13.750f,   14.568f,   15.434f,   16.352f,   17.324f,   18.354f,   19.445f,   // 8-15
+   20.602f,   21.827f,   23.125f,   24.500f,   25.957f,   27.500f,   29.135f,   30.868f,   // 16-23
+   32.703f,   34.648f,   36.708f,   38.891f,   41.203f,   43.654f,   46.249f,   48.999f,   // 24-31
+   51.913f,   55.000f,   58.270f,   61.735f,   65.406f,   69.296f,   73.416f,   77.782f,   // 32-39
+   82.407f,   87.307f,   92.499f,   97.999f,  103.826f,  110.000f,  116.541f,  123.471f,   // 40-47
+  130.813f,  138.591f,  146.832f,  155.563f,  164.814f,  174.614f,  184.997f,  195.998f,   // 48-55
+  207.652f,  220.000f,  233.082f,  246.942f,  261.626f,  277.183f,  293.665f,  311.127f,   // 56-63
+  329.628f,  349.228f,  369.994f,  391.995f,  415.305f,  440.000f,  466.164f,  493.883f,   // 64-71
+  523.251f,  554.365f,  587.330f,  622.254f,  659.255f,  698.456f,  739.989f,  783.991f,   // 72-79
+  830.609f,  880.000f,  932.328f,  987.767f, 1046.502f, 1108.731f, 1174.659f, 1244.508f,   // 80-87
+ 1318.510f, 1396.913f, 1479.978f, 1567.982f, 1661.219f, 1760.000f, 1864.655f, 1975.533f,   // 88-95
+ 2093.005f, 2217.461f, 2349.318f, 2489.016f, 2637.020f, 2793.826f, 2959.955f, 3135.963f,   // 96-103
+ 3322.438f, 3520.000f, 3729.310f, 3951.066f, 4186.009f, 4434.922f, 4698.636f, 4978.032f,   // 104-111
+ 5274.041f, 5587.652f, 5919.911f, 6271.927f, 6644.875f, 7040.000f, 7458.620f, 7902.133f,   // 112-119
+ 8372.018f, 8869.844f, 9397.273f, 9956.063f,10548.082f,11175.303f,11839.822f,12543.854f    // 120-127
+};
+// clang-format on
+
+// Safe MIDI note → frequency: table lookup for integer notes,
+// falls back to std::pow for fractional/detune (desktop only).
+inline sample_t midiNoteToFreq(int note) {
+    if (note >= 0 && note < 128)
+        return kMidiFreqTable[note];
+    // Out-of-range fallback
+    return sample_t(440) * std::pow(sample_t(2), (note - sample_t(69)) / sample_t(12));
+}
+
 class Voice {
 public:
   enum class FilterModel { Classic, Ladder, Cascade12, Cascade24 };
@@ -23,7 +57,7 @@ public:
     mOscA.Init(sampleRate);
     mOscB.Init(sampleRate);
     mOscA.SetFrequency(sample_t(440));
-    mDetuneFactor = std::pow(sample_t(2), mDetuneB / sample_t(1200));
+    mDetuneFactor = sea::Math::Exp2(mDetuneB / sample_t(1200));
     mOscB.SetFrequency(sample_t(440) * mDetuneFactor);
     mTargetFreq = sample_t(440);
     mGlideTime = sample_t(0);
@@ -74,7 +108,7 @@ public:
   }
 
   void NoteOn(int note, int velocity, uint32_t timestamp = 0) {
-    sample_t newFreq = sample_t(440) * std::pow(sample_t(2), (note - sample_t(69)) / sample_t(12));
+    sample_t newFreq = midiNoteToFreq(note);
     mTargetFreq = newFreq;
 
     if (mGlideTime > sample_t(0) && mActive) {
@@ -108,7 +142,7 @@ public:
   }
 
   void ApplyDetuneCents(sample_t cents) {
-    sample_t factor = std::pow(sample_t(2), cents / sample_t(1200));
+    sample_t factor = sea::Math::Exp2(cents / sample_t(1200));
     mFreq *= factor;
     mCurrentPitch = static_cast<float>(mFreq);
     mOscA.SetFrequency(mFreq);
@@ -301,6 +335,7 @@ public:
   uint8_t GetVoiceID() const { return mVoiceID; }
   uint32_t GetTimestamp() const { return mTimestamp; }
   float GetPitch() const { return mCurrentPitch; }
+  float GetOscAPhaseInc() const { return static_cast<float>(mOscA.GetPhaseIncrement()); }
 
   float GetPanPosition() const {
     float modulatedPan = mPanPosition + (mLastLfoVal * mLfoPanDepth);
@@ -326,6 +361,7 @@ public:
     rs.currentPitch = mCurrentPitch;
     rs.panPosition = mPanPosition;
     rs.amplitude = mLastAmpEnvVal;
+    rs.phaseIncrement = static_cast<float>(mOscA.GetPhaseIncrement());
     return rs;
   }
 
@@ -377,7 +413,7 @@ public:
     mMixA = std::clamp(mixA, sample_t(0.0), sample_t(1.0));
     mMixB = std::clamp(mixB, sample_t(0.0), sample_t(1.0));
     mDetuneB = detuneB;
-    mDetuneFactor = std::pow(sample_t(2), mDetuneB / sample_t(1200));
+    mDetuneFactor = sea::Math::Exp2(mDetuneB / sample_t(1200));
   }
 
   void SetLFO(int type, sample_t rate, sample_t depth) {

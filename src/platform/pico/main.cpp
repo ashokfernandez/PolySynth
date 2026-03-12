@@ -112,16 +112,8 @@ static void serial_task(void* params) {
 // ── LED heartbeat — FreeRTOS idle hook ───────────────────────────────────
 // Blinks the onboard LED at 1Hz. No blink = system hung.
 // Called from the idle task — must NOT block or call any blocking FreeRTOS API.
-static bool s_led_state = false;
-static uint32_t s_last_led_toggle = 0;
-
 extern "C" void vApplicationIdleHook() {
-    uint32_t now = to_ms_since_boot(get_absolute_time());
-    if (now - s_last_led_toggle >= 1000) {
-        s_led_state = !s_led_state;
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, s_led_state);
-        s_last_led_toggle = now;
-    }
+    // DIAGNOSTIC: Empty idle hook — testing if cyw43_arch_gpio_put breaks Core 1 audio
 }
 
 // ── Stack overflow hook — required when configCHECK_FOR_STACK_OVERFLOW > 0 ─
@@ -184,14 +176,16 @@ int main()
     }
     printf("Audio started on core %d\n", audio_ok ? 1 : 0);
 
-    // Create serial task — priority 4, 1024-word (4KB) stack
-    xTaskCreate(serial_task, "Serial", 1024, nullptr, 4, nullptr);
+    // DIAGNOSTIC: FreeRTOS scheduler enabled, idle hook EMPTY (no cyw43 calls)
+    printf("DIAGNOSTIC: FreeRTOS scheduler starting — idle hook empty\n");
 
-    // Start FreeRTOS scheduler — never returns
-    printf("Starting FreeRTOS scheduler...\n");
+    // Create serial task on Core 0
+    xTaskCreate(serial_task, "Serial", 1024, nullptr, 1, nullptr);
+
+    // Start scheduler — should never return
     vTaskStartScheduler();
 
     // Should never reach here
-    printf("ERROR: FreeRTOS scheduler exited\n");
+    printf("ERROR: vTaskStartScheduler returned!\n");
     return 1;
 }

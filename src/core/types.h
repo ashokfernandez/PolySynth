@@ -48,6 +48,7 @@ struct VoiceRenderState {
   float currentPitch = 0.0f;
   float panPosition = 0.0f;
   float amplitude = 0.0f;
+  float phaseIncrement = 0.0f;  // Oscillator A phase increment (diagnostic)
 };
 
 // Event sent from audio thread to UI thread via SPSCRingBuffer.
