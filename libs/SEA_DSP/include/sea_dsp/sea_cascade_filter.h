@@ -35,6 +35,7 @@ public:
 
   SEA_INLINE T Process(T in) {
     T feedback = (mSlope == Slope::dB24) ? mLastOut24 : mLastOut12;
+    // Per-sample tanh: nonlinear waveshaping, input varies per sample
     T driven = Math::Tanh(in - feedback * mFeedbackGain);
 
     T out1 = stage1.ProcessLP(driven);

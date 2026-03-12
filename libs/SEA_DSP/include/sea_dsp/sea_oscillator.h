@@ -70,6 +70,17 @@ public:
   }
 
   /**
+   * @brief Get current phase increment (diagnostic).
+   */
+  Real GetPhaseIncrement() const {
+#ifdef SEA_DSP_OSC_BACKEND_DAISYSP
+    return static_cast<Real>(0); // Not available with DaisySP backend
+#else
+    return mPhaseIncrement;
+#endif
+  }
+
+  /**
    * @brief Set pulse width for square wave.
    * Range: (0.0, 1.0)
    */
@@ -109,6 +120,7 @@ public:
             static_cast<Real>(1.0);
       break;
     case WaveformType::Sine:
+      // Wavetable on embedded (SEA_FAST_MATH), std::sin on desktop
       out = Math::Sin(kTwoPi * mPhase);
       break;
     }

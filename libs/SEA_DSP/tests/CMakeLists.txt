@@ -65,6 +65,7 @@ set(TEST_SOURCES
     Test_Sigmoid.cpp
     Test_VintageChorus.cpp
     Test_VintageDelay.cpp
+    Test_Wavetable.cpp
 )
 
 add_executable(sea_tests ${TEST_SOURCES})

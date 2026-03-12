@@ -237,6 +237,19 @@ public:
     return count;
   }
 
+  // Diagnostic: per-voice render state snapshot
+  std::array<VoiceRenderState, kMaxVoices> GetVoiceStates() const {
+    return mVoiceManager.GetVoiceStates();
+  }
+
+  // Diagnostic: per-voice envelope amplitude (from last Process call)
+  void GetPerVoiceAmplitudes(float* amps, int maxVoices) const {
+    auto states = mVoiceManager.GetVoiceStates();
+    for (int i = 0; i < maxVoices && i < kMaxVoices; i++) {
+      amps[i] = states[i].amplitude;
+    }
+  }
+
   void UpdateVisualization() {
     mVisualActiveVoiceCount.store(mVoiceManager.GetActiveVoiceCount(),
                                   std::memory_order_relaxed);
@@ -252,6 +265,16 @@ public:
     }
     mVisualHeldNotesLow.store(low, std::memory_order_relaxed);
     mVisualHeldNotesHigh.store(high, std::memory_order_relaxed);
+  }
+
+  // Diagnostic: process with per-voice peak tracking
+  void ProcessDiag(sample_t &left, sample_t &right, float* voicePeaks) {
+    sample_t l, r;
+    mVoiceManager.ProcessStereoDiag(l, r, voicePeaks);
+    l *= mGain;
+    r *= mGain;
+    left = l;
+    right = r;
   }
 
   // --- Audio Processing ---

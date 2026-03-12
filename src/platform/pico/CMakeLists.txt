@@ -14,6 +14,13 @@ if(NOT DEFINED PICO_PLATFORM)
 endif()
 include(pico_sdk_import.cmake)
 
+# ── FreeRTOS-Kernel (RPi fork, must come before project()) ────────────────
+# Sets FREERTOS_KERNEL_PATH so the SDK and FreeRTOS port can find each other.
+# The import cmake auto-detects RP2350_ARM_NTZ portable layer via PICO_PLATFORM.
+set(FREERTOS_KERNEL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../external/FreeRTOS-Kernel" CACHE PATH "")
+set(FREERTOS_CONFIG_FILE_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "")
+include(${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2350_ARM_NTZ/FreeRTOS_Kernel_import.cmake)
+
 project(polysynth_pico C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
@@ -90,6 +97,7 @@ target_link_libraries(polysynth_pico PRIVATE
     pico_stdlib
     pico_cyw43_arch_none    # CYW43 for onboard LED (no WiFi stack)
     pico_multicore          # Dual-core: audio DSP on core 1
+    FreeRTOS-Kernel-Heap4   # FreeRTOS with heap_4 (best-fit + coalescing)
     hardware_pio
     hardware_dma
     hardware_clocks

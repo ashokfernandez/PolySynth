@@ -213,6 +213,7 @@ pico-build:
     #!/usr/bin/env bash
     set -euo pipefail
     bash ./scripts/download_pico_sdk.sh
+    bash ./scripts/download_freertos_kernel.sh
     export PICO_SDK_PATH="$(pwd)/external/pico-sdk"
     # Discover ARM toolchain (validates version ≥ 12 for C++17)
     ARM_BIN=$(bash ./scripts/find_arm_toolchain.sh)
@@ -224,6 +225,36 @@ pico-build:
 pico-flash: pico-build
     picotool load build/pico/polysynth_pico.uf2 -f
     picotool reboot
+
+# Open interactive serial terminal to Pico (minicom). Ctrl-A X to quit.
+pico-serial:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    PORT=$(ls /dev/tty.usbmodem* /dev/ttyACM* 2>/dev/null | head -1 || true)
+    if [ -z "$PORT" ]; then
+        echo "ERROR: No Pico serial port found. Is the device connected?"
+        exit 1
+    fi
+    echo "Opening minicom on $PORT (Ctrl-A X to quit)..."
+    minicom -D "$PORT" -b 115200
+
+# Capture Pico serial output for N seconds (default 10). Usage: just pico-serial-listen [seconds]
+pico-serial-listen seconds="10":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    PORT=$(ls /dev/tty.usbmodem* /dev/ttyACM* 2>/dev/null | head -1 || true)
+    if [ -z "$PORT" ]; then
+        echo "ERROR: No Pico serial port found. Is the device connected?"
+        exit 1
+    fi
+    echo "Listening on $PORT for {{seconds}}s (Ctrl-C to stop early)..."
+    stty -f "$PORT" 115200 raw -echo 2>/dev/null || stty -F "$PORT" 115200 raw -echo 2>/dev/null
+    cat "$PORT" &
+    CAT_PID=$!
+    sleep {{seconds}}
+    kill $CAT_PID 2>/dev/null || true
+    wait $CAT_PID 2>/dev/null || true
+    echo -e "\nDone."
 
 # Remove Pico build directory.
 pico-clean:
@@ -246,6 +277,7 @@ pico-build-emu:
     #!/usr/bin/env bash
     set -euo pipefail
     bash ./scripts/download_pico_sdk.sh
+    bash ./scripts/download_freertos_kernel.sh
     export PICO_SDK_PATH="$(pwd)/external/pico-sdk"
     ARM_BIN=$(bash ./scripts/find_arm_toolchain.sh)
     export PATH="$ARM_BIN:$PATH"

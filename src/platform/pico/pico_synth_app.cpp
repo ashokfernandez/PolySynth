@@ -149,10 +149,11 @@ void __time_critical_func(PicoSynthApp::AudioCallback)(uint32_t* buffer, uint32_
         }
     }
 
-    // Process audio
+    // Process audio (with per-voice peak diagnostic)
+    float vPeaks[4] = {};
     for (uint32_t i = 0; i < numFrames; i++) {
         float left = 0.0f, right = 0.0f;
-        mEngine.Process(left, right);
+        mEngine.ProcessDiag(left, right, vPeaks);
 
         constexpr float kOutputGain = 4.0f;
         left *= kOutputGain;
@@ -171,6 +172,25 @@ void __time_critical_func(PicoSynthApp::AudioCallback)(uint32_t* buffer, uint32_
         buffer[i * 2]     = pico_audio::PackI2S(l16);
         buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
     }
+
+    // Store per-voice peak diagnostics
+    for (int i = 0; i < 4; i++) {
+        mVoicePeak[i].store(vPeaks[i], std::memory_order_relaxed);
+    }
+
+    // Store per-voice frequency/phase diagnostics
+    {
+        auto states = mEngine.GetVoiceStates();
+        for (int i = 0; i < 4; i++) {
+            mVoiceFreq[i].store(states[i].currentPitch, std::memory_order_relaxed);
+            mVoicePhaseInc[i].store(states[i].phaseIncrement, std::memory_order_relaxed);
+            mVoiceNote[i].store(states[i].note, std::memory_order_relaxed);
+        }
+    }
+
+    // Update visualization cache so GetActiveVoiceCount() returns real values
+    // (the single-sample Process() overload doesn't call UpdateVisualization())
+    mEngine.UpdateVisualization();
 
     // Update voice count for status reporting
     int vc = mEngine.GetActiveVoiceCount();

@@ -122,6 +122,27 @@ public:
     return sum * kHeadroomScale;
   }
 
+  // Diagnostic version: captures per-voice mono peak levels
+  inline void ProcessStereoDiag(sample_t &outLeft, sample_t &outRight, float* voicePeaks) {
+    outLeft = sample_t(0);
+    outRight = sample_t(0);
+
+    for (int i = 0; i < kNumVoices; i++) {
+      sample_t mono = mVoices[i].Process();
+      float absMono = mono > 0 ? static_cast<float>(mono) : static_cast<float>(-mono);
+      if (absMono > voicePeaks[i]) voicePeaks[i] = absMono;
+      if (mono == sample_t(0))
+        continue;
+
+      sample_t panL, panR;
+      mVoices[i].GetPanCoefficients(panL, panR);
+      outLeft += mono * panL;
+      outRight += mono * panR;
+    }
+    outLeft *= kHeadroomScale;
+    outRight *= kHeadroomScale;
+  }
+
   inline void ProcessStereo(sample_t &outLeft, sample_t &outRight) {
     outLeft = sample_t(0);
     outRight = sample_t(0);
