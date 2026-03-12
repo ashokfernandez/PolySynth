@@ -135,6 +135,7 @@ endif()
 add_executable(run_tests_embedded
     ${UNIT_TEST_SOURCES}
     unit/Test_EmbeddedConfig.cpp
+    unit/Test_PicoGoldenMaster.cpp
 )
 
 target_compile_definitions(run_tests_embedded PRIVATE
@@ -202,6 +203,66 @@ foreach(_demo IN LISTS ALL_DEMO_TARGETS)
     polysynth_enable_compiler_warnings(${_demo})
     polysynth_apply_sanitizers(${_demo})
 endforeach()
+
+# ---------------------------------------------------------------------------
+# Embedded-configuration demo executables
+# Same demos compiled with Pico-equivalent flags (float, 4 voices, no FX).
+# Produces golden master WAVs for the embedded signal path.
+# demo_fx_engine is excluded: it calls SetChorus/SetDelay/SetLimiter which
+# are compile-guarded away when deploy flags are OFF.
+# ---------------------------------------------------------------------------
+set(EMBEDDED_DEMO_TARGETS
+    demo_render_wav
+    demo_adsr
+    demo_engine_poly
+    demo_filter_sweep
+    demo_poly_chords
+    demo_polymod
+    demo_waveforms
+    demo_pulse_width
+    demo_osc_mix
+    demo_filter_resonance
+    demo_filter_envelope
+    demo_prophet_filter
+    demo_lfo_vibrato
+    demo_lfo_tremolo
+    demo_lfo_filter_wobble
+    demo_factory_presets
+)
+
+foreach(_demo IN LISTS EMBEDDED_DEMO_TARGETS)
+    set(_emb "${_demo}_embedded")
+    add_executable(${_emb} demos/${_demo}.cpp)
+    target_compile_definitions(${_emb} PRIVATE
+        POLYSYNTH_USE_FLOAT
+        SEA_PLATFORM_EMBEDDED
+        POLYSYNTH_MAX_VOICES=4
+        POLYSYNTH_DEPLOY_CHORUS=0
+        POLYSYNTH_DEPLOY_DELAY=0
+        POLYSYNTH_DEPLOY_LIMITER=0
+    )
+    target_link_libraries(${_emb} PRIVATE SEA_DSP SEA_Util)
+    polysynth_enable_compiler_warnings(${_emb})
+endforeach()
+
+# ---------------------------------------------------------------------------
+# ARM cross-compilation flags (when using arm-linux-gnueabihf toolchain)
+# Matches Pico Cortex-M33 float behavior: VFPv4 FPU, hard-float ABI,
+# fast-math optimizations. Used with QEMU user-mode for ARM golden masters.
+# ---------------------------------------------------------------------------
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm")
+    foreach(_demo IN LISTS EMBEDDED_DEMO_TARGETS)
+        set(_emb "${_demo}_embedded")
+        target_compile_options(${_emb} PRIVATE
+            -march=armv7-a -mfpu=vfpv4 -mfloat-abi=hard
+            -ffast-math -funroll-loops
+        )
+    endforeach()
+    target_compile_options(run_tests_embedded PRIVATE
+        -march=armv7-a -mfpu=vfpv4 -mfloat-abi=hard
+        -ffast-math -funroll-loops
+    )
+endif()
 
 # ---------------------------------------------------------------------------
 # Sanitizer summary (printed at configure time)

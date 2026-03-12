@@ -48,8 +48,8 @@ int main() {
       engine.SetFilter(20000.0, 0.0, 0.0);
     }
 
-    double left = 0.0;
-    double right = 0.0;
+    PolySynthCore::sample_t left = 0.0;
+    PolySynthCore::sample_t right = 0.0;
     engine.Process(left, right);
     output.push_back(static_cast<float>(left));
   }

@@ -284,6 +284,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -344,7 +346,7 @@ jobs:
 
       - name: Validate demo output frequency
         run: |
-          python3 scripts/analyze_audio.py tests/golden/demo_render_wav.wav --expected-freq 440
+          python3 scripts/analyze_audio.py tests/golden/desktop-x86_64/demo_render_wav.wav --expected-freq 440
 
   # ---------------------------------------------------------------------------
   # Job 5: Build macOS release artifacts on tag pushes.
@@ -494,6 +496,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Install build dependencies
         run: |
@@ -511,15 +515,73 @@ jobs:
           chmod +x scripts/download_dependencies.sh
           ./scripts/download_dependencies.sh
 
-      - name: Configure and build embedded test target
+      - name: Configure and build embedded targets
         run: |
           cmake -S tests -B tests/build_embedded \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug
-          cmake --build tests/build_embedded --target run_tests_embedded --parallel
+          cmake --build tests/build_embedded --parallel
 
       - name: Run embedded-config unit tests
         run: tests/build_embedded/run_tests_embedded -r compact
+
+      - name: Verify embedded golden-master audio output
+        run: |
+          python3 scripts/golden_master.py --verify --embedded \
+            --build-dir tests/build_embedded
+
+  # ---------------------------------------------------------------------------
+  # Pico Layer 1b: ARM Golden Masters (QEMU User-Mode)
+  # Cross-compiles embedded demos with arm-linux-gnueabihf-g++ and runs under
+  # QEMU to verify ARM 32-bit single-precision float arithmetic produces the
+  # expected audio output. Catches ARM-specific float behavior differences
+  # (FMA fusion, rounding) that x86 native tests cannot detect.
+  # ---------------------------------------------------------------------------
+  pico-arm-golden-masters:
+    name: Pico / Layer 1b – ARM Golden Masters (QEMU)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install ARM cross-compilation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build qemu-user-static \
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+      - name: Cache external dependencies
+        uses: actions/cache@v4
+        with:
+          path: external
+          key: deps-${{ runner.os }}-${{ hashFiles('scripts/download_dependencies.sh') }}
+
+      - name: Download project external dependencies
+        run: |
+          chmod +x scripts/download_dependencies.sh
+          ./scripts/download_dependencies.sh
+
+      - name: Cross-compile embedded targets for ARM
+        run: |
+          cmake -S tests -B tests/build_arm \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/arm-linux-gnueabihf.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -G Ninja
+          cmake --build tests/build_arm --parallel $(nproc)
+
+      - name: Run ARM embedded unit tests under QEMU
+        run: |
+          qemu-arm -L /usr/arm-linux-gnueabihf/ \
+            tests/build_arm/run_tests_embedded -r compact
+
+      - name: Verify ARM golden-master audio output
+        if: hashFiles('tests/golden/embedded-armv7/*.wav') != ''
+        env:
+          QEMU_LD_PREFIX: /usr/arm-linux-gnueabihf
+        run: |
+          python3 scripts/golden_master.py --verify --arm
 
   # ---------------------------------------------------------------------------
   # Pico Layer 2a: ARM Cross-Compile Check (RP2350)
@@ -609,8 +671,27 @@ jobs:
           path: src/platform/pico/wokwi
           timeout: 30000
           expect_text: "[TEST:ALL_PASSED]"
-          fail_text: "[TEST:FAIL]"
+          fail_text: "[TEST:FAIL],[GOLDEN:FAIL]"
           serial_log_file: wokwi-serial.log
+
+      - name: Verify golden master CRC from serial output
+        if: always()
+        run: |
+          if [ -f wokwi-serial.log ]; then
+            if grep -q '\[GOLDEN:CRC32:' wokwi-serial.log; then
+              echo "Golden master CRC found in serial output:"
+              grep '\[GOLDEN:' wokwi-serial.log
+              if grep -q '\[GOLDEN:FAIL\]' wokwi-serial.log; then
+                echo "ERROR: Golden master CRC mismatch!"
+                exit 1
+              fi
+              if grep -q '(generated' wokwi-serial.log; then
+                echo "::warning::Golden CRC is a placeholder (0x00000000). Update golden_crc.h with the generated value."
+              fi
+            else
+              echo "INFO: No golden master CRC in serial output (may be placeholder)"
+            fi
+          fi
 
       - name: Upload serial log
         if: always()
