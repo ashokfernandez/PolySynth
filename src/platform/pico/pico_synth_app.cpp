@@ -1,5 +1,6 @@
 #include "pico_synth_app.h"
 
+#include <cmath>
 #include <cstring>
 
 #include "pico.h"  // __time_critical_func
@@ -166,8 +167,8 @@ void __time_critical_func(PicoSynthApp::AudioCallback)(uint32_t* buffer, uint32_
         if (peak > prev) mPeakLevel.store(peak, std::memory_order_relaxed);
 
         // Soft clip + saturating int16 conversion
-        auto l16 = saturate_to_i16(static_cast<int32_t>(fast_tanh(left) * 32767.0f));
-        auto r16 = saturate_to_i16(static_cast<int32_t>(fast_tanh(right) * 32767.0f));
+        auto l16 = saturate_to_i16(static_cast<int32_t>(std::roundf(fast_tanh(left) * 32767.0f)));
+        auto r16 = saturate_to_i16(static_cast<int32_t>(std::roundf(fast_tanh(right) * 32767.0f)));
         buffer[i * 2]     = pico_audio::PackI2S(l16);
         buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
     }

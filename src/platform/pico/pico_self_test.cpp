@@ -5,6 +5,7 @@
 #include "sine_generator.h"  // pico_audio::PackI2S
 #include "golden_crc.h"
 
+#include <cmath>
 #include <cstdio>
 #include <cstdint>
 
@@ -132,9 +133,9 @@ bool RunAll(PicoSynthApp& app, void (*audioCallback)(uint32_t*, uint32_t))
             right *= kOutputGain;
 
             auto l16 = golden_saturate_to_i16(
-                static_cast<int32_t>(golden_fast_tanh(left) * 32767.0f));
+                static_cast<int32_t>(std::roundf(golden_fast_tanh(left) * 32767.0f)));
             auto r16 = golden_saturate_to_i16(
-                static_cast<int32_t>(golden_fast_tanh(right) * 32767.0f));
+                static_cast<int32_t>(std::roundf(golden_fast_tanh(right) * 32767.0f)));
             golden_buf[i * 2]     = pico_audio::PackI2S(l16);
             golden_buf[i * 2 + 1] = pico_audio::PackI2S(r16);
         }

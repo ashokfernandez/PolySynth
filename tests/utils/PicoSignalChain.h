@@ -9,6 +9,7 @@
 #include "../../src/platform/pico/sine_generator.h" // pico_audio::PackI2S
 
 #include <algorithm> // std::clamp
+#include <cmath>     // std::roundf
 #include <cstdint>
 #include <vector>
 
@@ -46,8 +47,8 @@ inline std::vector<uint32_t> RenderToI2S(PolySynthCore::Engine& engine,
         left *= kOutputGain;
         right *= kOutputGain;
 
-        auto l16 = saturate_to_i16(static_cast<int32_t>(fast_tanh(left) * 32767.0f));
-        auto r16 = saturate_to_i16(static_cast<int32_t>(fast_tanh(right) * 32767.0f));
+        auto l16 = saturate_to_i16(static_cast<int32_t>(std::roundf(fast_tanh(left) * 32767.0f)));
+        auto r16 = saturate_to_i16(static_cast<int32_t>(std::roundf(fast_tanh(right) * 32767.0f)));
         buffer[i * 2]     = pico_audio::PackI2S(l16);
         buffer[i * 2 + 1] = pico_audio::PackI2S(r16);
     }
