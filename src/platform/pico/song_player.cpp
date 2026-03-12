@@ -58,9 +58,12 @@ bool SongPlayer::Update(uint64_t now_us, PicoSynthApp& app) {
             }
 
             case pico_song::EventType::End:
-                mPlaying = false;
-                printf("[SONG] Finished: %s\n", mSong->name);
-                return false;
+                // Loop: reset to beginning
+                app.Panic();
+                mEventIndex = 0;
+                mNextEventUs = now_us + static_cast<uint64_t>(mSong->events[0].delta_ms) * 1000ULL;
+                printf("[SONG] Looping: %s\n", mSong->name);
+                return true;
         }
 
         mEventIndex++;
@@ -69,10 +72,12 @@ bool SongPlayer::Update(uint64_t now_us, PicoSynthApp& app) {
         if (mEventIndex < mSong->eventCount) {
             mNextEventUs += static_cast<uint64_t>(mSong->events[mEventIndex].delta_ms) * 1000ULL;
         } else {
-            // Ran past end without End sentinel
-            mPlaying = false;
-            printf("[SONG] Finished: %s\n", mSong->name);
-            return false;
+            // Ran past end without End sentinel — loop
+            app.Panic();
+            mEventIndex = 0;
+            mNextEventUs = now_us + static_cast<uint64_t>(mSong->events[0].delta_ms) * 1000ULL;
+            printf("[SONG] Looping: %s\n", mSong->name);
+            return true;
         }
     }
 
@@ -93,11 +98,12 @@ void SongPlayer::ApplyPatch(PicoSynthApp& app) {
     st.mixOscA = 1.0f;
     st.mixOscB = 0.0f;
 
-    // Filter: Ladder, cutoff ~4kHz, mild resonance, envelope modulation
+    // Filter: Ladder, lower cutoff so envelope sweep is audible, keyboard tracking
     st.filterModel = 1;
-    st.filterCutoff = 4000.0f;
-    st.filterResonance = 0.15f;
-    st.filterEnvAmount = 0.3f;
+    st.filterCutoff = 1800.0f;
+    st.filterResonance = 0.1f;
+    st.filterEnvAmount = 0.45f;
+    st.filterKeyboardTrack = true;
 
     // Amp ADSR: snappy attack, moderate sustain, quick release
     st.ampAttack = 0.005f;
