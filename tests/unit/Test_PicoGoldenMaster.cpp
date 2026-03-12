@@ -2,8 +2,8 @@
 // Verifies that Engine → gain → fast_tanh → int16 saturation → I2S packing
 // produces deterministic output matching a stored reference.
 //
-// The reference is generated on first run (or with GENERATE_GOLDEN defined)
-// and verified on subsequent runs. This catches regressions in:
+// The reference must be pre-generated via 'just golden-generate-embedded'.
+// This catches regressions in:
 //   - Float-precision DSP (embedded config)
 //   - Post-processing chain (gain, soft-clip, saturation, I2S packing)
 
@@ -21,8 +21,8 @@ namespace {
 
 // Path to the golden reference binary file (relative to working directory).
 // CI runs from tests/build/ or tests/build_embedded/.
-static const char* kGoldenRefPath = "../golden_embedded/pico_signal_chain.bin";
-static const char* kGoldenWavPath = "../golden_embedded/pico_signal_chain.wav";
+static const char* kGoldenRefPath = "../golden/embedded-x86_64/pico_signal_chain.bin";
+static const char* kGoldenWavPath = "../golden/embedded-x86_64/pico_signal_chain.wav";
 
 static constexpr float kSampleRate = 48000.0f;
 static constexpr uint32_t kNoteOnFrames = 24000;   // 0.5s
@@ -101,14 +101,8 @@ TEST_CASE("Pico signal chain golden master", "[PicoGoldenMaster][embedded]")
 
     SECTION("Verify against golden reference") {
         if (!FileExists(kGoldenRefPath)) {
-            // First run — generate the golden reference.
-            WriteBinaryGolden(kGoldenRefPath, current);
-            WriteWavFromI2S(kGoldenWavPath, current, kTotalFrames);
-            WARN("Golden reference generated: " << kGoldenRefPath);
-            WARN("Inspect WAV: " << kGoldenWavPath);
-            // Don't fail — the next run will verify.
-            SUCCEED("Generated golden reference (first run)");
-            return;
+            FAIL("Golden reference missing: " << kGoldenRefPath
+                 << ". Run 'just golden-generate-embedded' to create it.");
         }
 
         auto golden = ReadBinaryGolden(kGoldenRefPath);

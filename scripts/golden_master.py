@@ -10,19 +10,19 @@ import wave
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 TEST_BUILD_DIR = os.path.join(PROJECT_ROOT, "tests", "build")
-GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden")
+GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden", "desktop-x86_64")
 ALIAS_MAP = {
     "demo_render_wav.wav": "demo_engine_saw.wav",
 }
 
 # Embedded-configuration paths (Pico-equivalent: float, 4 voices, no FX).
 EMBEDDED_BUILD_DIR = os.path.join(PROJECT_ROOT, "tests", "build")
-EMBEDDED_GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden_embedded")
+EMBEDDED_GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden", "embedded-x86_64")
 EMBEDDED_SUFFIX = "_embedded"
 
 # ARM cross-compiled paths (real ARM float via QEMU user-mode).
 ARM_BUILD_DIR = os.path.join(PROJECT_ROOT, "tests", "build_arm")
-ARM_GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden_arm")
+ARM_GOLDEN_DIR = os.path.join(PROJECT_ROOT, "tests", "golden", "embedded-armv7")
 
 
 def find_demos(build_dir, suffix=""):

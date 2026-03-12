@@ -113,10 +113,10 @@ bool RunAll(PicoSynthApp& app, void (*audioCallback)(uint32_t*, uint32_t))
     }
 
     // Test 7: Golden master CRC — full signal chain determinism check.
-    // Renders 256 frames through Engine → gain → fast_tanh → SSAT → I2S pack
+    // Renders 2048 frames through Engine → gain → fast_tanh → SSAT → I2S pack
     // and compares CRC32 of the packed buffer against the expected value.
     {
-        static constexpr uint32_t kGoldenFrames = 256;
+        static constexpr uint32_t kGoldenFrames = 2048;
         static constexpr float kOutputGain = 4.0f;
         uint32_t golden_buf[kGoldenFrames * 2]; // stereo: L,R pairs
 

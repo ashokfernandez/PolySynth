@@ -275,8 +275,8 @@ golden-generate:
     cmake -S tests -B tests/build -G Ninja -DCMAKE_BUILD_TYPE=Release
     cmake --build tests/build --parallel
     python3 scripts/golden_master.py --generate
-    echo "Desktop golden masters written to tests/golden/"
-    echo "Review and commit: git add tests/golden/*.wav"
+    echo "Desktop golden masters written to tests/golden/desktop-x86_64/"
+    echo "Review and commit: git add tests/golden/desktop-x86_64/*.wav"
 
 # Generate embedded golden master reference WAVs (commit tests/golden_embedded/).
 golden-generate-embedded:
@@ -285,8 +285,8 @@ golden-generate-embedded:
     cmake -S tests -B tests/build -G Ninja -DCMAKE_BUILD_TYPE=Release
     cmake --build tests/build --parallel
     python3 scripts/golden_master.py --generate --embedded
-    echo "Embedded golden masters written to tests/golden_embedded/"
-    echo "Review and commit: git add tests/golden_embedded/*.wav"
+    echo "Embedded golden masters written to tests/golden/embedded-x86_64/"
+    echo "Review and commit: git add tests/golden/embedded-x86_64/*.wav"
 
 # Generate ARM golden master reference WAVs (commit tests/golden_arm/).
 # Requires: apt install qemu-user-static g++-arm-linux-gnueabihf
@@ -299,8 +299,24 @@ golden-generate-arm:
     cmake --build tests/build_arm --parallel
     QEMU_LD_PREFIX=/usr/arm-linux-gnueabihf \
         python3 scripts/golden_master.py --generate --arm
-    echo "ARM golden masters written to tests/golden_arm/"
-    echo "Review and commit: git add tests/golden_arm/*.wav"
+    echo "ARM golden masters written to tests/golden/embedded-armv7/"
+    echo "Review and commit: git add tests/golden/embedded-armv7/*.wav"
+
+# Verify desktop golden masters against committed references.
+golden-verify:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cmake -S tests -B tests/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    cmake --build tests/build --parallel
+    python3 scripts/golden_master.py --verify
+
+# Verify embedded golden masters against committed references.
+golden-verify-embedded:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cmake -S tests -B tests/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    cmake --build tests/build --parallel
+    python3 scripts/golden_master.py --verify --embedded
 
 # Verify ARM golden masters against committed references.
 golden-verify-arm:

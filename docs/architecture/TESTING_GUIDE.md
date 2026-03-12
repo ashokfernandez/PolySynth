@@ -318,15 +318,78 @@ Example pattern: see `Test_LFO_Routing.cpp`.
 
 ## Golden Master Reference
 
+### Overview
+
+Golden master tests verify DSP determinism by comparing audio output against
+committed reference files. Any signal path change — intentional or accidental —
+shows up as an RMS diff exceeding the 0.001 tolerance.
+
+Reference files are stored in Git LFS under `tests/golden/` with one
+subdirectory per target platform:
+
+```
+tests/golden/
+├── desktop-x86_64/      19 WAV files (double precision, all effects)
+├── embedded-x86_64/     15 WAV files + pico_signal_chain.bin/.wav
+└── embedded-armv7/      15 WAV files (ARM 32-bit via QEMU)
+```
+
+### What Each Target Tests
+
+| Target | Build flags | What it proves |
+|---|---|---|
+| **desktop-x86_64** | Default (double, all FX) | Full-fidelity signal path on x86-64 |
+| **embedded-x86_64** | `POLYSYNTH_USE_FLOAT`, `MAX_VOICES=4`, FX off | Pico-equivalent DSP on host — catches float precision and compile-flag regressions |
+| **embedded-armv7** | ARM cross-compile + VFPv4 FPU, run under QEMU | ARM 32-bit single-precision float behavior — catches FMA fusion, rounding differences vs x86 |
+
+The **embedded-x86_64** target also produces a binary golden master
+(`pico_signal_chain.bin`) — an exact I2S-packed buffer from the full signal
+chain (Engine → gain → fast_tanh → int16 saturation → I2S pack). This catches
+post-processing regressions that RMS comparison alone might miss.
+
+### Wokwi CRC (Firmware-Level Verification)
+
+The RP2350 firmware includes an on-device golden master check
+(`src/platform/pico/pico_self_test.cpp`). At boot it renders 2048 stereo
+frames through the complete signal chain and computes a CRC32 of the packed I2S
+buffer. The expected CRC is compiled into the binary via `golden_crc.h`.
+
+This is the only test that exercises the *actual* firmware code path including
+ARM `SSAT` instructions, Pico SDK math, and the real `PackI2S` implementation.
+It runs in the Wokwi RP2040 emulator in CI (Layer 2b) and on real hardware
+during development.
+
+**Bootstrap flow:** On first run (CRC placeholder = `0x00000000`), the test
+prints the generated CRC to serial and passes. Update `golden_crc.h` with the
+printed value to lock in the reference.
+
 ### How It Works
 
 1. Demo programs in `tests/demos/` each produce a WAV file
-2. `golden_master.py --generate` runs all demos and stores outputs in `tests/golden/`
+2. `golden_master.py --generate` runs all demos and stores outputs in the target directory
 3. `golden_master.py --verify` re-runs demos and compares RMS difference against stored files
 4. Tolerance: 0.001 RMS (very strict — catches any signal path change)
+5. The embedded target additionally verifies exact binary match for `pico_signal_chain.bin`
 
-### Current Golden Master Files (19)
+### Commands
 
+```bash
+# Desktop
+just golden-generate           # Write tests/golden/desktop-x86_64/*.wav
+just golden-verify             # Verify against committed desktop references
+
+# Embedded (Pico-equivalent, host-compiled)
+just golden-generate-embedded  # Write tests/golden/embedded-x86_64/*.wav + .bin
+just golden-verify-embedded    # Verify against committed embedded references
+
+# ARM (QEMU cross-compiled)
+just golden-generate-arm       # Write tests/golden/embedded-armv7/*.wav
+just golden-verify-arm         # Verify against committed ARM references
+```
+
+### Current Golden Master Files
+
+**Desktop (19 WAVs):**
 ```
 demo_engine_poly.wav     demo_lfo_filter_wobble.wav
 demo_engine_saw.wav      demo_lfo_tremolo.wav
@@ -340,6 +403,12 @@ demo_fx_limiter.wav      demo_render_wav.wav
 demo_waveforms.wav
 ```
 
+**Embedded (15 WAVs + binary):** Same as desktop minus `demo_fx_chorus`,
+`demo_fx_delay`, `demo_fx_limiter` (effects compile-guarded), plus
+`pico_signal_chain.bin` and `pico_signal_chain.wav`.
+
+**ARM:** Same set as embedded, cross-compiled for ARM 32-bit.
+
 ### Adding a New Demo
 
 1. Create `tests/demos/demo_your_feature.cpp`
@@ -350,8 +419,13 @@ demo_waveforms.wav
    target_link_libraries(demo_your_feature PRIVATE SEA_DSP)
    ```
 4. Register in `scripts/golden_master.py` demo list
-5. Generate reference: `python3 scripts/golden_master.py --generate`
-6. Commit the new `.wav` file in `tests/golden/`
+5. Generate references for all targets:
+   ```bash
+   just golden-generate
+   just golden-generate-embedded
+   just golden-generate-arm  # if applicable
+   ```
+6. Commit the new files (stored in Git LFS automatically)
 
 ---
 
@@ -401,12 +475,21 @@ All safety-gate jobs must pass before downstream jobs run. The WAM build is part
 
 ### Embedded Testing Layers (Pico)
 
-The Pico CI uses a three-layer testing approach:
+The Pico CI uses a four-layer testing approach, progressively closer to real
+hardware:
 
-| Layer | Environment | What it proves |
-|---|---|---|
-| **Layer 1** | Native host (x86) with embedded compile flags | DSP logic correct under `float` precision and 4-voice limit |
-| **Layer 2a** | ARM cross-compilation (RP2350) | Full firmware links for target hardware |
-| **Layer 2b** | Wokwi emulator (RP2040 proxy) | Firmware boots and passes self-tests at runtime |
+| Layer | Environment | Golden dir | What it proves |
+|---|---|---|---|
+| **Layer 1** | Native host (x86) + embedded compile flags | `embedded-x86_64/` | DSP logic correct under `float` precision and 4-voice limit |
+| **Layer 1b** | ARM cross-compile + QEMU user-mode | `embedded-armv7/` | ARM 32-bit float behavior (FMA, rounding) matches reference |
+| **Layer 2a** | ARM bare-metal cross-compile (RP2350) | — | Full firmware links for target hardware |
+| **Layer 2b** | Wokwi emulator (RP2040 proxy) | CRC in `golden_crc.h` | Firmware boots, runs self-tests, signal chain CRC matches |
 
-Layer 2b uses RP2040 as a proxy because Wokwi does not yet support RP2350 natively. The code is identical — only the board target differs.
+**Layer 1** catches the most common regressions: float precision changes,
+voice-count assumptions, and accidentally enabled effects. **Layer 1b** catches
+ARM-specific issues that x86 cannot detect (different FPU rounding, FMA
+fusion). **Layer 2b** is the only layer that exercises the actual firmware code
+path including ARM SSAT instructions.
+
+Layer 2b uses RP2040 as a proxy because Wokwi does not yet support RP2350
+natively. The code is identical — only the board target differs.
