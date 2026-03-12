@@ -15,6 +15,8 @@
 #include "pico_synth_app.h"
 #include "pico_command_dispatch.h"
 #include "pico_demo.h"
+#include "song_player.h"
+#include "songs/song_registry.h"
 #include "pico_self_test.h"
 
 static PicoSynthApp s_app;
@@ -59,13 +61,14 @@ static void serial_task(void* params) {
     (void)params;
 
     PicoDemo demo;
+    SongPlayer songPlayer;
     pico_serial::CommandParser parser;
     uint32_t report_counter = 0;
     uint64_t last_report_us = time_us_64();
 
-    // Start demo
-    demo.Start(time_us_64());
-    printf("Type STOP to halt demo, or send commands\n\n");
+    // Start song playback on boot
+    songPlayer.Play(*pico_song::kSongs[0], s_app);
+    printf("Type STOP to halt, DEMO for diagnostics, SONG to replay\n\n");
 
     while (true) {
         // Non-blocking serial read with 1ms timeout — yields CPU to lower-priority tasks
@@ -73,12 +76,17 @@ static void serial_task(void* params) {
         if (ch != PICO_ERROR_TIMEOUT) {
             if (parser.Feed(static_cast<char>(ch))) {
                 auto cmd = parser.Parse();
-                pico_commands::Dispatch(cmd, s_app, demo);
+                pico_commands::Dispatch(cmd, s_app, demo, songPlayer);
             }
         }
 
         // Demo tick
         demo.Update(time_us_64(), s_app);
+
+        // Song player tick
+        if (songPlayer.IsPlaying()) {
+            songPlayer.Update(time_us_64(), s_app);
+        }
 
         // Drain voice-change events
         int8_t from, to;
@@ -99,12 +107,19 @@ static void serial_task(void* params) {
 
             float peak = s_app.ExchangePeakLevel();
 
-            printf("[%lus] CPU: %.1f%% | Voices: %d | Peak: %.3f | Phase: %s\n",
+            const char* activity = "OFF";
+            if (songPlayer.IsPlaying()) {
+                activity = songPlayer.CurrentSongName();
+            } else if (demo.IsRunning()) {
+                activity = demo.CurrentPhaseName();
+            }
+
+            printf("[%lus] CPU: %.1f%% | Voices: %d | Peak: %.3f | %s\n",
                    static_cast<unsigned long>(report_counter * 5),
                    static_cast<double>(cpu_percent),
                    s_app.GetActiveVoiceCount(),
                    static_cast<double>(peak),
-                   demo.IsRunning() ? demo.CurrentPhaseName() : "OFF");
+                   activity);
         }
     }
 }
@@ -154,7 +169,8 @@ int main()
     printf("  RTOS:        FreeRTOS (Core 0 only)\n");
     printf("========================================\n");
     printf("Commands: NOTE_ON <n> <v>, NOTE_OFF <n>, SET <p> <v>,\n");
-    printf("          GET <p>, STATUS, PANIC, RESET, DEMO, STOP\n");
+    printf("          GET <p>, STATUS, PANIC, RESET, DEMO, STOP,\n");
+    printf("          SONG [n], SONG STOP\n");
     printf("========================================\n\n");
 
     // Run self-tests (includes engine init + audio I2S test)
