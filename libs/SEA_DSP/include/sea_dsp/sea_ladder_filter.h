@@ -99,6 +99,7 @@ private:
 
     T k = mResonance * static_cast<T>(4.0);
 
+    // Per-sample tanh: nonlinear waveshaping, input varies per sample
     T u = (Math::Tanh(in) - k * S_total) * mInvFeedbackDenom;
 
     // Compute stages

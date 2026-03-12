@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sea_math.h"
 #include <cmath>
 #include <algorithm>
 
@@ -7,9 +8,9 @@ namespace sea {
 
 template <typename T>
 struct Sigmoid {
-  // High-quality hyperbolic tangent saturation
+  // Hyperbolic tangent saturation — routes through Padé approximant on embedded
   static T Tanh(T x) {
-    return std::tanh(x);
+    return static_cast<T>(Math::Tanh(static_cast<Real>(x)));
   }
 
   // Cubic approximation: f(x) = x - x³/3 for x in [-1.5, 1.5], clamped outside

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sea_math.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -12,6 +13,7 @@ public:
   void Init(T sampleRate) {
     mSampleRate = sampleRate;
     UpdateLookaheadBuffer();
+    UpdateReleaseCoeff();
     Reset();
   }
 
@@ -27,6 +29,7 @@ public:
   void SetParams(T threshold, T lookaheadMs, T releaseMs) {
     mThreshold = std::max(T(0.01), std::min(T(1.0), threshold));
     mReleaseMs = std::max(T(1.0), std::min(T(500.0), releaseMs));
+    UpdateReleaseCoeff();
 
     T newLookahead = std::max(T(0.0), std::min(T(50.0), lookaheadMs));
     if (newLookahead != mLookaheadMs) {
@@ -55,9 +58,7 @@ public:
     if (targetGain < mGain) {
       mGain = targetGain;
     } else {
-      const T releaseCoeff =
-          T(1.0) - std::exp(-T(1.0) / (mReleaseMs * T(0.001) * mSampleRate));
-      mGain = mGain + (targetGain - mGain) * releaseCoeff;
+      mGain = mGain + (targetGain - mGain) * mReleaseCoeff;
     }
 
     const int size = mBufferSize;
@@ -116,6 +117,11 @@ private:
     void clear() { head = tail = count = 0; }
   };
 
+  void UpdateReleaseCoeff() {
+    mReleaseCoeff =
+        T(1.0) - Math::Exp(-T(1.0) / (mReleaseMs * T(0.001) * mSampleRate));
+  }
+
   void UpdateLookaheadBuffer() {
     mBufferSize =
         std::max(1, static_cast<int>(mLookaheadMs * T(0.001) * mSampleRate));
@@ -128,6 +134,7 @@ private:
   int mWriteIndex = 0;
   int64_t mSampleIndex = 0;
   T mGain = T(1.0);
+  T mReleaseCoeff = T(0);
   int mBufferSize = 1;
   PeakRingBuffer mPeakWindow;
   std::array<T, kMaxBufferSize> mBufferL = {};
