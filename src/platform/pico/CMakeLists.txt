@@ -65,6 +65,7 @@ add_executable(polysynth_pico
     pico_synth_app.cpp
     pico_command_dispatch.cpp
     pico_demo.cpp
+    song_player.cpp
     pico_self_test.cpp
 )
 

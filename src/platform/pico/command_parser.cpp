@@ -74,6 +74,15 @@ Command CommandParser::Parse() {
         cmd.type = Command::DEMO;
     } else if (std::strcmp(token, "STOP") == 0) {
         cmd.type = Command::STOP;
+    } else if (std::strcmp(token, "SONG") == 0) {
+        cmd.type = Command::SONG;
+        char arg[16] = {};
+        read_token(p, arg, sizeof(arg));
+        if (std::strcmp(arg, "STOP") == 0 || std::strcmp(arg, "stop") == 0) {
+            std::strncpy(cmd.strArg, "STOP", sizeof(cmd.strArg) - 1);
+        } else if (arg[0] != '\0') {
+            cmd.intArg1 = std::atoi(arg);
+        }
     }
 
     // Reset buffer for next line
